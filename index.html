@@ -1,0 +1,3054 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mi Colección</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+
+    <style>
+        :root { --bg: #050505; --panel: #111114; --accent: #3b82f6; --border: #27272a; --gold: #fbbf24; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: #f4f4f5; overflow: hidden; }
+        .sidebar { background-color: var(--panel); border-right: 1px solid var(--border); }
+        .inspector { background-color: var(--panel); border-left: 1px solid var(--border); }
+        .input-pro { background: #000; border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 6px; width: 100%; font-size: 0.85rem; }
+        .input-pro:focus { border-color: var(--accent); outline: none; ring: 2px solid rgba(59, 130, 246, 0.2); }
+        .no-cut-text { white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word; }
+        
+        #itemsGrid { padding: 16px; padding-bottom: 100px; overflow-y: auto; flex: 1; }
+
+        /* --- MOSAICO (GRID) --- */
+        #itemsGrid.view-grid { 
+            display: grid !important; 
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+            gap: 12px !important; 
+            align-content: start !important;
+        }
+        
+        @media (max-width: 640px) {
+            #itemsGrid.view-grid {
+                grid-template-columns: 1fr 1fr !important;
+                gap: 8px !important;
+                padding: 8px !important;
+            }
+        }
+
+        #itemsGrid.view-grid .item-card {
+            display: flex !important;
+            flex-direction: column !important;
+            background: #18181b;
+            border: 1px solid #27272a;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            height: auto !important; 
+            min-height: 180px !important;
+        }
+
+        #itemsGrid.view-grid .item-card .card-img-area {
+            width: 100% !important;
+            aspect-ratio: 1 / 1 !important; 
+            background: #27272a; 
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            flex-grow: 1; 
+        }
+        
+        #itemsGrid.view-grid .item-card .card-img-area img {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            display: block !important;
+        }
+
+        /* --- LISTADO (LIST) --- */
+        #itemsGrid.view-list { 
+            display: flex !important; 
+            flex-direction: column !important; 
+            gap: 8px !important; 
+        }
+
+        #itemsGrid.view-list .item-card {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            min-height: 50px !important;
+            background: #18181b;
+            border: 1px solid #27272a;
+            border-radius: 8px;
+            padding: 8px 16px !important;
+            cursor: pointer;
+            width: 100% !important;
+        }
+        
+        #itemsGrid.view-list .item-card .card-img-area { display: none !important; }
+        
+        #itemsGrid.view-list .item-card .card-text-area {
+            font-size: 0.85rem !important;
+            font-weight: 800 !important;
+            color: #fff !important;
+            flex: 1 !important;
+            text-align: left !important;
+            border: none !important;
+            background: transparent !important;
+            padding: 0 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
+
+        #itemsGrid.view-grid .item-card .card-text-area {
+            padding: 8px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: #fff;
+            text-align: center;
+            border-top: 1px solid #27272a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            background: #18181b;
+            min-height: 30px; 
+        }
+
+        @media (max-width: 640px) {
+            #itemsGrid.view-list .item-card .card-text-area {
+                white-space: normal !important; 
+                overflow: visible !important;
+                line-height: 1.2 !important;
+            }
+        }
+
+        .item-card:hover { border-color: #52525b; background: #27272a; }
+        .item-card.active { border-color: var(--accent); background: #1d1d21; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+        .modal-box { background: #0f0f12; width: 95%; max-width: 1400px; max-height: 95vh; border-radius: 20px; border: 1px solid var(--border); display: flex; flex-direction: column; }
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; }
+        .gallery-img-container { aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); position: relative; background: #000; }
+        .help-card { background: #18181b; padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
+        
+        .mobile-sidebar { position: fixed; inset: 0; z-index: 50; background: var(--panel); width: 85%; max-width: 300px; border-right: 1px solid var(--border); transform: translateX(-100%); transition: transform 0.3s; display: flex; flex-direction: column; }
+        .mobile-sidebar.open { transform: translateX(0); }
+        .mobile-inspector { position: fixed; inset: 0; z-index: 100; background: var(--panel); transform: translateY(100%); transition: transform 0.3s; display: flex; flex-direction: column; }
+        .mobile-inspector.active { transform: translateY(0); }
+        .overlay-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 40; display: none; }
+
+        @media (min-width: 768px) {
+            .mobile-sidebar { position: relative; transform: none; width: 18rem; z-index: 1; }
+            .mobile-inspector { position: relative; transform: none; width: 600px; z-index: 1; }
+            .menu-toggle { display: none; }
+            .overlay-bg { display: none !important; }
+            .inspector-back-btn { display: none; }
+        }
+        
+        .stars-outer { position: relative; display: inline-block; font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 12px; letter-spacing: 1px; }
+        .stars-outer::before { content: "\f005 \f005 \f005 \f005 \f005"; color: #3f3f46; }
+        .stars-inner { position: absolute; top: 0; left: 0; white-space: nowrap; overflow: hidden; width: 0; font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 12px; letter-spacing: 1px; }
+        .stars-inner::before { content: "\f005 \f005 \f005 \f005 \f005"; color: var(--gold); }
+
+        details > summary { list-style: none; cursor: pointer; background: #18181b; padding: 15px; border-radius: 8px; border: 1px solid var(--border); font-weight: bold; text-transform: uppercase; font-size: 0.75rem; color: #fff; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        details > summary::after { content: '\f078'; font-family: "Font Awesome 6 Free"; font-size: 1em; font-weight: bold; transition: 0.2s; }
+        details[open] > summary::after { content: '\f077'; }
+        details[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom: none; margin-bottom: 0; background: #27272a; }
+        details > div { border: 1px solid var(--border); border-top: none; padding: 15px; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; background: #09090b; margin-bottom: 10px; }
+        
+        .draggable-item { cursor: grab; }
+        .draggable-item:active { cursor: grabbing; background: #1f1f22; }
+        .drag-over { border: 1px dashed var(--accent); }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <header class="h-16 border-b border-zinc-800 bg-black flex items-center justify-between px-6 z-50">
+        <div class="flex items-center gap-4">
+            <button onclick="toggleSidebar()" class="menu-toggle text-white text-xl"><i class="fa-solid fa-bars"></i></button>
+            <div class="cursor-pointer" title="Cambiar Logo">
+                <div id="headerLogo" class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+                    <i class="fa-solid fa-cubes text-white text-lg"></i>
+                </div>
+            </div>
+            <div>
+                <h1 id="appTitleHeader" class="font-black text-xl tracking-tighter text-white uppercase block">Mi Colección</h1>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 md:gap-4 overflow-x-auto">
+            <button onclick="openStats()" class="bg-yellow-600/10 text-yellow-500 px-4 py-2 rounded-lg text-xs font-black uppercase flex items-center gap-2 hover:bg-yellow-600/20 transition whitespace-nowrap">
+                <i class="fa-solid fa-chart-line"></i> <span class="hidden md:inline">Gráficos</span>
+            </button>
+            <div class="flex bg-zinc-900 rounded-lg p-1 border border-zinc-800">
+                <button onclick="changeView('grid')" class="px-3 py-1.5 rounded-md hover:bg-zinc-800 text-zinc-400"><i class="fa-solid fa-grip"></i></button>
+                <button onclick="changeView('list')" class="px-3 py-1.5 rounded-md hover:bg-zinc-800 text-zinc-400"><i class="fa-solid fa-list"></i></button>
+            </div>
+            <button onclick="openModal('helpModal')" class="text-blue-400 px-4 py-2 rounded-lg text-xs font-black uppercase flex items-center gap-2 hover:bg-blue-600/10 transition">
+                <i class="fa-solid fa-life-ring"></i> Ayuda
+            </button>
+            <button onclick="tryOpenConfig()" class="bg-zinc-800 hover:bg-zinc-700 text-white px-5 py-2 rounded-xl text-xs font-black uppercase flex items-center gap-2 transition whitespace-nowrap">
+                <i class="fa-solid fa-sliders"></i> Configuración
+            </button>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden relative">
+        <div id="sidebarOverlay" onclick="toggleSidebar()" class="overlay-bg"></div>
+        
+        <aside id="mainSidebar" class="mobile-sidebar sidebar flex flex-col">
+            <div class="p-6 overflow-y-auto flex-1">
+                <div class="flex justify-between md:hidden mb-4">
+                      <span class="font-bold text-white uppercase">Menú</span>
+                      <button onclick="toggleSidebar()" class="text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <button onclick="newItem()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-xs font-black uppercase tracking-widest transition mb-6 shadow-lg shadow-blue-900/30">
+                    + AÑADIR ARTÍCULO
+                </button>
+                <h3 class="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-4">Mis Colecciones</h3>
+                <nav id="colNav" class="space-y-1"></nav>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col bg-[#050505]">
+            <div class="p-4 border-b border-zinc-900 flex justify-between items-center bg-zinc-950/50 sticky top-0 z-10">
+                <div class="relative w-full md:w-96">
+                    <input type="text" id="globalSearch" oninput="renderItems()" placeholder="Búsqueda Inteligente (Texto, Campos)..." class="input-pro pl-10">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-zinc-600 text-xs"></i>
+                </div>
+                <div id="colActiveLabel" class="text-[10px] font-black text-blue-500 bg-blue-500/10 px-4 py-1.5 rounded-full border border-blue-500/20 uppercase tracking-widest hidden md:block">
+                    Cargando...
+                </div>
+            </div>
+            <div id="itemsGrid" class="view-grid"></div>
+        </main>
+
+        <aside id="inspectorPanel" class="mobile-inspector inspector flex flex-col">
+            <div id="inspectorEmpty" class="flex-1 flex flex-col items-center justify-center p-12 text-center opacity-20">
+                <i class="fa-solid fa-hand-pointer text-6xl mb-4"></i>
+                <p class="text-xs font-black uppercase tracking-widest">Selecciona un elemento</p>
+            </div>
+
+            <div id="inspectorContent" class="hidden flex-1 flex flex-col overflow-hidden">
+                <div class="p-4 border-b border-zinc-800 flex flex-wrap gap-2 justify-between items-center bg-zinc-900/50">
+                    <button onclick="hideInspector()" class="inspector-back-btn text-white"><i class="fa-solid fa-arrow-left"></i></button>
+                    
+                    <div class="flex gap-2">
+                        <button id="editToggleBtn" onclick="toggleEditMode()" class="bg-zinc-800 text-zinc-400 px-4 py-2 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 border border-zinc-700 hover:bg-zinc-700 transition">
+                            <i class="fa-solid fa-lock"></i> <span>SOLO LECTURA</span>
+                        </button>
+                        <button id="autoFetchBtn" onclick="openAutoFetchModal()" class="hidden bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 transition shadow-lg shadow-purple-900/20">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> <span>BUSCAR INFO</span>
+                        </button>
+                    </div>
+
+                    <button id="delItemBtn" onclick="deleteCurrentItem()" class="text-red-500 hover:text-red-400 text-[10px] font-black uppercase ml-auto hidden">ELIMINAR</button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-6 space-y-8">
+                    <section class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Galería de Imágenes</label>
+                            <span id="photoCounter" class="text-[9px] text-zinc-600 font-mono">0 IMG</span>
+                        </div>
+                        <div id="itemGallery" class="gallery-grid"></div>
+                        
+                        <div id="galleryControls" class="hidden mt-2">
+                             <div class="flex gap-2 items-center mb-2">
+                                 <select id="uploadSizeSelector" class="input-pro text-xs w-auto flex-1 bg-zinc-900 border-zinc-700">
+                                     <option value="1000" selected>Reducir a 1000px</option>
+                                     <option value="800">Reducir a 800px</option>
+                                     <option value="1600">Reducir a 1600px</option>
+                                     <option value="original">Original (Sin cambios)</option>
+                                 </select>
+                                 <span class="text-[9px] text-zinc-500 whitespace-nowrap">Calidad: 70%</span>
+                             </div>
+                             <button onclick="document.getElementById('photoInp').click()" class="w-full py-3 border border-dashed border-zinc-700 rounded-xl text-[10px] font-black text-zinc-500 hover:text-blue-500 transition uppercase">
+                                + Subir Fotos (PC/Móvil)
+                             </button>
+                        </div>
+                    </section>
+
+                    <div id="dynamicFields" class="space-y-6 pt-6 border-t border-zinc-900"></div>
+                    
+                    <div id="connectionsContainer" class="">
+                        <button id="connectionsBtn" onclick="openConnectionsModal()" class="w-full bg-blue-900/10 border border-blue-900/30 text-blue-400 py-3 rounded-lg text-xs font-black uppercase hover:bg-blue-900/20 transition flex items-center justify-between px-4">
+                        </button>
+                    </div>
+
+                    <div class="h-24 md:h-0"></div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <div id="importModal" class="modal-overlay hidden" style="z-index: 2500;">
+        <div class="bg-black border border-zinc-800 p-6 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <h3 class="text-white font-bold mb-4 uppercase text-lg text-center text-green-500">Mapear Datos CSV</h3>
+            
+            <div class="mb-4 bg-zinc-900 p-3 rounded border border-zinc-800">
+                <label class="text-[10px] font-bold text-blue-500 uppercase block mb-1">Importar en la Colección:</label>
+                <select id="importTargetCol" class="input-pro text-xs" onchange="openImportModal(true)"></select>
+            </div>
+
+            <p class="text-xs text-zinc-400 mb-4 text-center">Asigna cada columna del CSV a uno de TUS campos.</p>
+            
+            <div class="bg-zinc-900/50 border border-zinc-800 rounded p-4 mb-4 flex-1 overflow-y-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-zinc-700 text-xs text-zinc-400 uppercase">
+                            <th class="p-2 w-1/4">Columna CSV (Ejemplo)</th>
+                            <th class="p-2 w-1/6">Estado</th>
+                            <th class="p-2 w-1/3">Acción / Campo Destino</th>
+                            <th class="p-2 w-1/4">Comprobación</th>
+                        </tr>
+                    </thead>
+                    <tbody id="importMapBody"></tbody>
+                </table>
+            </div>
+
+            <div class="flex gap-4">
+                 <button onclick="closeModal('importModal')" class="flex-1 bg-zinc-800 p-3 rounded text-xs font-bold uppercase hover:bg-zinc-700 text-zinc-300">Cancelar</button>
+                 <button onclick="processImport()" class="flex-1 bg-green-600 p-3 rounded text-xs font-bold uppercase hover:bg-green-500 text-white">IMPORTAR AHORA</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="massDeleteModal" class="modal-overlay hidden" style="z-index: 3100;">
+        <div class="bg-black border border-zinc-800 p-6 rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-red-500 font-black uppercase text-lg">Selección para Eliminación</h3>
+                <button onclick="closeModal('massDeleteModal')" class="text-zinc-500"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <p class="text-xs text-zinc-400 mb-2">Selecciona los registros que deseas borrar permanentemente.</p>
+            <div id="massDeleteList" class="flex-1 overflow-y-auto bg-zinc-900 p-2 rounded border border-zinc-800 space-y-1"></div>
+            <div class="mt-4 flex gap-2">
+                <button onclick="selectAllForDelete(true)" class="bg-zinc-800 text-xs px-3 py-2 rounded hover:bg-zinc-700">Marcar Todos</button>
+                <button onclick="selectAllForDelete(false)" class="bg-zinc-800 text-xs px-3 py-2 rounded hover:bg-zinc-700">Desmarcar Todos</button>
+                <button onclick="executeMassDelete()" class="bg-red-600 text-white font-bold uppercase text-xs px-4 py-2 rounded ml-auto hover:bg-red-500">BORRAR SELECCIONADOS</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="exportCenterModal" class="modal-overlay hidden" style="z-index: 5000;">
+        <div class="bg-black border border-zinc-800 p-6 rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
+            <h3 class="text-white font-bold mb-4 uppercase text-lg text-center">Centro de Exportación e Importación</h3>
+            
+            <div class="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
+                <div class="border border-zinc-800 p-4 rounded bg-zinc-900/50">
+                    <h4 class="text-blue-400 font-bold uppercase text-xs mb-3">1. Seleccionar Colecciones</h4>
+                    <div id="expColList" class="space-y-1 h-40 overflow-y-auto"></div>
+                </div>
+                <div class="border border-zinc-800 p-4 rounded bg-zinc-900/50">
+                    <h4 class="text-blue-400 font-bold uppercase text-xs mb-3">2. Seleccionar Campos</h4>
+                    <div id="expFieldList" class="space-y-1 h-40 overflow-y-auto"></div>
+                </div>
+            </div>
+
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                 <button onclick="runExport('csv')" class="bg-zinc-800 p-3 rounded text-xs font-bold uppercase hover:bg-zinc-700">CSV / Excel</button>
+                 <button onclick="runExport('pdf')" class="bg-blue-900/30 text-blue-400 p-3 rounded text-xs font-bold uppercase hover:bg-blue-900/50 border border-blue-900">PDF (Lista con Fotos)</button>
+                 <button onclick="downloadBackup()" class="bg-purple-900/30 text-purple-400 p-3 rounded text-xs font-bold uppercase hover:bg-purple-900/50 border border-purple-900">Backup Completo</button>
+            </div>
+            
+            <div class="mt-4 pt-4 border-t border-zinc-800">
+                <h4 class="text-green-400 font-bold uppercase text-xs mb-3 text-center">Importar Datos</h4>
+                <button onclick="document.getElementById('csvInp').click()" class="w-full bg-green-900/10 text-green-500 p-3 rounded text-xs font-bold uppercase hover:bg-green-900/20 border border-green-900/30">Seleccionar CSV / Excel</button>
+            </div>
+
+            <button onclick="closeModal('exportCenterModal')" class="mt-4 text-red-500 text-xs font-bold uppercase w-full">Cerrar</button>
+        </div>
+    </div>
+
+    <div id="connectionsModal" class="modal-overlay hidden">
+        <div class="modal-box max-w-lg bg-zinc-950">
+            <div class="p-4 border-b border-zinc-800 flex justify-between items-center">
+                <h3 id="connModalTitle" class="text-blue-400 font-black uppercase text-sm">Conexiones Relacionadas</h3>
+                <button onclick="closeModal('connectionsModal')" class="text-white"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div id="connectionsList" class="p-4 space-y-2 overflow-y-auto max-h-96"></div>
+        </div>
+    </div>
+
+    <div id="fileManagerModal" class="modal-overlay hidden" style="z-index: 2200;">
+        <div class="bg-black border border-zinc-800 p-6 rounded-xl w-full max-w-md">
+            <h3 class="text-white font-bold mb-4 uppercase">Gestor de Archivos</h3>
+            <div id="fileListContainer" class="space-y-2 mb-4 max-h-60 overflow-y-auto"></div>
+            <div id="fileUploadControl" class="hidden">
+                 <button onclick="document.getElementById('fileFieldInp').click()" class="w-full bg-zinc-800 py-2 rounded text-xs font-bold uppercase hover:bg-zinc-700">Añadir Archivo</button>
+            </div>
+            <button onclick="closeModal('fileManagerModal')" class="mt-4 w-full text-red-500 text-xs font-bold uppercase border border-red-900/30 py-2 rounded">Cerrar</button>
+        </div>
+    </div>
+
+    <div id="qualityControlModal" class="modal-overlay hidden" style="z-index: 3500;">
+        <div class="modal-box max-w-2xl">
+            <div class="p-6 border-b border-zinc-800 bg-black flex justify-between items-center">
+                <h2 class="text-lg font-black uppercase text-purple-500"><i class="fa-solid fa-stethoscope mr-2"></i> Control de Calidad de Datos</h2>
+                <button onclick="closeModal('qualityControlModal')" class="text-zinc-500 text-3xl"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex flex-col h-full">
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                         <label class="text-[9px] font-bold text-zinc-500 uppercase block mb-1">1. Colección</label>
+                         <select id="qcColSelect" class="input-pro" onchange="updateQualityFields()"></select>
+                    </div>
+                    <div>
+                         <label class="text-[9px] font-bold text-zinc-500 uppercase block mb-1">2. Modo de Búsqueda</label>
+                         <select id="qcModeSelect" class="input-pro" onchange="updateQualityFields()">
+                             <option value="duplicates">Buscar Duplicados</option>
+                             <option value="empty">Buscar Campos Vacíos</option>
+                             <option value="photos">BUSCAR REGISTROS SIN FOTO (Carátula)</option> </select>
+                    </div>
+                    <div>
+                         <label class="text-[9px] font-bold text-zinc-500 uppercase block mb-1">3. Campo Objetivo</label>
+                         <select id="qcFieldSelect" class="input-pro"></select>
+                    </div>
+                </div>
+
+                <button onclick="runQualityCheck()" class="w-full bg-purple-600 py-3 rounded-lg font-bold uppercase text-xs mb-6 hover:bg-purple-500 transition">
+                    EJECUTAR ANÁLISIS
+                </button>
+
+                <div class="flex-1 bg-zinc-900 rounded-xl border border-zinc-800 p-4 overflow-y-auto max-h-96">
+                    <h4 class="text-xs font-bold text-zinc-400 uppercase mb-3 border-b border-zinc-800 pb-2">Resultados</h4>
+                    <div id="qcResults" class="space-y-2">
+                        <p class="text-zinc-600 text-center italic text-xs mt-4">Configura y pulsa Ejecutar para ver resultados.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="statsModal" class="modal-overlay hidden">
+        <div class="modal-box max-w-6xl">
+            <div class="p-6 border-b border-zinc-800 bg-black flex justify-between items-center">
+                <h2 class="text-xl font-black uppercase text-yellow-500">Informe de Datos</h2>
+                <button onclick="closeModal('statsModal')" class="text-zinc-500 text-3xl"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 overflow-y-auto max-h-[80vh]">
+                
+                <div class="lg:col-span-4 space-y-6">
+                     <div class="space-y-4">
+                          <h3 class="text-xs font-bold text-white mb-2 uppercase border-b border-zinc-800 pb-2">Conteo Rápido</h3>
+                          <div id="statsBody" class="space-y-2"></div>
+                     </div>
+                     <div class="space-y-4">
+                        <h3 class="text-xs font-bold text-green-500 mb-2 uppercase border-b border-zinc-800 pb-2">Resumen Financiero</h3>
+                        <div id="financialStatsBody" class="space-y-2 bg-zinc-900 p-4 rounded-xl border border-zinc-800"></div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-8 space-y-6">
+                    <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
+                        <h3 class="text-sm font-black text-blue-400 mb-4 uppercase flex items-center gap-2">
+                            <i class="fa-solid fa-flask"></i> Generador de Informes Avanzado
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                            <div>
+                                <label class="text-[9px] font-bold text-zinc-500 uppercase block mb-2">1. Seleccionar Colecciones</label>
+                                <div id="advStatsCols" class="bg-black border border-zinc-800 rounded p-2 h-32 overflow-y-auto space-y-1"></div>
+                            </div>
+                            
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="text-[9px] font-bold text-zinc-500 uppercase block mb-1">2. Agrupar por Campo (Eje X)</label>
+                                    <select id="advGroupBy" class="input-pro text-xs bg-black"></select>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="text-[9px] font-bold text-zinc-500 uppercase block mb-1">3. Operación</label>
+                                        <select id="advOperation" class="input-pro text-xs bg-black" onchange="toggleAdvValueField()">
+                                            <option value="count">Contar Ítems (Cantidad)</option>
+                                            <option value="sum">Sumar Valor (Total)</option>
+                                        </select>
+                                    </div>
+                                    <div id="advValueFieldWrap" class="opacity-50 pointer-events-none">
+                                        <label class="text-[9px] font-bold text-zinc-500 uppercase block mb-1">4. Campo Valor</label>
+                                        <select id="advValueField" class="input-pro text-xs bg-black"></select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="generateAdvancedReport()" class="w-full bg-blue-600 py-3 rounded-lg font-black uppercase text-xs hover:bg-blue-500 transition shadow-lg shadow-blue-900/20">
+                            GENERAR GRÁFICO E INFORME
+                        </button>
+                    </div>
+
+                    <div class="bg-black p-4 rounded-xl border border-zinc-800">
+                        <canvas id="advChart" class="max-h-64 w-full mb-6"></canvas>
+                        <div id="advReportTable" class="overflow-x-auto"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="fieldEditModal" class="modal-overlay hidden" style="z-index: 4500;">
+        <div class="bg-black border border-zinc-800 p-6 rounded-xl w-full max-w-sm flex flex-col shadow-2xl">
+            <h3 class="text-white font-bold mb-4 uppercase text-center">Editar Campo</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] text-zinc-500 uppercase font-bold mb-1 block">Nombre</label>
+                    <input type="text" id="editFieldName" class="input-pro text-xs">
+                </div>
+                <div>
+                    <label class="text-[10px] text-zinc-500 uppercase font-bold mb-1 block">Tipo</label>
+                    <select id="editFieldType" class="input-pro text-xs bg-zinc-900" onchange="toggleEditRel()">
+                        <option value="text">Texto Corto</option>
+                        <option value="textarea">Texto Largo</option>
+                        <option value="textarea_lines">Texto Largo (con saltos)</option>
+                        <option value="link">Enlace Web</option>
+                        <option value="file">Adjuntos (Múltiples)</option>
+                        <option value="rating">Valoración</option>
+                        <option value="currency">Moneda (€)</option>
+                        <option value="relation">Relación</option>
+                    </select>
+                </div>
+                <div id="editRelSet" class="hidden p-3 bg-zinc-900 rounded border border-zinc-700 space-y-2">
+                    <label class="text-[9px] text-zinc-400 uppercase font-bold">Relacionar con:</label>
+                    <select id="editRelDest" class="input-pro text-xs bg-black"></select>
+                </div>
+                <button onclick="saveFieldEdit()" class="w-full bg-blue-600 py-3 rounded font-black uppercase text-xs hover:bg-blue-500">Guardar Cambios</button>
+                <button onclick="closeModal('fieldEditModal')" class="w-full text-zinc-500 py-2 font-bold uppercase text-[10px]">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="autoFetchModal" class="modal-overlay hidden" style="z-index: 4600;">
+        <div class="bg-black border border-zinc-800 p-6 rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
+            <div class="flex justify-between items-center mb-3 border-b border-zinc-800 pb-3">
+                <h3 class="text-purple-400 font-black uppercase text-lg"><i class="fa-solid fa-wand-magic-sparkles"></i> Autocompletar Info</h3>
+                <button onclick="closeModal('autoFetchModal')" class="text-zinc-500"><i class="fa-solid fa-times"></i></button>
+            </div>
+            
+            <p class="text-xs text-zinc-400 mb-3">Los campos se rellenan solos. Usa <strong>Google</strong> para buscar en todo internet (lo más fiable) o el botón de autocompletar.</p>
+            
+            <!-- Campos de búsqueda múltiples -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                <div>
+                    <label class="text-[9px] font-bold text-zinc-500 uppercase block mb-1">Título</label>
+                    <input type="text" id="afTitle" class="input-pro text-xs" placeholder="Nombre del juego, película, sello...">
+                </div>
+                <div>
+                    <label class="text-[9px] font-bold text-zinc-500 uppercase block mb-1">Plataforma / Consola / Marca</label>
+                    <input type="text" id="afPlatform" class="input-pro text-xs" placeholder="PS4, Nintendo Switch, Sega, etc.">
+                </div>
+                <div>
+                    <label class="text-[9px] font-bold text-zinc-500 uppercase block mb-1">Año</label>
+                    <input type="text" id="afYear" class="input-pro text-xs" placeholder="Ej: 1999">
+                </div>
+                <div>
+                    <label class="text-[9px] font-bold text-zinc-500 uppercase block mb-1">País / Región</label>
+                    <input type="text" id="afRegion" class="input-pro text-xs" placeholder="España, PAL, USA, Japón...">
+                </div>
+            </div>
+
+            <!-- Google primero -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+                <button onclick="openGoogleSearch()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded text-xs">
+                    <i class="fa-brands fa-google"></i> Buscar en Google
+                </button>
+                <button onclick="openGoogleImages()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded text-xs">
+                    <i class="fa-solid fa-images"></i> Carátulas en Google Imágenes
+                </button>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-2 mb-3">
+                <select id="autoFetchSource" class="input-pro text-xs bg-zinc-900 flex-1">
+                    <option value="wikipedia" selected>Autocompletar (Wikipedia y otras)</option>
+                    <option value="openlibrary">Libros</option>
+                    <option value="tvmaze">Series de TV</option>
+                    <option value="itunes_movie">Películas</option>
+                    <option value="itunes_software">Apps / Software</option>
+                </select>
+                <button onclick="executeWebSearch('all')" class="bg-zinc-700 hover:bg-zinc-600 text-white font-bold px-4 py-2 rounded text-xs whitespace-nowrap">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Autocompletar
+                </button>
+            </div>
+
+            <div id="autoFetchLoading" class="hidden text-center py-3 text-zinc-500 text-xs font-bold uppercase"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Buscando en internet...</div>
+            
+            <div id="autoFetchResults" class="flex-1 overflow-y-auto space-y-2 bg-zinc-950 p-2 rounded border border-zinc-900 min-h-[140px] max-h-[220px]">
+                <p class="text-zinc-600 text-center text-xs mt-8">Usa los botones de Google (recomendado) o Autocompletar.</p>
+            </div>
+
+            <div id="autoFetchImagePicker" class="hidden mt-3 pt-3 border-t border-zinc-800">
+                <h4 class="text-purple-400 font-bold uppercase text-xs mb-2"><i class="fa-solid fa-images"></i> Elige carátula / fotos (puedes marcar varias)</h4>
+                <div id="autoFetchImagesGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-36 overflow-y-auto"></div>
+                <p class="text-[9px] text-zinc-500 mt-1">La primera marcada será la carátula principal. Se añadirán a la galería del artículo.</p>
+            </div>
+
+            <div id="autoFetchMapper" class="hidden mt-3 pt-3 border-t border-zinc-800">
+                <h4 class="text-blue-400 font-bold uppercase text-xs mb-2">Mapear Datos Encontrados a tus Campos</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="autoFetchMapGrid"></div>
+                <button onclick="importWebData()" class="w-full mt-3 bg-green-600 hover:bg-green-500 text-white py-3 rounded-lg font-black uppercase text-xs">IMPORTAR DATOS + FOTOS AHORA</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="configModal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="p-6 border-b border-zinc-800 bg-black flex justify-between items-center">
+                <h2 class="text-xl font-black uppercase text-white">Configuración del Sistema</h2>
+                <button onclick="closeModal('configModal')" class="text-zinc-500 text-3xl"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-8">
+                
+                <details>
+                    <summary>General y Apariencia</summary>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                             <label class="text-[10px] font-bold text-zinc-500 uppercase block mb-2">Nombre de la App / Colección</label>
+                             <input type="text" id="configAppName" class="input-pro" placeholder="Mi Colección" oninput="updateAppName(this.value)">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-zinc-500 uppercase block mb-2">Logo Personalizado</label>
+                            <button onclick="document.getElementById('logoInput').click()" class="w-full bg-zinc-900 border border-zinc-800 p-3 rounded text-xs text-zinc-400 uppercase hover:border-blue-500">
+                                <i class="fa-solid fa-image mr-2"></i> Cambiar Logo
+                            </button>
+                        </div>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>Estructura: Colecciones y Campos</summary>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="col-span-1 border-r border-zinc-800 pr-4">
+                            <h3 class="text-xs font-bold text-zinc-500 uppercase mb-3">Mis Colecciones</h3>
+                            <div id="configColList" class="space-y-2 mb-4 max-h-60 overflow-y-auto"></div>
+                            <div class="flex gap-2">
+                                <input type="text" id="newColInp" class="input-pro text-xs" placeholder="Nueva Colección (Ej: Juegos)">
+                                <button onclick="addCollection()" class="bg-blue-600 px-4 rounded-lg font-bold">+</button>
+                            </div>
+                        </div>
+
+                        <div class="col-span-1 md:col-span-2" id="fManagerWrapper">
+                            <div id="fManagerEmpty" class="h-full flex flex-col items-center justify-center text-zinc-600 opacity-50">
+                                <i class="fa-solid fa-arrow-left text-2xl mb-2 md:inline hidden"></i>
+                                <i class="fa-solid fa-arrow-up text-2xl mb-2 md:hidden"></i>
+                                <p class="text-xs uppercase font-bold">Selecciona una colección para editar sus campos</p>
+                            </div>
+                            
+                            <div id="fManagerContent" class="hidden">
+                                <div class="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
+                                    <h3 class="text-xs font-black text-purple-500 uppercase">Editando: <span id="edColName" class="text-white text-sm ml-2"></span></h3>
+                                    <button onclick="delCol()" class="text-red-500 text-[10px] font-bold uppercase hover:bg-red-900/20 px-2 py-1 rounded">BORRAR COLECCIÓN</button>
+                                </div>
+                                
+                                <p class="text-[10px] text-zinc-400 mb-2 italic">Usa la estrella para definir qué campo es el PRINCIPAL (Título).</p>
+                                <div id="configFieldList" class="space-y-2 mb-4 max-h-60 overflow-y-auto pr-2"></div>
+                                
+                                <div class="bg-black p-4 rounded border border-zinc-800 space-y-3">
+                                    <label class="text-[10px] font-bold text-zinc-500 uppercase">Añadir Nuevo Campo:</label>
+                                    <input type="text" id="newFTitle" class="input-pro text-xs" placeholder="Nombre del Campo">
+                                    <select id="newFType" onchange="toggleRel()" class="input-pro text-xs bg-zinc-900">
+                                        <option value="text">Texto Corto</option>
+                                        <option value="textarea">Texto Largo</option>
+                                        <option value="textarea_lines">Texto Largo (con saltos)</option>
+                                        <option value="link">Enlace Web</option>
+                                        <option value="file">Adjuntos (Múltiples)</option>
+                                        <option value="rating">Valoración</option>
+                                        <option value="currency">Moneda (€)</option>
+                                        <option value="relation">Relación</option>
+                                    </select>
+                                    <div id="relSet" class="hidden p-3 bg-zinc-900 rounded border border-zinc-700 space-y-2">
+                                        <label class="text-[9px] text-zinc-400 uppercase font-bold">Vincular con:</label>
+                                        <select id="relDest" onchange="updRelF()" class="input-pro text-xs bg-black"></select>
+                                        <label class="text-[9px] text-zinc-400 uppercase font-bold">Mostrar:</label>
+                                        <select id="relDisp" class="input-pro text-xs bg-black"></select>
+                                    </div>
+                                    <button onclick="addField()" class="w-full bg-purple-600 py-3 rounded-xl text-[10px] font-black uppercase shadow-lg hover:bg-purple-500 transition">CREAR CAMPO</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>Configuración de Vistas</summary>
+                    <div>
+                        <div class="mb-4 bg-zinc-900 p-2 rounded border border-zinc-800">
+                            <label class="text-[10px] font-bold text-zinc-500 uppercase block mb-1">Configurar vista para:</label>
+                            <select id="viewConfigSelector" class="input-pro text-xs" onchange="renderViewConfigFor(this.value)"></select>
+                        </div>
+
+                        <p class="text-xs text-zinc-400 mb-4">Selecciona qué campos se muestran en la vista de Mosaico (Grid) y en la vista de Lista.</p>
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <h3 class="text-xs font-bold text-blue-500 uppercase mb-3">Vista Mosaico (Grid)</h3>
+                                <div id="gridFieldsConfig" class="space-y-2"></div>
+                            </div>
+                            <div>
+                                <h3 class="text-xs font-bold text-green-500 uppercase mb-3">Vista Lista</h3>
+                                <div id="listFieldsConfig" class="space-y-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>Gestión de Datos y Eliminación</summary>
+                    <div class="space-y-4">
+                        <div class="bg-red-900/10 border border-red-900/30 p-4 rounded-xl">
+                            <h3 class="text-red-500 font-black uppercase text-xs mb-3">Zona de Eliminación</h3>
+                            <p class="text-zinc-400 text-[10px] mb-4">Selecciona una colección para realizar operaciones de borrado.</p>
+                            
+                            <select id="massDeleteColSelect" class="input-pro text-xs mb-4 bg-black"></select>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <button onclick="emptyCollection()" class="border border-red-900 text-red-500 p-3 rounded text-xs font-bold uppercase hover:bg-red-900/20">
+                                    <i class="fa-solid fa-trash-can"></i> Vaciar Colección (Mantener Estructura)
+                                </button>
+                                <button onclick="openMassDeleteModal()" class="bg-red-900/30 text-white p-3 rounded text-xs font-bold uppercase hover:bg-red-900/50">
+                                    <i class="fa-solid fa-list-check"></i> Selección Masiva para Borrar
+                                </button>
+                            </div>
+                            <p class="text-[9px] text-zinc-500 mt-2">* "Vaciar Colección" borra todos los items pero deja los campos y configuración intactos.</p>
+                        </div>
+                    </div>
+                </details>
+
+                <details open> <summary>Herramientas, Cloud y Exportación</summary>
+                    <div class="grid grid-cols-1 gap-3">
+
+                         <div class="bg-green-900/10 p-4 rounded-xl border border-green-900/30 mb-3">
+                            <h3 class="text-green-400 font-black uppercase text-xs mb-2"><i class="fa-solid fa-folder-tree"></i> Guardar en una carpeta de la red (para varios ordenadores)</h3>
+                            <p class="text-[10px] text-zinc-400 mb-3">
+                                Si quieres que la colección se vea igual en varios PCs de casa o del trabajo:<br>
+                                1. Crea una carpeta compartida en la red (o usa una que ya tengas).<br>
+                                2. Pulsa «Conectar Carpeta de Red» y elige esa carpeta.<br>
+                                3. La app guardará ahí un archivo llamado <strong>db.json</strong>.<br>
+                                4. En los otros ordenadores abre esta misma página y vuelve a conectar la misma carpeta.
+                            </p>
+                            <p class="text-[9px] text-zinc-500 mb-3">Solo funciona en Chrome o Edge. La primera vez en cada ordenador hay que pulsar el botón (el navegador lo pide por seguridad).</p>
+                            <p id="netFolderStatus" class="text-[10px] mb-3 font-bold uppercase"></p>
+                            <div class="flex gap-2 flex-wrap">
+                                <button id="btnConnectFolder" onclick="connectNetworkFolder()" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded text-xs font-bold uppercase"><i class="fa-solid fa-folder-plus"></i> Conectar Carpeta de Red</button>
+                                <button id="btnReconnectFolder" onclick="reconnectNetworkFolder()" class="hidden flex-1 bg-yellow-600 hover:bg-yellow-500 text-white py-2 rounded text-xs font-bold uppercase"><i class="fa-solid fa-rotate"></i> Reconectar</button>
+                                <button id="btnDisconnectFolder" onclick="disconnectNetworkFolder()" class="hidden border border-red-900 text-red-500 py-2 px-4 rounded text-xs font-bold uppercase hover:bg-red-900/20"><i class="fa-solid fa-link-slash"></i> Desconectar</button>
+                            </div>
+                         </div>
+
+                         <div class="bg-blue-900/10 p-4 rounded-xl border border-blue-900/30 mb-3">
+                            <h3 class="text-blue-400 font-black uppercase text-xs mb-2"><i class="fa-solid fa-cloud"></i> Copia en otra web / servidor (avanzado)</h3>
+                            <p class="text-[10px] text-zinc-400 mb-3">
+                                <strong>Forma más fácil (recomendada para todo el mundo):</strong><br>
+                                1. Pulsa el botón verde de abajo «GUARDAR COPIA DE SEGURIDAD».<br>
+                                2. Se descarga un archivo .json en tu ordenador.<br>
+                                3. Sube ese archivo a tu Google Drive, OneDrive o donde quieras (arrastrando y soltando).<br>
+                                4. Cuando quieras recuperarlo, usa «RESTAURAR COPIA» y elige ese archivo.<br><br>
+                                La opción de URL de abajo es solo si tienes un servidor propio o un NAS. No hace falta usarla.
+                            </p>
+                            <input type="text" id="syncUrlInput" class="input-pro text-xs mb-2" placeholder="Solo si tienes servidor propio (déjalo vacío si no sabes)">
+                            <div class="flex gap-2">
+                                <button onclick="syncPushToUrl()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded text-xs font-bold uppercase"><i class="fa-solid fa-cloud-arrow-up"></i> Enviar</button>
+                                <button onclick="syncPullFromUrl()" class="flex-1 border border-blue-600 text-blue-400 hover:bg-blue-900/50 py-2 rounded text-xs font-bold uppercase"><i class="fa-solid fa-cloud-arrow-down"></i> Recuperar</button>
+                            </div>
+                         </div>
+
+                         <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 mb-3">
+                             <div class="flex items-center gap-3">
+                                 <input type="checkbox" id="autoBackupToggle" class="accent-blue-500 w-5 h-5" onchange="toggleAutoBackup(this.checked)">
+                                 <div>
+                                     <label for="autoBackupToggle" class="text-xs font-bold uppercase text-white block">Copia de Seguridad Automática al Cerrar</label>
+                                     <p class="text-[9px] text-zinc-500">Intenta descargar una copia al cerrar la pestaña.</p>
+                                 </div>
+                             </div>
+                          </div>
+
+                          <button onclick="openExportMenu()" class="w-full bg-zinc-900 p-4 rounded-xl border border-zinc-800 hover:border-blue-600 transition flex items-center justify-between">
+                            <span class="text-xs font-bold uppercase text-blue-500">Centro de Exportación / Importación</span>
+                            <i class="fa-solid fa-file-export text-blue-500 text-xl"></i>
+                        </button>
+                        
+                        <button onclick="downloadBackup()" class="w-full bg-zinc-900 p-4 rounded-xl border border-zinc-800 hover:border-green-500 transition flex items-center justify-between">
+                             <span class="text-xs font-bold uppercase text-green-500">GUARDAR COPIA DE SEGURIDAD (Descargar)</span>
+                            <i class="fa-solid fa-download text-green-500 text-xl"></i>
+                        </button>
+                        
+                        <button onclick="document.getElementById('jsonInp').click()" class="w-full bg-zinc-900 p-4 rounded-xl border border-zinc-800 hover:border-red-500 transition flex items-center justify-between">
+                            <span class="text-xs font-bold uppercase text-zinc-400">RESTAURAR COPIA (Cargar Archivo)</span>
+                            <i class="fa-solid fa-upload text-zinc-500"></i>
+                        </button>
+
+                        <button onclick="openQualityControlModal()" class="w-full bg-zinc-900 p-4 rounded-xl border border-zinc-800 hover:border-purple-600 transition flex items-center justify-between">
+                            <span class="text-xs font-bold uppercase text-purple-500">Control de Calidad (Duplicados / Vacíos)</span>
+                            <i class="fa-solid fa-stethoscope text-purple-500 text-xl"></i>
+                        </button>
+                    </div>
+                </details>
+                
+            </div>
+        </div>
+    </div>
+
+    <div id="helpModal" class="modal-overlay hidden">
+        <div class="modal-box">
+             <div class="p-6 border-b border-zinc-800 bg-black flex justify-between items-center">
+                <h2 class="text-xl font-black uppercase text-white">Manual de Usuario</h2>
+                 <button onclick="closeModal('helpModal')" class="text-zinc-500 text-3xl"><i class="fa-solid fa-times"></i></button>
+             </div>
+             <div class="flex-1 overflow-y-auto p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                 <article class="help-card">
+                     <h3 class="text-white font-bold mb-2 uppercase text-lg">Guía Básica e IndexedDB</h3>
+                     <p class="text-sm text-zinc-400 mb-2">Usa el botón "+ AÑADIR ARTÍCULO" para crear nuevos elementos.</p>
+                     <p class="text-sm text-zinc-400"><strong>Importante:</strong> Esta app usa IndexedDB. Tienes almacenamiento ilimitado y puedes meter todas las fotos que quieras sin preocuparte por el límite de 5MB del navegador antiguo.</p>
+                 </article>
+                 <article class="help-card">
+                     <h3 class="text-purple-400 font-bold mb-2 uppercase text-lg">Autocompletar Internet</h3>
+                     <p class="text-sm text-zinc-400 mb-2">Entra a un artículo → activa <strong>MODO EDICIÓN</strong> → pulsa <strong>BUSCAR INFO</strong>.</p>
+                     <p class="text-sm text-zinc-400 mb-2">Busca carátulas e información de videojuegos, películas, libros, series, sellos, música… Elige las fotos que quieras y mapea los datos a tus campos.</p>
+                     <p class="text-sm text-zinc-400"><strong>No hace falta registrarse en ningún sitio ni poner ninguna clave.</strong> Todo es gratis y directo desde internet.</p>
+                 </article>
+                 <article class="help-card">
+                     <h3 class="text-blue-400 font-bold mb-2 uppercase text-lg">Modo Edición</h3>
+                     <p class="text-sm text-zinc-400 mb-2">Al entrar en un artículo, verás un candado "SOLO LECTURA".</p>
+                     <p class="text-sm text-zinc-400">Púlsalo para desbloquear la edición, cambiar datos, subir fotos o eliminar el artículo.</p>
+                 </article>
+                 <article class="help-card">
+                     <h3 class="text-yellow-500 font-bold mb-2 uppercase text-lg">Exportación</h3>
+                     <p class="text-sm text-zinc-400 mb-2">Desde el <strong>Centro de Exportación</strong>:</p>
+                     <ul class="list-disc list-inside text-xs text-zinc-400">
+                         <li><strong>CSV/Excel:</strong> Respeta saltos de línea y conecta campos.</li>
+                         <li><strong>PDF:</strong> Genera catálogo con fotos.</li>
+                     </ul>
+                 </article>
+             </div>
+        </div>
+    </div>
+
+    <input type="file" id="photoInp" class="hidden" multiple onchange="addPh(event)">
+    <input type="file" id="jsonInp" class="hidden" onchange="impJ(event)">
+    <input type="file" id="csvInp" class="hidden" accept=".csv" onchange="handleCSVSmart(event)">
+    <input type="file" id="logoInput" class="hidden" accept="image/*" onchange="changeLogo(event)">
+    <input type="file" id="fileFieldInp" class="hidden" multiple onchange="handleFileField(event)">
+
+    <script>
+        const DEFAULT_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABmJLR0QA/wD/AP+gvaeTAAAH5klEQVR4nO2ba2wUZRSG3zO7XbqtFykVpBa00BZK04L8gEhLgxIEDH+M8Q9iYjQx/mCi0RgTE6PRHzTRGI0xGg0aE2M0/iF/gEQQQWpDoKUtF8W0pdJCuW233Z3xY7ot3W23u7M7U/ZJvpnZnZ133vOe95wz58w6VCoVlVRS/l+o/u4ANjY2cgsWLBiv0+nmi8Xi/Hg8Pl8kEolG4/F4e3t7+28HDhz4K1P9ZVqADQ0N3KJFi5YIguB8QRDm8Xy6SjWVSsHj8SAUCoHn+e8PHTr0Vyb6y1iA1atXz5Mk6WJVVdVCm81mZ62vUCgQCAQwNDS09+DBg19nqr+MBVi1atVCq9V6uSgI81nrz0U0GsXo6Cimp6e/P3DgQGsm+slYgFWrVi00m81XyLLsYK2/EIqiQJZlDA8P7z1w4MBfmehH1gJ4PJ6lFovlau5/L4CmaQwPD6Ovr++7ffv2fZ+JfmQrwOrVqxcKgnCVIAgL2OrORywWw+joKCYmJvbu37//u0z0I1sBVq5cuVRVVVfLsuzIVnc+FEVBNBpFT0/P3n379n2TiX5kK4DH41lqs9mu4W7zAjRNw9DQEHp6er7Zt2/f15noR7YC1NTULFdVdY0gCHPY6s5HLBbD6OgoJiYm9u7fv38zV302L4DH41lqMpmulmXZwVZ3PhRFQTQaRW9v7959+/Z9xVWfzQtQU1OzXJblNdx9XoCmaRgeHkZvby93fTYvgMfjWeZwOK7l/vcC4vE4RkdHMTExsZeLPpsXoKamZrnJZFojCMJctrrzoSgKotEoenp69nLVZ/MCeDyepTab7VruNi9A0zQMDQ2hr6+Puz6bF6CmpsZtsVjWyrLszFZ3PhKJBKanpzE2NraXqz6bF8Dj8Sy1Wq3Xcv97AdFoFL29vRgfH9/LVZ/NC1BdXb3cbDZfK4qik63ufGiagqGhIQwMDOzlqs/mBfB4PEsdDse13G1eQCwWw+joKCYnJ7/lqs/mBaiqqqqzWq3Xy7LszFZ3PhRFgSRJ6Ovr2/vtt99+xVWfrQvwer3LzGbz9dx9XoCmaRgYGMDw8PBen8/3NVd9Ni9AVVXVcrPZfL0gCM5sdedDlmWMjY1hcnJyL1d9Ni+Ax+NZZjKZrpdleTFb3flQFAXRaBQ9PT17ueqzeQGqqqqWm83mG7jbvABN0zA0NISBgYG9XPXZvACVlZXLzWbzDYIgLGKrOx+yLGNsbAyTk5N7ueqzeQE8Hs8yk8l0oyzLS9jqzoeiKIhGo+jt7d3LVZ/NC1BZWel2OBw3cv97AZqmYWhIC+D1epc5HI4bZVlesNl6JBLB2NgYJicn9/p8vq+46rN1ASorK5c7HI4bRVFczFZ3PhRFgSRJ6O3t3ctVn80L4PF4ljocjhslSXYx1Z2PZDKJwcFBDAwM7OVqj80LUFlZucxms90kCMJiprrzkUqlMDExgYmJib1c9dm8AJWVlcttNttNsix72OrOh6IoiEajePvtt/dy1WfzAlRWVi632Ww3c/97AZqmYWBgAMPDw3u56rN5ASorK5fb7fabuGfwAqS0AC6Xy22322+WZdnFVHc+EokERkdHMTk5uZerPpsXoKKiYrnD4bhFEIRFTHXnQ1EURCIRvP3223u56rN5ASorK5fb7fabZVlesNl6JpPBAHcM2LwAFRUVy+12+y2iKC5iqjsfyWQS4+PjGB8fHwvV302L4DH46m02WzLXS7XUovF4hIEwZlKpRbIsoxIJIJYLIZEIoFEIgG/349AIIBAIIBEIgFZlhGLxTAxMYGJiYm9XPXZvABWq3W5w+G4XRCEJdFodJEsy04AGR3Y4/F4vQcPHvyFqT6bF6CiomK5w+G4XRCEJdFo1J1Op5fIsuwEAKfT6ZUk6dV9+/Z9y1SfzQtQUVGx3G633y6K4pJoNOpOJpNLZFnm9gGdTueV3t7evVz12bwAFRUVy2022+2CICyJRqPuZDK5RJZlDgBOp9MrSRJXe7YuAMDiBQsW3C4IwpJoNOpOJpNLRFnmAOBwOLySJH3JVZ/NC2C1Wpc7HI7bRVEsiUaj7mQyuUSWZQ4ADofDK0nS11z12bwAFRUVy2022x2CICyJRqPuZDK5RJZlDgAOh8MrSdI3XPXZvACVlZXLbTbbHaIoLkkkEu5kMrlElmUOAHRdXyVJ0rdc9dm8AB6Pp9Jms90piuKSaDTqTiaTS2RZ5gBgs9m8kiR9x1WfzQtQWVm53Gaz3SmK4pJoNOpOJpNLRFnmAABJkrziOH7HVZ+tC1BZWbncZrPdKYrikkQi4U4mk0tEUVwMAMFgcI8sy99z1V9G5wH/A7Y3/w/t8RnEAAAAAElFTkSuQmCC";
+
+        const STORAGE_KEY = "MiColeccion"; 
+        
+        let db = {
+            schemas: { "General": [] }, 
+            items: [],
+            activeCol: "General",
+            view: "grid",
+            settings: { logo: null, appName: "Mi Colección", autoBackup: false }, 
+            viewSettings: {} 
+        };
+        
+        let activeId = null, edCol = null, isEditing = false, activeFileFieldKey = null;
+        let viewConfigCol = null;
+        let csvData = [];
+        let csvHeaders = [];
+        let advChartInstance = null;
+        let editingFieldParams = null; 
+
+        // NUEVO: Variables para Autocompletado Web
+        let autoFetchCurrentData = null; // Guarda los datos traidos de internet
+        let autoFetchResultsList = [];   // Lista de resultados (evita problemas con onclick largos)
+        let autoFetchSelectedImages = []; // URLs de imágenes elegidas por el usuario
+        
+        // NUEVO: Configuración localForage
+        localforage.config({ name: 'MiColeccionDB', storeName: 'Colecciones' });
+
+        // ===================================================================
+        // NUEVO: Almacenamiento en Carpeta de Red Local (File System Access API)
+        // ===================================================================
+        let dirHandle = null;          // Handle a la carpeta de red conectada
+        let fsWriteEnabled = false;    // true si tenemos permiso de lectura/escritura activo
+        const DIR_HANDLE_KEY = "MiColeccion_DirHandle";
+        const NET_DB_FILENAME = "db.json";
+        const FS_SUPPORTED = (typeof window !== 'undefined') && ('showDirectoryPicker' in window);
+        const IN_IFRAME = (function(){ try { return window.self !== window.top; } catch(e){ return true; } })();
+
+        // Intenta recuperar (sin pedir permiso, sin gesto de usuario) el handle guardado
+        // de una sesión anterior. Si el permiso sigue "granted", queda listo para usarse.
+        async function tryAutoReconnect() {
+            if (!FS_SUPPORTED) return;
+            try {
+                const handle = await localforage.getItem(DIR_HANDLE_KEY);
+                if (!handle) return;
+                dirHandle = handle;
+                const perm = await handle.queryPermission({ mode: 'readwrite' });
+                fsWriteEnabled = (perm === 'granted');
+            } catch(e) {
+                dirHandle = null; fsWriteEnabled = false;
+            }
+        }
+
+        async function readNetDbFile() {
+            if (!dirHandle) return null;
+            try {
+                const fileHandle = await dirHandle.getFileHandle(NET_DB_FILENAME, { create: false });
+                const file = await fileHandle.getFile();
+                const text = await file.text();
+                if (!text || !text.trim()) return null;
+                return JSON.parse(text);
+            } catch(e) {
+                return null; // El archivo aún no existe en esa carpeta
+            }
+        }
+
+        async function writeNetDbFile() {
+            if (!dirHandle || !fsWriteEnabled) return;
+            try {
+                const fileHandle = await dirHandle.getFileHandle(NET_DB_FILENAME, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(JSON.stringify(db));
+                await writable.close();
+            } catch(e) {
+                console.error("Error guardando en la carpeta de red:", e);
+            }
+        }
+
+        async function connectNetworkFolder() {
+            if (!FS_SUPPORTED) {
+                alert("Tu navegador no soporta esta función.\nUsa Google Chrome o Microsoft Edge para conectar una carpeta de red.");
+                return;
+            }
+            try {
+                const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                const perm = await handle.requestPermission({ mode: 'readwrite' });
+                if (perm !== 'granted') { alert("No se ha concedido permiso de lectura/escritura sobre la carpeta."); return; }
+
+                dirHandle = handle;
+                fsWriteEnabled = true;
+                await localforage.setItem(DIR_HANDLE_KEY, handle);
+
+                const existing = await readNetDbFile();
+                if (existing) {
+                    const cargar = confirm("Ya existe una base de datos en esa carpeta de red (db.json).\n\nACEPTAR = Cargar esos datos (recomendado si otro equipo ya la usa)\nCANCELAR = Mantener mis datos actuales y sobrescribir el archivo de la carpeta con ellos");
+                    if (cargar) {
+                        db = {...db, ...existing};
+                        if(!db.viewSettings) db.viewSettings = {};
+                        if(!db.settings) db.settings = { logo: null, appName: "Mi Colección", autoBackup: false };
+                        renderColNav(); renderItems(); applySettings();
+                    }
+                }
+
+                await save();
+                updateStorageStatusUI();
+                alert("Carpeta de red conectada. A partir de ahora los datos se guardan también en:\n" + dirHandle.name + "/" + NET_DB_FILENAME);
+            } catch(e) {
+                if (e.name === 'SecurityError') {
+                    alert("No se puede abrir el selector de carpetas porque esta página se está mostrando dentro de una vista incrustada (iframe) de otra herramienta (por ejemplo, un previsualizador).\n\nSOLUCIÓN: abre el archivo .html directamente en una pestaña normal de Chrome o Edge (doble clic en el archivo, o arrástralo a una ventana del navegador) y vuelve a pulsar 'Conectar Carpeta de Red'.\n\nMientras tanto puedes usar 'GUARDAR COPIA DE SEGURIDAD' y 'RESTAURAR COPIA' para mover los datos manualmente a la carpeta de red.");
+                } else if (e.name !== 'AbortError') {
+                    console.error(e); alert("No se pudo conectar con la carpeta seleccionada.");
+                }
+            }
+        }
+
+        async function reconnectNetworkFolder() {
+            if (!dirHandle) { return connectNetworkFolder(); }
+            try {
+                const perm = await dirHandle.requestPermission({ mode: 'readwrite' });
+                if (perm === 'granted') {
+                    fsWriteEnabled = true;
+                    await loadDB();
+                    renderColNav(); renderItems(); applySettings();
+                    updateStorageStatusUI();
+                } else {
+                    alert("Permiso denegado.");
+                }
+            } catch(e) { console.error(e); alert("No se pudo reconectar. Prueba a conectar la carpeta de nuevo."); }
+        }
+
+        async function disconnectNetworkFolder() {
+            dirHandle = null;
+            fsWriteEnabled = false;
+            await localforage.removeItem(DIR_HANDLE_KEY);
+            updateStorageStatusUI();
+        }
+
+        function updateStorageStatusUI() {
+            const el = document.getElementById('netFolderStatus');
+            if (el) {
+                if (!FS_SUPPORTED) {
+                    el.innerHTML = `<span class="text-red-500">Tu navegador no soporta esta función (usa Chrome o Edge).</span>`;
+                } else if (IN_IFRAME) {
+                    el.innerHTML = `<span class="text-red-500"><i class="fa-solid fa-triangle-exclamation"></i> Esta página se está viendo dentro de una vista incrustada (iframe). Ábrela directamente en una pestaña del navegador para poder conectar la carpeta.</span>`;
+                } else if (dirHandle && fsWriteEnabled) {
+                    el.innerHTML = `<span class="text-green-500"><i class="fa-solid fa-circle-check"></i> Conectado — guardando en "${dirHandle.name}/${NET_DB_FILENAME}"</span>`;
+                } else if (dirHandle && !fsWriteEnabled) {
+                    el.innerHTML = `<span class="text-yellow-500"><i class="fa-solid fa-triangle-exclamation"></i> Carpeta guardada ("${dirHandle.name}") pero necesita reconexión. Pulsa "Reconectar".</span>`;
+                } else {
+                    el.innerHTML = `<span class="text-zinc-500">No conectado. Los datos solo se guardan en este navegador.</span>`;
+                }
+            }
+            const btnConnect = document.getElementById('btnConnectFolder');
+            const btnReconnect = document.getElementById('btnReconnectFolder');
+            const btnDisconnect = document.getElementById('btnDisconnectFolder');
+            if(btnConnect) btnConnect.classList.toggle('hidden', !!dirHandle);
+            if(btnReconnect) btnReconnect.classList.toggle('hidden', !(dirHandle && !fsWriteEnabled));
+            if(btnDisconnect) btnDisconnect.classList.toggle('hidden', !dirHandle);
+        }
+        // ===================================================================
+
+        window.onload = async () => {
+            await tryAutoReconnect();
+            await loadDB();
+            applySettings();
+            renderColNav(); renderItems();
+            updateStorageStatusUI();
+        };
+
+        // NUEVO: Carga Asíncrona (prioriza la carpeta de red si está conectada y con permiso; si no, usa IndexedDB local)
+        async function loadDB() {
+            try {
+                let d = null;
+                if (dirHandle && fsWriteEnabled) {
+                    d = await readNetDbFile();
+                }
+                if (!d) {
+                    d = await localforage.getItem(STORAGE_KEY);
+                }
+                if(d) { 
+                    db = {...db, ...d}; 
+                    if(!db.viewSettings) db.viewSettings = {};
+                    if(!db.settings) db.settings = { logo: null, appName: "Mi Colección", autoBackup: false };
+                } else { await save(); }
+            } catch(e){ alert("Error cargando base de datos IndexedDB."); } 
+        }
+
+        // NUEVO: Guardado Asíncrono. Guarda siempre en IndexedDB local (copia de seguridad rápida)
+        // y, si hay carpeta de red conectada, también escribe el archivo db.json ahí.
+        async function save() { 
+            try {
+                await localforage.setItem(STORAGE_KEY, db);
+            } catch(e) {
+                console.error("Error guardando:", e);
+            }
+            if (dirHandle && fsWriteEnabled) {
+                await writeNetDbFile();
+            }
+        }
+
+        function tryOpenConfig() {
+            openModal('configModal');
+        }
+
+        function renderColNav() {
+            const nav = document.getElementById('colNav'); nav.innerHTML = "";
+            Object.keys(db.schemas).forEach(c => {
+                const b = document.createElement('button');
+                b.className = `w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-black transition mb-1 ${db.activeCol===c?'bg-blue-600/10 text-blue-400 border border-blue-600/20':'text-zinc-500 hover:text-white hover:bg-zinc-900'}`;
+                b.innerHTML = `<span>${c}</span>`; 
+                b.onclick = () => { db.activeCol=c; activeId=null; renderColNav(); renderItems(); hideInspector(); if(window.innerWidth < 768) toggleSidebar(); };
+                nav.appendChild(b);
+            });
+            document.getElementById('colActiveLabel').innerText = db.activeCol;
+        }
+        
+        function renderStars(val) {
+             let h = '<div class="text-yellow-500 text-[10px]">';
+             for(let i=1; i<=5; i++) {
+                 if(val >= i) h += '<i class="fa-solid fa-star"></i>';
+                 else if(val >= i - 0.5) h += '<i class="fa-solid fa-star-half-stroke"></i>';
+                 else h += '<i class="fa-regular fa-star"></i>';
+             }
+             return h + ` <span class="text-zinc-500 ml-1">(${val})</span></div>`;
+        }
+
+        function renderItems() {
+            const g = document.getElementById('itemsGrid');
+            const q = document.getElementById('globalSearch').value.toLowerCase();
+            g.className = db.view === 'grid' ? 'view-grid' : 'view-list';
+            g.innerHTML = "";
+            
+            const items = db.items.filter(i => {
+                if(i._col !== db.activeCol) return false;
+                const raw = JSON.stringify(i).toLowerCase();
+                return raw.includes(q);
+            });
+
+            if(items.length === 0) {
+                g.innerHTML = `<div class="col-span-full text-center text-zinc-600 mt-20"><p class="text-xl font-black uppercase">NO HAY ELEMENTOS</p><p class="text-xs">Pulsa "+ AÑADIR ARTÍCULO" para empezar.</p></div>`;
+                return;
+            }
+
+            const schema = db.schemas[db.activeCol] || [];
+            let primaryField = schema.find(f => f.isTitle);
+            if (!primaryField) primaryField = schema.find(f => f.name.match(/^(titulo|title|nombre|name)$/i));
+            if (!primaryField) primaryField = schema.find(f => f.type === 'text') || schema[0];
+
+            items.forEach(i => {
+                const card = document.createElement('div'); 
+                card.className = `item-card ${activeId===i.id?'active':''}`; 
+                card.onclick = () => showInspector(i.id);
+                
+                let cover = null;
+                if(i._photos && i._photos.length) cover = i._photos[0];
+
+                let displayTitle = "Sin Título"; 
+                if(primaryField && i[primaryField.key]) {
+                    displayTitle = i[primaryField.key];
+                } else if (!primaryField) {
+                     const possibleKeys = Object.keys(i).filter(k => k !== 'id' && k !== '_col' && k !== '_photos');
+                     if(possibleKeys.length > 0) displayTitle = i[possibleKeys[0]];
+                }
+                
+                if(!displayTitle || displayTitle.trim() === "") displayTitle = "&nbsp;";
+
+                if (db.view === 'grid') {
+                    let imgHtml = cover ? 
+                        `<img src="${cover}">` : 
+                        `<div class="w-full h-full flex items-center justify-center bg-zinc-800"><i class="fa-solid fa-image text-zinc-600 text-3xl"></i></div>`;
+                    
+                    card.innerHTML = `
+                    <div class="card-img-area">${imgHtml}</div>
+                    <div class="card-text-area">${displayTitle}</div>`;
+                } else {
+                    card.innerHTML = `
+                    <div class="card-text-area">${displayTitle}</div>
+                    <div class="text-zinc-600 text-xs ml-2">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </div>`;
+                }
+                g.appendChild(card);
+            });
+        }
+
+        function showInspector(id) {
+            activeId = id; isEditing = false; updateEditBtnUI();
+            document.getElementById('inspectorEmpty').classList.add('hidden');
+            document.getElementById('inspectorContent').classList.remove('hidden');
+            document.getElementById('inspectorPanel').classList.add('active');
+            
+            const item = db.items.find(i => i.id === id);
+            renderGallery(item);
+            renderInspectorFields();
+            if(window.innerWidth < 768) { document.getElementById('mainSidebar').classList.remove('open'); document.getElementById('sidebarOverlay').style.display='none'; }
+        }
+
+        function toggleEditMode() {
+            isEditing = !isEditing; updateEditBtnUI(); renderInspectorFields();
+            document.getElementById('galleryControls').classList.toggle('hidden', !isEditing);
+            document.getElementById('delItemBtn').classList.toggle('hidden', !isEditing);
+            
+            // NUEVO: Mostrar botón autocompletar
+            document.getElementById('autoFetchBtn').classList.toggle('hidden', !isEditing);
+            
+            const item = db.items.find(i => i.id === activeId);
+            renderGallery(item);
+        }
+
+        function updateEditBtnUI() {
+            const btn = document.getElementById('editToggleBtn');
+            if(isEditing) {
+                btn.className = "bg-blue-600 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 transition";
+                btn.innerHTML = `<i class="fa-solid fa-pen"></i> <span>MODO EDICIÓN</span>`;
+            } else {
+                btn.className = "bg-zinc-800 text-zinc-400 px-4 py-2 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 border border-zinc-700 hover:bg-zinc-700 transition";
+                btn.innerHTML = `<i class="fa-solid fa-lock"></i> <span>SOLO LECTURA</span>`;
+            }
+        }
+
+        function renderInspectorFields() {
+            const item = db.items.find(i => i.id === activeId);
+            const d = document.getElementById('dynamicFields'); d.innerHTML = "";
+            
+            const schema = db.schemas[item._col] || [];
+            
+            let primaryField = schema.find(f => f.isTitle);
+            if (!primaryField) primaryField = schema.find(f => f.name.match(/^(titulo|title|nombre|name)$/i));
+            if (!primaryField) primaryField = schema.find(f => f.type === 'text') || schema[0];
+            
+            let displayTitle = "Sin Título";
+            let rawTitleVal = "";
+            if(primaryField && item[primaryField.key]) {
+                displayTitle = item[primaryField.key];
+                rawTitleVal = item[primaryField.key];
+            } else if (!primaryField) {
+                 const possibleKeys = Object.keys(item).filter(k => k !== 'id' && k !== '_col' && k !== '_photos');
+                 if(possibleKeys.length > 0) displayTitle = item[possibleKeys[0]];
+            }
+            
+            if(isEditing && primaryField) {
+                 d.innerHTML += `<input type="text" id="inspectorTitleInp" value="${rawTitleVal}" oninput="updVal('${primaryField.key}', this.value)" class="w-full bg-transparent text-xl font-black text-white mb-6 uppercase border-b border-zinc-800 pb-2 focus:border-blue-500 outline-none" placeholder="Escribe el Título...">`;
+            } else {
+                 d.innerHTML += `<h2 id="inspectorHeaderTitle" class="text-xl font-black text-white mb-6 uppercase no-cut-text border-b border-zinc-800 pb-2">${displayTitle}</h2>`;
+            }
+
+            db.schemas[item._col].forEach(f => {
+                if(primaryField && f.key === primaryField.key) return;
+
+                let h = ""; const v = item[f.key] || "";
+                
+                if(!isEditing) {
+                    if(f.type==='link') h = v?`<a href="${v}" target="_blank" class="text-blue-400 underline break-all">${v}</a>`:'-';
+                    else if(f.type==='relation') { 
+                        const r=db.items.find(x=>x.id===v); 
+                        let rTxt = "-";
+                        if(r) {
+                             const s = db.schemas[r._col];
+                             const pf = s ? (s.find(z=>z.isTitle)||s.find(z=>z.type==='text')||s[0]) : null;
+                             if(pf && r[pf.key]) rTxt = r[pf.key];
+                             else rTxt = r.title || "Item";
+                            
+                             h=`<button onclick="showInspector('${r.id}')" class="text-blue-400 font-bold border-b border-blue-900">${rTxt}</button>`;
+                        } else h = '-';
+                    }
+                    else if(f.type==='rating') { h = renderStars(v); }
+                    else if(f.type==='file') {
+                          const files = Array.isArray(v) ? v : (v ? [v] : []);
+                          if(files.length === 0) h = "-";
+                          else {
+                              h = `<div class="grid grid-cols-1 gap-1">` + files.map(file => 
+                                  `<div class="flex items-center gap-2 bg-zinc-900 p-2 rounded border border-zinc-800">
+                                     <i class="fa-solid fa-file text-zinc-500"></i>
+                                     <span class="text-xs text-zinc-300 truncate flex-1">${file.name}</span>
+                                     <button onclick="downloadFile('${file.name}')" class="text-green-500"><i class="fa-solid fa-download"></i></button>
+                                   </div>`
+                              ).join('') + `</div>`;
+                          }
+                    }
+                    else if(f.type==='currency') { 
+                        const raw = (v || "").toString().trim();
+                        // Si parece un código de barras (muchos dígitos, empieza por 0, o longitud típica de EAN/UPC) NO lo tratamos como dinero
+                        const looksLikeBarcode = raw.length >= 8 && /^\d+$/.test(raw) && (raw.length > 10 || /^0/.test(raw) || raw.length === 8 || raw.length === 12 || raw.length === 13);
+                        if (looksLikeBarcode) {
+                            h = `<div class="text-sm text-zinc-300 no-cut-text font-mono tracking-wider">${raw}</div>`;
+                        } else {
+                            let cleanVal = parseFloat(raw.replace(/[^0-9.-]+/g,""));
+                            if(isNaN(cleanVal)) cleanVal = 0;
+                            h = `<div class="text-green-400 font-mono">${new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(cleanVal)}</div>`;
+                        }
+                    }
+                    else h = `<div class="text-sm text-zinc-300 no-cut-text">${v}</div>`;
+                } 
+                else {
+                    if(f.type==='textarea') h=`<textarea class="input-pro h-24" oninput="updVal('${f.key}',this.value)">${v}</textarea>`;
+                    else if(f.type==='textarea_lines') h=`<textarea class="input-pro h-40 whitespace-pre" oninput="updVal('${f.key}',this.value)">${v}</textarea>`;
+                    else if(f.type==='relation') {
+                          const targetCollection = f.targetCol || Object.keys(db.schemas)[0]; 
+                          const t=db.items.filter(it=>it._col===targetCollection);
+                          const opts = t.map(x => {
+                              let txt = "Sin Título";
+                              const sch = db.schemas[x._col];
+                              if(sch) {
+                                  const pk = sch.find(k=>k.isTitle) || sch.find(k=>k.type==='text') || sch[0];
+                                  if(pk && x[pk.key]) txt = x[pk.key];
+                              }
+                              return `<option value="${x.id}" ${v===x.id?'selected':''}>${txt}</option>`;
+                          }).join('');
+                          h=`<select class="input-pro bg-black" onchange="updVal('${f.key}',this.value)"><option value="">-- Sin asignar --</option>${opts}</select>`;
+                    }
+                    else if(f.type==='file') h=`<button onclick="openFileManager('${f.key}')" class="w-full bg-zinc-800 py-2 border border-zinc-700 rounded text-xs font-bold uppercase hover:bg-zinc-700">Gestionar Archivos (${Array.isArray(v)?v.length:0})</button>`;
+                    else h=`<input class="input-pro" value="${v}" oninput="updVal('${f.key}',this.value)">`;
+                }
+                d.innerHTML += `<div class="mb-4 bg-[#0d0d10] p-3 rounded border border-zinc-900"><label class="text-[9px] font-black text-zinc-500 uppercase block mb-2 tracking-widest">${f.name}</label>${h}</div>`;
+            });
+            
+            const connContainer = document.getElementById('connectionsContainer');
+            const connBtn = document.getElementById('connectionsBtn');
+            connContainer.classList.remove('hidden'); 
+            connBtn.innerHTML = '<i class="fa-solid fa-share-nodes"></i> VER CONEXIONES';
+        }
+
+        function updVal(k,v) { 
+            const i=db.items.find(x=>x.id===activeId); 
+            i[k]=v;
+            
+            const f = db.schemas[i._col].find(x => x.key === k);
+            let isTitleField = (f && f.isTitle) || (f && f.name.match(/^(titulo|title|nombre|name)$/i));
+            
+            if(isTitleField) {
+                const headerEl = document.getElementById('inspectorHeaderTitle');
+                if(headerEl) headerEl.innerText = v || "Sin Título";
+                renderItems(); 
+            }
+            save(); 
+        }
+
+        // --- NUEVO: FUNCIONES DE AUTO-FETCH DE INTERNET (MEJORADO) ---
+        function openAutoFetchModal() {
+            const item = db.items.find(i => i.id === activeId);
+            const schema = db.schemas[item._col] || [];
+            let primaryField = schema.find(f => f.isTitle) || schema.find(f => f.type === 'text') || schema[0];
+            let currentTitle = primaryField ? (item[primaryField.key] || "") : "";
+            
+            // Rellenar los campos de búsqueda desde los datos del artículo
+            let platform = '', year = '', region = '';
+            schema.forEach(f => {
+                const n = (f.name || '').toLowerCase();
+                const val = (item[f.key] || '').toString().trim();
+                if (!val) return;
+                if (n.includes('consola') || n.includes('plataforma') || n.includes('platform') || n.includes('sistema') || n.includes('marca') || n.includes('hardware') || n === 'ps' || n.includes('play')) {
+                    platform = val;
+                } else if (n.includes('año') || n.includes('ano') || n.includes('year') || n.includes('fecha') || n.includes('date') || n.includes('lanzamiento') || n.includes('release')) {
+                    const y = val.match(/\d{4}/);
+                    if (y) year = y[0];
+                    else if (/^\d{4}$/.test(val)) year = val;
+                } else if (n.includes('país') || n.includes('pais') || n.includes('country') || n.includes('origen') || n.includes('región') || n.includes('region') || n.includes('pal') || n.includes('ntsc') || n.includes('región')) {
+                    region = val;
+                }
+            });
+
+            document.getElementById('afTitle').value = currentTitle;
+            document.getElementById('afPlatform').value = platform;
+            document.getElementById('afYear').value = year;
+            document.getElementById('afRegion').value = region;
+
+            document.getElementById('autoFetchResults').innerHTML = '<p class="text-zinc-600 text-center text-xs mt-8">Los campos se rellenan solos. Pulsa Buscar.</p>';
+            document.getElementById('autoFetchMapper').classList.add('hidden');
+            document.getElementById('autoFetchImagePicker').classList.add('hidden');
+            document.getElementById('autoFetchImagesGrid').innerHTML = '';
+            autoFetchCurrentData = null;
+            autoFetchResultsList = [];
+            autoFetchSelectedImages = [];
+
+            openModal('autoFetchModal');
+        }
+
+        function buildGoogleQuery() {
+            const title = (document.getElementById('afTitle').value || '').trim();
+            const platform = (document.getElementById('afPlatform').value || '').trim();
+            const year = (document.getElementById('afYear').value || '').trim();
+            const region = (document.getElementById('afRegion').value || '').trim();
+            return [title, platform, year, region].filter(Boolean).join(' ');
+        }
+
+        function openGoogleSearch() {
+            const q = buildGoogleQuery();
+            if (!q) { alert('Escribe al menos el título'); return; }
+            window.open('https://www.google.com/search?q=' + encodeURIComponent(q), '_blank');
+        }
+
+        function openGoogleImages() {
+            const q = buildGoogleQuery();
+            if (!q) { alert('Escribe al menos el título'); return; }
+            window.open('https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(q), '_blank');
+        }
+
+        function getSignificantWords(text) {
+            const stop = new Set(['el','la','los','las','un','una','de','del','y','o','en','a','al','para','por','con','que','es','se','su','sus','the','of','and','or','in','to','a','an','for','on','with','is','are','who','wants','be','ser','quiere','ediciones','especiales','edition','special','edicion']);
+            return (text || '').toLowerCase()
+                .replace(/[¿?¡!.,:;()[\]"'«»]/g, ' ')
+                .split(/\s+/)
+                .filter(w => w.length > 2 && !stop.has(w) && !/^\d+$/.test(w));
+        }
+
+        function scoreResult(result, titleWords, platform) {
+            const text = ((result.title || '') + ' ' + (result.description || '')).toLowerCase();
+            let score = 0;
+            titleWords.forEach(w => {
+                if (text.includes(w)) score += 3;
+            });
+            // Bonus si el título del resultado contiene varias palabras del título buscado
+            const resultTitleWords = getSignificantWords(result.title || '');
+            const overlap = titleWords.filter(w => resultTitleWords.includes(w)).length;
+            score += overlap * 4;
+
+            if (platform) {
+                const p = platform.toLowerCase();
+                if (text.includes(p) || text.includes('playstation') || text.includes('psx') || text.includes('ps1') || text.includes('ps2') || text.includes('ps3') || text.includes('ps4') || text.includes('ps5')) {
+                    score += 2;
+                }
+            }
+            // Penalizar fuerte cosas claramente irrelevantes
+            if (/mortadelo|filemón|filemon|fútbol club|futbol club|devil may cry|zelda|link.?s awakening/i.test(text) && !titleWords.some(w => /mortadelo|zelda|devil/.test(w))) {
+                score -= 20;
+            }
+            // Bonus por ser videojuego
+            if (/videojuego|video game|\bgame\b|\bjuego\b/i.test(text)) score += 2;
+            return score;
+        }
+
+        function buildSearchQueries() {
+            const title = (document.getElementById('afTitle').value || '').trim();
+            const platform = (document.getElementById('afPlatform').value || '').trim();
+            const year = (document.getElementById('afYear').value || '').trim();
+            const region = (document.getElementById('afRegion').value || '').trim();
+
+            const item = db.items.find(i => i.id === activeId);
+            const colName = (item && item._col) ? item._col.toLowerCase() : '';
+            const isGameCol = /juego|game|videojuego|consola|playstation|xbox|nintendo|sega|pc/.test(colName);
+            const platformLower = platform.toLowerCase();
+            const isGamePlatform = /play|ps[1-5x]|xbox|nintendo|switch|wii|sega|saturn|dreamcast|gameboy|nds|3ds|pc|steam|psp|vita|gamecube|n64|snes|nes|atari|mega drive|genesis/.test(platformLower);
+            const isGame = isGameCol || isGamePlatform || !!platform;
+
+            const queries = [];
+            if (!title) return queries;
+
+            // Variantes del título (quitar subtítulos largos a veces ayuda)
+            const shortTitle = title.split(':')[0].trim();
+            const cleanTitle = title.replace(/[¿?¡!]/g, '').trim();
+
+            if (isGame) {
+                // Consultas orientadas a videojuego
+                queries.push(`"${cleanTitle}" videojuego`);
+                queries.push(`${cleanTitle} videojuego`);
+                if (shortTitle !== cleanTitle) {
+                    queries.push(`"${shortTitle}" videojuego`);
+                    queries.push(`${shortTitle} videojuego`);
+                }
+                if (platform) {
+                    queries.push(`${cleanTitle} ${platform}`);
+                    queries.push(`"${shortTitle}" ${platform}`);
+                }
+                // Inglés común
+                queries.push(`"${cleanTitle}" video game`);
+                queries.push(`${shortTitle} video game`);
+                if (platformLower.includes('ps') || platformLower.includes('play')) {
+                    queries.push(`${shortTitle} playstation`);
+                    queries.push(`${shortTitle} psx`);
+                    queries.push(`${shortTitle} "who wants to be a millionaire"`); // por si el título está en español
+                }
+            } else {
+                queries.push(`"${cleanTitle}"`);
+                queries.push(cleanTitle);
+                if (platform) queries.push(`${cleanTitle} ${platform}`);
+                if (year) queries.push(`${cleanTitle} ${year}`);
+            }
+
+            // Quitar duplicados
+            return [...new Set(queries.filter(Boolean))];
+        }
+
+        async function executeWebSearch(mode = 'all') {
+            const source = document.getElementById('autoFetchSource').value;
+            const resDiv = document.getElementById('autoFetchResults');
+            const loadDiv = document.getElementById('autoFetchLoading');
+            const title = (document.getElementById('afTitle').value || '').trim();
+            const platform = (document.getElementById('afPlatform').value || '').trim();
+            
+            if(!title) { alert("Escribe al menos el título"); return; }
+            
+            resDiv.innerHTML = "";
+            loadDiv.classList.remove('hidden');
+            document.getElementById('autoFetchMapper').classList.add('hidden');
+            document.getElementById('autoFetchImagePicker').classList.add('hidden');
+            autoFetchResultsList = [];
+            autoFetchSelectedImages = [];
+            autoFetchCurrentData = null;
+
+            try {
+                let results = [];
+                const titleWords = getSignificantWords(title);
+
+                if(source === 'wikipedia') {
+                    const fetchWiki = async (lang, q) => {
+                        try {
+                            const res = await fetch(`https://${lang}.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=8&prop=pageimages|extracts|info&inprop=url&exintro=1&explaintext=1&exchars=450&pithumbsize=400&format=json&origin=*`);
+                            const data = await res.json();
+                            if(data.query && data.query.pages) {
+                                return Object.values(data.query.pages).map(page => ({
+                                    source: 'wikipedia',
+                                    lang: lang,
+                                    pageid: page.pageid,
+                                    title: page.title,
+                                    description: page.extract ? page.extract.replace(/\n/g, ' ') : '',
+                                    cover: page.thumbnail ? page.thumbnail.source : '',
+                                    url: page.fullurl || `https://${lang}.wikipedia.org/?curid=${page.pageid}`,
+                                    images: page.thumbnail ? [page.thumbnail.source] : []
+                                }));
+                            }
+                        } catch(e) {}
+                        return [];
+                    };
+
+                    const queries = buildSearchQueries();
+                    // Ejecutar varias consultas (máx 6 para no tardar mucho)
+                    const toRun = queries.slice(0, 6);
+                    for (const q of toRun) {
+                        const es = await fetchWiki('es', q);
+                        results = results.concat(es);
+                        if (results.length < 8) {
+                            const en = await fetchWiki('en', q);
+                            results = results.concat(en);
+                        }
+                    }
+
+                    // Puntuar y filtrar
+                    results = results.map(r => {
+                        r._score = scoreResult(r, titleWords, platform);
+                        return r;
+                    });
+
+                    // Solo dejar los que tienen puntuación decente
+                    results = results.filter(r => r._score >= 4);
+
+                    // Ordenar por puntuación
+                    results.sort((a, b) => b._score - a._score);
+
+                    // Quitar duplicados por título
+                    const seen = new Set();
+                    results = results.filter(r => {
+                        const key = (r.title || '').toLowerCase();
+                        if (seen.has(key)) return false;
+                        seen.add(key);
+                        return true;
+                    });
+                }
+                else if(source === 'openlibrary') {
+                    const q = title + (platform ? ' ' + platform : '');
+                    const res = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=10`);
+                    const data = await res.json();
+                    if(data.docs && data.docs.length > 0) {
+                        results = data.docs.map(book => ({
+                            source: 'openlibrary',
+                            title: book.title, 
+                            author: book.author_name ? book.author_name.join(', ') : '', 
+                            year: book.first_publish_year || '',
+                            cover: book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg` : '',
+                            images: book.cover_i ? [`https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg`] : [],
+                            ext_id: book.key
+                        }));
+                    }
+                }
+                else if(source.startsWith('itunes')) {
+                    const entity = source === 'itunes_movie' ? 'movie' : 'software';
+                    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(title)}&entity=${entity}&limit=10&country=ES`);
+                    const data = await res.json();
+                    if(data.results && data.results.length > 0) {
+                        results = data.results.map(item => ({
+                            source: 'itunes',
+                            title: item.trackName || item.collectionName, 
+                            genre: item.primaryGenreName || '',
+                            description: item.longDescription || item.description || '',
+                            date: item.releaseDate ? item.releaseDate.substring(0,4) : '',
+                            year: item.releaseDate ? item.releaseDate.substring(0,4) : '',
+                            cover: item.artworkUrl100 ? item.artworkUrl100.replace('100x100bb', '600x600bb') : '',
+                            images: item.artworkUrl100 ? [item.artworkUrl100.replace('100x100bb', '600x600bb')] : []
+                        }));
+                    }
+                }
+                else if(source === 'tvmaze') {
+                    const res = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(title)}`);
+                    const data = await res.json();
+                    if(data && data.length > 0) {
+                        results = data.map(entry => {
+                            const show = entry.show;
+                            return {
+                                source: 'tvmaze',
+                                title: show.name, 
+                                genre: show.genres ? show.genres.join(', ') : '',
+                                date: show.premiered ? show.premiered.substring(0,4) : '',
+                                year: show.premiered ? show.premiered.substring(0,4) : '',
+                                description: show.summary ? show.summary.replace(/<[^>]*>?/gm, '') : '',
+                                cover: show.image ? (show.image.original || show.image.medium) : '',
+                                images: show.image ? [show.image.original || show.image.medium] : []
+                            };
+                        });
+                    }
+                }
+
+                autoFetchResultsList = results;
+
+                // Enlace de emergencia a Google (porque a veces Wikipedia no tiene la ficha)
+                const googleQ = encodeURIComponent(title + (platform ? ' ' + platform : '') + ' videojuego');
+                const googleLink = `https://www.google.com/search?q=${googleQ}`;
+                const googleImgLink = `https://www.google.com/search?tbm=isch&q=${googleQ}`;
+
+                if(results.length === 0) {
+                    resDiv.innerHTML = `
+                        <p class="text-zinc-400 text-sm text-center py-4">No se encontraron resultados buenos en Wikipedia.</p>
+                        <div class="flex flex-col gap-2 px-2">
+                            <a href="${googleLink}" target="_blank" class="bg-blue-900/40 border border-blue-700 text-blue-300 text-xs font-bold py-3 px-4 rounded text-center hover:bg-blue-900/60">
+                                Abrir búsqueda en Google
+                            </a>
+                            <a href="${googleImgLink}" target="_blank" class="bg-purple-900/40 border border-purple-700 text-purple-300 text-xs font-bold py-3 px-4 rounded text-center hover:bg-purple-900/60">
+                                Buscar carátulas en Google Imágenes
+                            </a>
+                        </div>`;
+                } else {
+                    let html = '';
+                    results.forEach((r, idx) => {
+                        const coverHtml = r.cover 
+                            ? `<img src="${r.cover}" class="w-12 h-16 object-cover rounded bg-zinc-800" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'w-12 h-16 bg-black rounded flex items-center justify-center\\'><i class=\\'fa-solid fa-image text-zinc-700\\'></i></div>'">` 
+                            : `<div class="w-12 h-16 bg-black rounded flex items-center justify-center"><i class="fa-solid fa-image text-zinc-700"></i></div>`;
+                        const descPreview = (r.description || r.author || r.genre || '').substring(0, 120);
+                        html += `
+                        <div onclick="selectWebResult(${idx})" class="flex gap-3 p-3 bg-zinc-900 border border-zinc-800 rounded cursor-pointer hover:border-purple-500 transition items-start">
+                            ${coverHtml}
+                            <div class="flex-1 overflow-hidden min-w-0">
+                                <h4 class="text-white font-bold text-sm truncate">${r.title || 'Sin título'}</h4>
+                                <p class="text-xs text-zinc-400 line-clamp-2">${descPreview}${descPreview.length >= 120 ? '...' : ''}</p>
+                                <span class="text-[9px] text-zinc-600 uppercase">${r.source}${r.year ? ' · ' + r.year : ''}</span>
+                            </div>
+                        </div>`;
+                    });
+                    // Siempre ofrecer Google como complemento
+                    html += `
+                    <div class="flex gap-2 mt-2 px-1">
+                        <a href="${googleLink}" target="_blank" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold py-2 px-2 rounded text-center">Google</a>
+                        <a href="${googleImgLink}" target="_blank" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-bold py-2 px-2 rounded text-center">Google Imágenes</a>
+                    </div>`;
+                    resDiv.innerHTML = html;
+                }
+            } catch(err) {
+                console.error(err);
+                resDiv.innerHTML = `<p class="text-red-500 text-sm p-4">Error de conexión: ${err.message}</p>`;
+            } finally {
+                loadDiv.classList.add('hidden');
+            }
+        }
+
+        async function selectWebResult(idx) {
+            if(!autoFetchResultsList[idx]) return;
+            autoFetchCurrentData = {...autoFetchResultsList[idx]};
+            autoFetchSelectedImages = [];
+
+            const mapper = document.getElementById('autoFetchMapGrid');
+            mapper.innerHTML = "";
+            const item = db.items.find(i => i.id === activeId);
+            const schema = db.schemas[item._col] || [];
+
+            // Si es Wikipedia, intentar traer más imágenes de la página
+            if(autoFetchCurrentData.source === 'wikipedia' && autoFetchCurrentData.pageid) {
+                try {
+                    const lang = autoFetchCurrentData.lang || 'es';
+                    const imgRes = await fetch(`https://${lang}.wikipedia.org/w/api.php?action=query&pageids=${autoFetchCurrentData.pageid}&prop=images&imlimit=12&format=json&origin=*`);
+                    const imgData = await imgRes.json();
+                    const pages = imgData.query && imgData.query.pages;
+                    if(pages) {
+                        const page = Object.values(pages)[0];
+                        if(page.images && page.images.length) {
+                            // Filtrar solo archivos de imagen y pedir urls
+                            const titles = page.images
+                                .map(im => im.title)
+                                .filter(t => /\.(jpg|jpeg|png|gif|webp)$/i.test(t))
+                                .slice(0, 8)
+                                .map(t => encodeURIComponent(t))
+                                .join('|');
+                            if(titles) {
+                                const infoRes = await fetch(`https://${lang}.wikipedia.org/w/api.php?action=query&titles=${titles}&prop=imageinfo&iiprop=url&iiurlwidth=400&format=json&origin=*`);
+                                const infoData = await infoRes.json();
+                                if(infoData.query && infoData.query.pages) {
+                                    const extraImgs = Object.values(infoData.query.pages)
+                                        .filter(p => p.imageinfo && p.imageinfo[0])
+                                        .map(p => p.imageinfo[0].thumburl || p.imageinfo[0].url)
+                                        .filter(Boolean);
+                                    autoFetchCurrentData.images = [...new Set([...(autoFetchCurrentData.images || []), ...extraImgs])];
+                                }
+                            }
+                        }
+                    }
+                } catch(e) { console.warn('No se pudieron cargar imágenes extra de Wikipedia', e); }
+            }
+
+            // Mostrar selector de imágenes (múltiples)
+            const imgGrid = document.getElementById('autoFetchImagesGrid');
+            imgGrid.innerHTML = '';
+            const imgs = autoFetchCurrentData.images && autoFetchCurrentData.images.length 
+                ? autoFetchCurrentData.images 
+                : (autoFetchCurrentData.cover ? [autoFetchCurrentData.cover] : []);
+            
+            if(imgs.length > 0) {
+                document.getElementById('autoFetchImagePicker').classList.remove('hidden');
+                // Guardamos las urls en el array de datos para acceso por índice
+                autoFetchCurrentData._imgList = imgs;
+                imgs.forEach((url, i) => {
+                    const isFirst = i === 0;
+                    if(isFirst) autoFetchSelectedImages.push(url);
+                    imgGrid.innerHTML += `
+                    <label class="relative cursor-pointer group block">
+                        <input type="checkbox" class="absolute top-1 left-1 z-10 w-4 h-4 accent-purple-500" ${isFirst ? 'checked' : ''} 
+                            onchange="toggleFetchImageByIndex(${i}, this.checked)">
+                        <img src="${url}" class="w-full aspect-[3/4] object-cover rounded border-2 ${isFirst ? 'border-purple-500' : 'border-zinc-700'} group-hover:border-purple-400" loading="lazy"
+                            onerror="this.parentElement.style.display='none'">
+                    </label>`;
+                });
+            } else {
+                document.getElementById('autoFetchImagePicker').classList.add('hidden');
+            }
+
+            // Añadir también los datos del formulario de búsqueda (plataforma, año, región) para poder mapearlos
+            const formPlatform = (document.getElementById('afPlatform').value || '').trim();
+            const formYear = (document.getElementById('afYear').value || '').trim();
+            const formRegion = (document.getElementById('afRegion').value || '').trim();
+            if (formPlatform && !autoFetchCurrentData.platform && !autoFetchCurrentData.platforms) {
+                autoFetchCurrentData.platform = formPlatform;
+            }
+            if (formYear && !autoFetchCurrentData.year && !autoFetchCurrentData.date) {
+                autoFetchCurrentData.year = formYear;
+            }
+            if (formRegion && !autoFetchCurrentData.region) {
+                autoFetchCurrentData.region = formRegion;
+            }
+
+            // Campos de texto a mapear
+            const skipKeys = ['images', 'cover', 'source', 'pageid', 'lang', 'url', 'ext_id', '_imgList', '_score'];
+            Object.keys(autoFetchCurrentData).forEach(key => {
+                if(skipKeys.includes(key) || key.startsWith('_') || !autoFetchCurrentData[key]) return;
+                
+                let optionsHTML = `<option value="">-- Ignorar --</option>`;
+                schema.forEach(f => {
+                    optionsHTML += `<option value="${f.key}">${f.name}</option>`;
+                });
+
+                // Autoselección inteligente
+                let preselected = "";
+                const k = key.toLowerCase();
+                const findField = (preds) => schema.find(x => preds.some(p => (x.name || '').toLowerCase().includes(p) || (x.isTitle && p === 'title')));
+                
+                if (k === 'title') {
+                    const f = findField(['titulo', 'title', 'nombre', 'name']) || schema.find(x => x.isTitle);
+                    if(f) preselected = f.key;
+                } else if (k === 'description' || k === 'summary') {
+                    const f = findField(['sinopsis', 'descrip', 'resumen', 'plot', 'argumento']);
+                    if(f) preselected = f.key;
+                } else if (k === 'author') {
+                    const f = findField(['autor', 'author', 'escritor', 'artista']);
+                    if(f) preselected = f.key;
+                } else if (k === 'year' || k === 'date') {
+                    const f = findField(['año', 'ano', 'year', 'fecha', 'date', 'lanzamiento']);
+                    if(f) preselected = f.key;
+                } else if (k === 'genre') {
+                    const f = findField(['genero', 'género', 'genre', 'categoría', 'categoria']);
+                    if(f) preselected = f.key;
+                } else if (k === 'platforms' || k === 'platform') {
+                    const f = findField(['plataforma', 'consola', 'platform', 'sistema', 'marca']);
+                    if(f) preselected = f.key;
+                } else if (k === 'region') {
+                    const f = findField(['región', 'region', 'país', 'pais', 'country', 'origen', 'pal', 'ntsc']);
+                    if(f) preselected = f.key;
+                } else if (k === 'rating') {
+                    const f = findField(['valoracion', 'valoración', 'rating', 'nota', 'puntuacion']);
+                    if(f) preselected = f.key;
+                }
+
+                let valPreview = String(autoFetchCurrentData[key]);
+                if(valPreview.length > 60) valPreview = valPreview.substring(0,60)+'...';
+
+                mapper.innerHTML += `
+                <div class="bg-black p-3 rounded border border-zinc-800">
+                    <label class="text-[10px] font-bold text-zinc-500 uppercase block mb-1">Dato: ${key}</label>
+                    <div class="text-white text-xs mb-2 break-words" title="${String(autoFetchCurrentData[key]).replace(/"/g,'&quot;')}">${valPreview}</div>
+                    <select id="map_fetch_${key}" class="input-pro text-xs bg-zinc-900 border-zinc-700">
+                        ${optionsHTML.replace(`value="${preselected}"`, `value="${preselected}" selected`)}
+                    </select>
+                </div>`;
+            });
+
+            // Siempre ofrecer opción de carátula aunque no haya campo mapeado
+            if(imgs.length === 0 && autoFetchCurrentData.cover) {
+                // ya cubierto arriba
+            }
+
+            document.getElementById('autoFetchMapper').classList.remove('hidden');
+            // Scroll al mapper en móvil
+            document.getElementById('autoFetchMapper').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function toggleFetchImageByIndex(idx, checked) {
+            const list = (autoFetchCurrentData && autoFetchCurrentData._imgList) ? autoFetchCurrentData._imgList : [];
+            const url = list[idx];
+            if(!url) return;
+            if(checked) {
+                if(!autoFetchSelectedImages.includes(url)) autoFetchSelectedImages.push(url);
+            } else {
+                autoFetchSelectedImages = autoFetchSelectedImages.filter(u => u !== url);
+            }
+            // Actualizar bordes visuales
+            document.querySelectorAll('#autoFetchImagesGrid label').forEach(lab => {
+                const inp = lab.querySelector('input');
+                const img = lab.querySelector('img');
+                if(inp && img) {
+                    img.classList.toggle('border-purple-500', inp.checked);
+                    img.classList.toggle('border-zinc-700', !inp.checked);
+                }
+            });
+        }
+
+        async function importWebData() {
+            if(!autoFetchCurrentData) return;
+            const item = db.items.find(i => i.id === activeId);
+            if(!item) return;
+
+            // 1. Mapear campos de texto
+            const skipKeys = ['images', 'cover', 'source', 'pageid', 'lang', 'url', 'ext_id', '_imgList'];
+            for (const key of Object.keys(autoFetchCurrentData)) {
+                if(skipKeys.includes(key) || key.startsWith('_') || !autoFetchCurrentData[key]) continue;
+                
+                const selectEl = document.getElementById(`map_fetch_${key}`);
+                if(!selectEl) continue;
+                
+                const targetField = selectEl.value;
+                if(!targetField) continue;
+
+                item[targetField] = autoFetchCurrentData[key];
+            }
+
+            // 2. Importar imágenes seleccionadas (o la cover por defecto)
+            let imagesToAdd = autoFetchSelectedImages.length > 0 
+                ? autoFetchSelectedImages 
+                : (autoFetchCurrentData.cover ? [autoFetchCurrentData.cover] : []);
+
+            if(imagesToAdd.length > 0) {
+                if(!item._photos) item._photos = [];
+                // Añadir al principio (la primera seleccionada será principal)
+                for (let i = imagesToAdd.length - 1; i >= 0; i--) {
+                    try {
+                        const base64Img = await fetchImageAsBase64(imagesToAdd[i]);
+                        if(base64Img) {
+                            // Evitar duplicados exactos
+                            if(!item._photos.includes(base64Img)) {
+                                item._photos.unshift(base64Img);
+                            }
+                        }
+                    } catch(e) { 
+                        console.error("No se pudo cargar la imagen:", e); 
+                    }
+                }
+            }
+
+            await save();
+            renderInspectorFields();
+            renderGallery(item);
+            renderItems();
+            closeModal('autoFetchModal');
+            // Feedback visual
+            const btn = document.getElementById('autoFetchBtn');
+            if(btn) {
+                const old = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> IMPORTADO';
+                setTimeout(() => { btn.innerHTML = old; }, 2000);
+            }
+        }
+
+        async function fetchImageAsBase64(url) {
+            try {
+                const response = await fetch(url, { mode: 'cors' });
+                if(!response.ok) throw new Error('HTTP ' + response.status);
+                const blob = await response.blob();
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            } catch (e) {
+                console.warn('Fallo al obtener imagen (posible CORS):', url, e);
+                // Intento alternativo con proxy público de imágenes (solo para desarrollo / uso personal)
+                try {
+                    const proxyUrl = 'https://images.weserv.nl/?url=' + encodeURIComponent(url.replace(/^https?:\/\//, ''));
+                    const response2 = await fetch(proxyUrl);
+                    if(response2.ok) {
+                        const blob = await response2.blob();
+                        return new Promise((resolve) => {
+                            const reader = new FileReader();
+                            reader.onloadend = () => resolve(reader.result);
+                            reader.readAsDataURL(blob);
+                        });
+                    }
+                } catch(e2) {}
+                return null;
+            }
+        }
+        // --- FIN AUTO-FETCH ---
+
+        // --- NUEVO: CLOUD SYNC WEBHOOK / LOCAL URL ---
+        async function syncPushToUrl() {
+            const url = document.getElementById('syncUrlInput').value.trim();
+            if(!url) return alert("Por favor, introduce una URL de sincronización válida (Ej: servidor local o WebHook).");
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(db)
+                });
+                if(response.ok) alert("Sincronización enviada con éxito.");
+                else alert("El servidor respondió con error: " + response.statusText);
+            } catch(err) {
+                alert("Error al conectar con la URL: " + err.message);
+            }
+        }
+
+        async function syncPullFromUrl() {
+            const url = document.getElementById('syncUrlInput').value.trim();
+            if(!url) return alert("Por favor, introduce una URL de sincronización válida.");
+            
+            if(confirm("Atención: Esto sobreescribirá tu colección actual con los datos descargados de la URL. ¿Continuar?")) {
+                try {
+                    const response = await fetch(url);
+                    if(!response.ok) throw new Error("HTTP " + response.status);
+                    const data = await response.json();
+                    
+                    if(data && data.schemas && data.items) {
+                        db = data;
+                        await save();
+                        location.reload();
+                    } else {
+                        alert("El JSON descargado no tiene el formato correcto.");
+                    }
+                } catch(err) {
+                    alert("Error al recuperar datos: " + err.message);
+                }
+            }
+        }
+        // --- FIN CLOUD SYNC ---
+
+        function openFileManager(key) {
+             activeFileFieldKey = key;
+             const item = db.items.find(x => x.id === activeId);
+             let files = item[key];
+             if(!Array.isArray(files)) files = files ? [files] : []; 
+             
+             const c = document.getElementById('fileListContainer'); c.innerHTML = "";
+             files.forEach((f, idx) => {
+                 c.innerHTML += `<div class="flex justify-between items-center bg-zinc-900 p-2 rounded mb-1 border border-zinc-800">
+                    <span class="text-xs truncate max-w-[200px]">${f.name}</span>
+                    <div class="flex gap-2">
+                        <button onclick="downloadFileFromManager(${idx})" class="text-green-500"><i class="fa-solid fa-download"></i></button>
+                        <button onclick="deleteFileFromManager(${idx})" class="text-red-500"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                 </div>`;
+             });
+             
+             document.getElementById('fileUploadControl').classList.remove('hidden');
+             openModal('fileManagerModal');
+        }
+        function handleFileField(e) {
+             const filesInput = e.target.files;
+             if(!filesInput.length) return;
+             const item = db.items.find(x => x.id === activeId);
+             if(!Array.isArray(item[activeFileFieldKey])) item[activeFileFieldKey] = [];
+             
+             Array.from(filesInput).forEach(f => {
+                 const r = new FileReader();
+                 r.onload = ev => {
+                         item[activeFileFieldKey].push({name: f.name, data: ev.target.result});
+                         save();
+                         openFileManager(activeFileFieldKey);
+                 };
+                 r.readAsDataURL(f);
+             });
+             e.target.value = "";
+        }
+        function deleteFileFromManager(idx) {
+             const item = db.items.find(x => x.id === activeId);
+             let files = Array.isArray(item[activeFileFieldKey]) ? item[activeFileFieldKey] : [];
+             files.splice(idx, 1);
+             item[activeFileFieldKey] = files;
+             save(); openFileManager(activeFileFieldKey); renderInspectorFields();
+        }
+        function downloadFileFromManager(idx) {
+             const item = db.items.find(x => x.id === activeId);
+             let files = Array.isArray(item[activeFileFieldKey]) ? item[activeFileFieldKey] : [];
+             downloadFileObj(files[idx]);
+        }
+        function downloadFile(name) {
+             const item = db.items.find(x => x.id === activeId);
+             for(let k in item) {
+                 if(Array.isArray(item[k])) {
+                        const f = item[k].find(x => x.name === name);
+                        if(f) return downloadFileObj(f);
+                 }
+             }
+        }
+        function downloadFileObj(f) {
+             const a = document.createElement('a'); a.href = f.data; a.download = f.name; a.click();
+        }
+
+        function renderConfig() {
+            document.getElementById('configAppName').value = db.settings.appName || "Mi Colección";
+            updateStorageStatusUI();
+            
+            const autoBk = db.settings.autoBackup ? 'checked' : '';
+            document.getElementById('autoBackupToggle').checked = db.settings.autoBackup || false;
+
+
+
+            if(!viewConfigCol) viewConfigCol = db.activeCol;
+            const viewSel = document.getElementById('viewConfigSelector');
+            viewSel.innerHTML = Object.keys(db.schemas).map(c => 
+                `<option value="${c}" ${c === viewConfigCol ? 'selected' : ''}>${c}</option>`
+            ).join('');
+            
+            renderViewConfigFor(viewConfigCol);
+            
+            const delSel = document.getElementById('massDeleteColSelect');
+            delSel.innerHTML = Object.keys(db.schemas).map(c => `<option value="${c}">${c}</option>`).join('');
+
+            const l = document.getElementById('configColList'); l.innerHTML = "";
+            Object.keys(db.schemas).forEach(c => {
+                const isActive = edCol === c ? "border-blue-500 bg-blue-900/10" : "border-zinc-800 bg-zinc-950";
+                l.innerHTML += `
+                <div class="${isActive} p-3 rounded flex justify-between items-center border mb-1 cursor-pointer hover:bg-zinc-900" onclick="editFields('${c}')">
+                    <span class="text-xs font-bold text-white uppercase truncate">${c}</span>
+                    <div class="flex gap-1">
+                        <button onclick="event.stopPropagation();renameCol('${c}')" class="bg-zinc-800 text-zinc-400 px-2 py-1 rounded hover:text-white mr-1" title="Renombrar"><i class="fa-solid fa-pen"></i></button>
+                        <i class="fa-solid fa-chevron-right text-zinc-600 text-xs"></i>
+                    </div>
+                </div>`;
+            });
+        }
+
+        function renderViewConfigFor(colName) {
+            viewConfigCol = colName;
+            const g = document.getElementById('gridFieldsConfig');
+            const listF = document.getElementById('listFieldsConfig');
+            g.innerHTML = ""; listF.innerHTML = "";
+            
+            if(!db.viewSettings[colName]) db.viewSettings[colName] = { grid: [], list: [] };
+            const conf = db.viewSettings[colName];
+
+            const fields = db.schemas[colName] || [];
+            if(fields.length === 0) {
+                 g.innerHTML = "<span class='text-zinc-600 text-xs'>Sin campos</span>";
+                 listF.innerHTML = "<span class='text-zinc-600 text-xs'>Sin campos</span>";
+            } else {
+                 fields.forEach(f => {
+                     const gChk = conf.grid.includes(f.key) ? 'checked' : '';
+                     const lChk = conf.list.includes(f.key) ? 'checked' : '';
+                     g.innerHTML += `<div class="text-xs text-zinc-300"><input type="checkbox" class="accent-blue-500 mr-2" onchange="saveViewConfig('grid','${f.key}')" ${gChk}> ${f.name}</div>`;
+                     listF.innerHTML += `<div class="text-xs text-zinc-300"><input type="checkbox" class="accent-green-500 mr-2" onchange="saveViewConfig('list','${f.key}')" ${lChk}> ${f.name}</div>`;
+                 });
+            }
+        }
+
+        function saveViewConfig(type, key) {
+             const conf = db.viewSettings[viewConfigCol]; 
+             const idx = conf[type].indexOf(key);
+             if(idx > -1) conf[type].splice(idx, 1); else conf[type].push(key);
+             save(); renderItems();
+        }
+
+        function editFields(c) {
+            edCol = c; 
+            document.getElementById('fManagerEmpty').classList.add('hidden');
+            document.getElementById('fManagerContent').classList.remove('hidden');
+            document.getElementById('edColName').innerText = c;
+            renderConfig(); 
+            const l = document.getElementById('configFieldList'); l.innerHTML = "";
+            db.schemas[c].forEach((f, idx) => {
+                const starClass = f.isTitle ? "text-yellow-500" : "text-zinc-700 hover:text-yellow-500";
+                l.innerHTML += `
+                <div class="bg-black p-2 rounded border border-zinc-800 flex justify-between items-center mb-1 draggable-item" draggable="true" ondragstart="dragStart(event, ${idx})" ondrop="drop(event, ${idx})" ondragover="allowDrop(event)">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-grip-lines text-zinc-600 cursor-grab"></i>
+                        <span class="text-[10px] font-bold text-zinc-300">${f.name} <span class="text-zinc-600">(${f.type})</span></span> 
+                    </div>
+                    <div class="flex gap-1 items-center">
+                        <button onclick="setPrimaryField('${c}','${f.id}')" class="${starClass} text-xs px-2 mr-2" title="Marcar como Título Principal"><i class="fa-solid fa-star"></i></button>
+                        <button onclick="openFieldEdit('${c}','${f.id}')" class="text-blue-500 text-xs px-2" title="Editar Propiedades"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="delField('${c}','${f.id}')" class="text-red-500 text-xs px-2"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>`;
+            });
+            const rd = document.getElementById('relDest'); rd.innerHTML=Object.keys(db.schemas).map(x=>`<option value="${x}">${x}</option>`).join(''); updRelF();
+        }
+
+        function setPrimaryField(col, fieldId) {
+            db.schemas[col].forEach(f => {
+                f.isTitle = (f.id === fieldId);
+            });
+            save();
+            editFields(col); 
+            renderItems(); 
+        }
+
+        function allowDrop(ev) { ev.preventDefault(); }
+        function dragStart(ev, idx) { ev.dataTransfer.setData("text", idx); }
+        function drop(ev, targetIdx) {
+            ev.preventDefault();
+            const sourceIdx = parseInt(ev.dataTransfer.getData("text"));
+            if(sourceIdx !== targetIdx) {
+                const arr = db.schemas[edCol];
+                const [movedItem] = arr.splice(sourceIdx, 1);
+                arr.splice(targetIdx, 0, movedItem);
+                save();
+                editFields(edCol);
+            }
+        }
+
+        function addCollection() { 
+            const inp = document.getElementById('newColInp');
+            const n = inp.value.trim(); 
+            if(!n) return; 
+            db.schemas[n] = []; 
+            inp.value = ""; 
+            save(); renderConfig(); renderColNav(); 
+        }
+        function renameCol(oldName) {
+            const newName = prompt("Nuevo nombre para la colección:", oldName);
+            if(newName && newName !== oldName && !db.schemas[newName]) {
+                db.schemas[newName] = db.schemas[oldName];
+                delete db.schemas[oldName];
+                db.items.forEach(i => { if(i._col === oldName) i._col = newName; });
+                if(db.viewSettings[oldName]) { db.viewSettings[newName] = db.viewSettings[oldName]; delete db.viewSettings[oldName]; }
+                if(db.activeCol === oldName) db.activeCol = newName;
+                if(edCol === oldName) edCol = newName;
+                save(); renderConfig(); renderColNav(); renderItems();
+            } else if (db.schemas[newName]) {
+                alert("Ya existe una colección con ese nombre.");
+            }
+        }
+        function addField() { 
+            const inp = document.getElementById('newFTitle');
+            const n = inp.value.trim(), t = document.getElementById('newFType').value; 
+            if(!n) return;
+            
+            const isFirst = db.schemas[edCol].length === 0;
+            
+            const f = { id: Date.now().toString(), name: n, type: t, key: "k_"+Date.now(), isTitle: isFirst };
+            if(t==='relation'){ f.targetCol=document.getElementById('relDest').value; f.targetField=document.getElementById('relDisp').value; }
+            db.schemas[edCol].push(f); 
+            inp.value = ""; document.getElementById('newFType').value = "text"; toggleRel();
+            save(); editFields(edCol);
+            if(viewConfigCol === edCol) renderViewConfigFor(edCol);
+        }
+        function delField(c,fid) { if(confirm("Se perderán los datos de este campo. ¿Seguro?")) { db.schemas[c]=db.schemas[c].filter(x=>x.id!==fid); save(); editFields(c); } }
+        function delCol() { 
+            if(confirm("ESTO BORRARÁ LA COLECCIÓN Y TODOS SUS ARTÍCULOS. ¿CONTINUAR?")) { 
+                delete db.schemas[edCol]; db.items=db.items.filter(i=>i._col!==edCol); delete db.viewSettings[edCol];
+                if(db.activeCol === edCol) db.activeCol = Object.keys(db.schemas)[0] || "General";
+                edCol = null; document.getElementById('fManagerContent').classList.add('hidden'); document.getElementById('fManagerEmpty').classList.remove('hidden');
+                save(); renderConfig(); renderColNav(); renderItems();
+            } 
+        }
+
+        function openFieldEdit(col, fid) {
+            const f = db.schemas[col].find(x => x.id === fid);
+            if (!f) return;
+            editingFieldParams = { col: col, fid: fid };
+            
+            document.getElementById('editFieldName').value = f.name;
+            document.getElementById('editFieldType').value = f.type;
+            
+            const rd = document.getElementById('editRelDest');
+            rd.innerHTML = Object.keys(db.schemas).map(x => `<option value="${x}">${x}</option>`).join('');
+            
+            if (f.type === 'relation' && f.targetCol) {
+                rd.value = f.targetCol;
+            }
+            
+            toggleEditRel();
+            openModal('fieldEditModal');
+        }
+
+        function toggleEditRel() {
+            const t = document.getElementById('editFieldType').value;
+            document.getElementById('editRelSet').classList.toggle('hidden', t !== 'relation');
+        }
+
+        function saveFieldEdit() {
+            if (!editingFieldParams) return;
+            const { col, fid } = editingFieldParams;
+            const f = db.schemas[col].find(x => x.id === fid);
+            if (!f) return;
+
+            const newName = document.getElementById('editFieldName').value;
+            const newType = document.getElementById('editFieldType').value;
+            
+            if (!newName.trim()) return alert("El nombre no puede estar vacío");
+
+            f.name = newName;
+            f.type = newType;
+
+            if (newType === 'relation') {
+                f.targetCol = document.getElementById('editRelDest').value;
+            }
+
+            save();
+            editFields(col);
+            renderItems();
+            closeModal('fieldEditModal');
+        }
+
+        function emptyCollection() {
+            const c = document.getElementById('massDeleteColSelect').value;
+            if(!c) return;
+            if(confirm(`¿Estás seguro de que quieres BORRAR TODOS los registros de "${c}"? Esta acción no se puede deshacer.`)) {
+                const countBefore = db.items.length;
+                db.items = db.items.filter(i => i._col !== c);
+                const countAfter = db.items.length;
+                save();
+                renderItems();
+                alert(`Eliminados ${countBefore - countAfter} registros de "${c}".`);
+            }
+        }
+
+        function openMassDeleteModal() {
+            const c = document.getElementById('massDeleteColSelect').value;
+            if(!c) return alert("Selecciona una colección primero.");
+            const items = db.items.filter(i => i._col === c);
+            if(items.length === 0) return alert("Esta colección está vacía.");
+            
+            const list = document.getElementById('massDeleteList');
+            list.innerHTML = "";
+            items.forEach(i => {
+                const s = db.schemas[c];
+                let title = "Sin Título";
+                const pField = s.find(f => f.isTitle) || s.find(f=>f.type==='text') || s[0];
+                if(pField && i[pField.key]) title = i[pField.key];
+
+                list.innerHTML += `
+                <div class="flex items-center gap-2 bg-black p-2 rounded hover:bg-zinc-800 border-b border-zinc-800">
+                    <input type="checkbox" class="mass-del-chk accent-red-600 w-4 h-4" value="${i.id}">
+                    <span class="text-xs text-zinc-300 truncate">${title}</span>
+                </div>`;
+            });
+            openModal('massDeleteModal');
+        }
+
+        function selectAllForDelete(val) {
+            document.querySelectorAll('.mass-del-chk').forEach(c => c.checked = val);
+        }
+
+        function executeMassDelete() {
+            const selected = Array.from(document.querySelectorAll('.mass-del-chk:checked')).map(c => c.value);
+            if(selected.length === 0) return alert("No has seleccionado nada.");
+            
+            if(confirm(`¿Borrar ${selected.length} elementos seleccionados permanentemente?`)) {
+                db.items = db.items.filter(i => !selected.includes(i.id));
+                save();
+                renderItems();
+                closeModal('massDeleteModal');
+                alert("Elementos eliminados.");
+            }
+        }
+
+        function openExportMenu() {
+            closeModal('configModal');
+            const cList = document.getElementById('expColList'); cList.innerHTML = "";
+            const fList = document.getElementById('expFieldList'); fList.innerHTML = "";
+            Object.keys(db.schemas).forEach(c => {
+                 cList.innerHTML += `<div><input type="checkbox" id="ex_col_${c}" value="${c}" onchange="updateExpFields()" class="accent-blue-500"> <label class="text-zinc-400 text-xs">${c}</label></div>`;
+            });
+            document.getElementById('exportCenterModal').classList.remove('hidden');
+        }
+        
+        function updateExpFields() {
+             const fList = document.getElementById('expFieldList'); fList.innerHTML = "";
+             const cols = Array.from(document.querySelectorAll('#expColList input:checked')).map(x=>x.value);
+             const allFields = new Set();
+             cols.forEach(c => db.schemas[c].forEach(f => allFields.add(f.name)));
+             allFields.forEach(f => {
+                 fList.innerHTML += `<div><input type="checkbox" checked class="accent-blue-500 field-chk" value="${f}"> <label class="text-zinc-400 text-xs">${f}</label></div>`;
+             });
+        }
+
+        function runExport(type) {
+             const cols = Array.from(document.querySelectorAll('#expColList input:checked')).map(x=>x.value);
+             if(!cols.length) return alert("Selecciona al menos una colección.");
+             const fieldNames = Array.from(document.querySelectorAll('.field-chk:checked')).map(x=>x.value);
+             let itemsToExport = db.items.filter(i => cols.includes(i._col));
+             
+             if(type === 'csv') {
+                 let csv = "Coleccion,Titulo," + fieldNames.join(",") + "\n";
+                 itemsToExport.forEach(item => {
+                           const schema = db.schemas[item._col];
+                           let primaryField = schema.find(f => f.isTitle);
+                           if (!primaryField) primaryField = schema.find(f => f.name.match(/^(titulo|title|nombre|name)$/i));
+                           if (!primaryField) primaryField = schema.find(f => f.type === 'text') || schema[0];
+
+                           const titleVal = primaryField ? item[primaryField.key] : "";
+                           
+                           let row = `"${item._col}","${(titleVal||'').replace(/"/g,'""')}"`;
+                           fieldNames.forEach(fn => {
+                            const schemaField = db.schemas[item._col].find(f => f.name === fn);
+                            let val = "";
+                            if(schemaField) {
+                                if(schemaField.type === 'relation') {
+                                    const relId = item[schemaField.key];
+                                    const relItem = db.items.find(x => x.id === relId);
+                                    if(relItem) {
+                                        const relSchema = db.schemas[relItem._col];
+                                        const relTitleField = relSchema.find(k=>k.isTitle) || relSchema.find(k=>k.type==='text') || relSchema[0];
+                                        if(relTitleField) val = relItem[relTitleField.key];
+                                        else val = "Item Relacionado";
+                                    }
+                                } 
+                                else if(schemaField.type === 'file') {
+                                    const files = item[schemaField.key];
+                                    if(Array.isArray(files)) val = files.map(f=>f.name).join('; ');
+                                }
+                                else {
+                                    val = (item[schemaField.key] || "").toString();
+                                }
+                            }
+                            row += `,"${val.replace(/"/g,'""')}"`;
+                           });
+                           csv += row + "\n";
+                 });
+                 const b = new Blob([csv],{type:'text/csv;charset=utf-8;'});
+                 const a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='Micoleccion.csv'; a.click();
+             } 
+             else if(type === 'pdf') {
+                 const { jsPDF } = window.jspdf;
+                 const doc = new jsPDF();
+                 
+                 cols.forEach((colName, idx) => {
+                         if(idx > 0) doc.addPage();
+                         doc.setFontSize(16); 
+                         doc.text(`Colección: ${colName}`, 14, 15);
+                         
+                         const colItems = itemsToExport.filter(i => i._col === colName);
+                         
+                         const body = colItems.map(i => {
+                           let img = null;
+                           if(i._photos && i._photos.length) img = i._photos[0];
+                           
+                           const schema = db.schemas[colName] || [];
+                           let primaryField = schema.find(f => f.isTitle);
+                           if (!primaryField) primaryField = schema.find(f => f.name.match(/^(titulo|title|nombre|name)$/i));
+                           if (!primaryField) primaryField = schema.find(f => f.type === 'text') || schema[0];
+
+                           let displayTitle = "Sin Título";
+                           if(primaryField && i[primaryField.key]) displayTitle = i[primaryField.key];
+                           
+                           let textBlock = displayTitle + "\n\n";
+                           fieldNames.forEach(fn => {
+                               const sf = db.schemas[colName].find(f=>f.name===fn);
+                               if(sf && primaryField && sf.key === primaryField.key) return;
+
+                               if(sf) {
+                                   let val = i[sf.key];
+                                   if(sf.type === 'relation' && val) {
+                                        const relItem = db.items.find(x => x.id === val);
+                                        if(relItem) {
+                                            const relSchema = db.schemas[relItem._col];
+                                            const relTitleField = relSchema.find(k=>k.isTitle) || relSchema[0];
+                                            val = relItem[relTitleField.key];
+                                        }
+                                   }
+                                   if(val) textBlock += `${fn}: ${val}\n`;
+                               }
+                           });
+                           
+                           return [img, textBlock]; 
+                         });
+                         
+                         doc.autoTable({
+                            head: [], 
+                            body: body,
+                            startY: 20,
+                            columnStyles: {
+                               0: { cellWidth: 25, minCellHeight: 25, valign: 'middle' },
+                               1: { cellWidth: 'auto', valign: 'middle' }
+                            },
+                            didDrawCell: (data) => {
+                               if(data.column.index === 0 && data.cell.raw && data.section === 'body') {
+                                   try { 
+                                         doc.addImage(data.cell.raw, 'JPEG', data.cell.x + 2, data.cell.y + 2, 20, 20); 
+                                   } catch(e){}
+                               }
+                            }
+                         });
+                 });
+                 doc.save('Micoleccion.pdf');
+             }
+        }
+
+        function openConnectionsModal() {
+            const list = document.getElementById('connectionsList'); list.innerHTML = "";
+            const comps = db.items.filter(it => { const s=db.schemas[it._col]; return s.some(f=>f.type==='relation' && it[f.key]===activeId); });
+            
+            document.getElementById('connModalTitle').innerText = `Conexiones Relacionadas (${comps.length})`;
+
+            if(comps.length === 0) list.innerHTML = "<div class='text-zinc-500 text-center'>Sin conexiones detectadas.</div>";
+            else {
+                comps.forEach(c => {
+                    const s = db.schemas[c._col];
+                    const pf = s ? (s.find(z=>z.isTitle)||s.find(z=>z.type==='text')||s[0]) : null;
+                    const rTxt = (pf && c[pf.key]) ? c[pf.key] : "Item";
+                    
+                    list.innerHTML += `<div onclick="showInspector('${c.id}');closeModal('connectionsModal')" class="cursor-pointer bg-zinc-900 p-3 mb-2 rounded border border-zinc-800 hover:border-blue-500 flex justify-between items-center"><span class="text-white font-bold">${rTxt}</span> <span class="text-[10px] bg-blue-900/20 text-blue-400 px-2 rounded">${c._col}</span></div>`;
+                });
+            }
+            openModal('connectionsModal');
+        }
+
+        function openStats() {
+            const b = document.getElementById('statsBody'); b.innerHTML = "";
+            const fb = document.getElementById('financialStatsBody'); fb.innerHTML = "";
+            
+            Object.keys(db.schemas).forEach(c => {
+                const count = db.items.filter(i => i._col === c).length;
+                b.innerHTML += `<div class="bg-zinc-900 p-3 rounded border border-zinc-800 flex justify-between items-center"><span class="text-white font-bold uppercase text-xs">${c}</span><span class="text-blue-500 font-black text-lg">${count}</span></div>`;
+            });
+
+            let grandTotal = 0;
+            let hasAnyCurrency = false;
+            Object.keys(db.schemas).forEach(colName => {
+                const colSchema = db.schemas[colName];
+                const currencyFields = colSchema.filter(f => f.type === 'currency');
+                if (currencyFields.length > 0) {
+                    hasAnyCurrency = true;
+                    let colHtml = `<div class="mb-4 last:mb-0"><h4 class="text-xs font-black text-blue-400 uppercase mb-2">${colName}</h4>`;
+                    currencyFields.forEach(f => {
+                        let totalField = 0;
+                        db.items.filter(i => i._col === colName).forEach(i => {
+                            let val = i[f.key];
+                            if (typeof val === 'string') { val = parseFloat(val.replace(/[^0-9.-]+/g,"")); }
+                            if (!isNaN(val)) totalField += parseFloat(val);
+                        });
+                        grandTotal += totalField;
+                        colHtml += `
+                        <div class="flex justify-between items-center border-b border-zinc-800/50 pb-1 mb-1 last:border-0 last:mb-0">
+                            <span class="text-[10px] font-bold text-zinc-400 uppercase ml-2">- ${f.name}</span>
+                            <span class="text-white font-mono font-bold text-xs">${new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(totalField)}</span>
+                        </div>`;
+                    });
+                    colHtml += `</div>`;
+                    fb.innerHTML += colHtml;
+                }
+            });
+
+            if (!hasAnyCurrency) { fb.innerHTML = "<span class='text-zinc-500 text-xs italic'>No hay campos de moneda definidos.</span>"; } 
+            else {
+                fb.innerHTML += `
+                <div class="mt-4 pt-3 border-t border-zinc-700 flex justify-between items-center bg-zinc-900">
+                    <span class="text-sm font-black text-white uppercase">TOTAL GLOBAL</span>
+                    <span class="text-green-400 font-mono font-black text-lg">${new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(grandTotal)}</span>
+                </div>`;
+            }
+
+            initAdvancedStats();
+            openModal('statsModal');
+        }
+
+        function initAdvancedStats() {
+            const colCont = document.getElementById('advStatsCols');
+            colCont.innerHTML = "";
+            Object.keys(db.schemas).forEach(c => {
+                colCont.innerHTML += `
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" value="${c}" id="chk_stat_${c}" class="accent-blue-500" onchange="updateAdvFields()">
+                    <label for="chk_stat_${c}" class="text-xs text-zinc-300 cursor-pointer select-none">${c}</label>
+                </div>`;
+            });
+            document.getElementById('advGroupBy').innerHTML = "<option value=''>-- Seleccionar --</option>";
+            document.getElementById('advValueField').innerHTML = "<option value=''>-- Seleccionar --</option>";
+            document.getElementById('advOperation').value = "count";
+            toggleAdvValueField();
+            
+            document.getElementById('advReportTable').innerHTML = "";
+            if(advChartInstance) { advChartInstance.destroy(); advChartInstance = null; }
+        }
+
+        function updateAdvFields() {
+            const selectedCols = Array.from(document.querySelectorAll('#advStatsCols input:checked')).map(cb => cb.value);
+            const groupSelect = document.getElementById('advGroupBy');
+            const valueSelect = document.getElementById('advValueField');
+            const currentGroup = groupSelect.value;
+            const currentValue = valueSelect.value;
+
+            groupSelect.innerHTML = "<option value=''>-- Seleccionar --</option>";
+            valueSelect.innerHTML = "<option value=''>-- Seleccionar --</option>";
+            
+            if(selectedCols.length === 0) return;
+
+            const allFieldNames = new Set();
+            selectedCols.forEach(c => {
+                if(db.schemas[c]) {
+                    db.schemas[c].forEach(f => allFieldNames.add(f.name));
+                }
+            });
+
+            Array.from(allFieldNames).sort().forEach(fn => {
+                groupSelect.innerHTML += `<option value="${fn}">${fn}</option>`;
+                valueSelect.innerHTML += `<option value="${fn}">${fn}</option>`;
+            });
+
+            if(Array.from(groupSelect.options).some(o => o.value === currentGroup)) groupSelect.value = currentGroup;
+            if(Array.from(valueSelect.options).some(o => o.value === currentValue)) valueSelect.value = currentValue;
+        }
+
+        function toggleAdvValueField() {
+            const op = document.getElementById('advOperation').value;
+            const wrap = document.getElementById('advValueFieldWrap');
+            if(op === 'sum') {
+                wrap.classList.remove('opacity-50', 'pointer-events-none');
+            } else {
+                wrap.classList.add('opacity-50', 'pointer-events-none');
+                document.getElementById('advValueField').value = "";
+            }
+        }
+
+        function generateAdvancedReport() {
+            const selectedCols = Array.from(document.querySelectorAll('#advStatsCols input:checked')).map(cb => cb.value);
+            const groupBy = document.getElementById('advGroupBy').value;
+            const operation = document.getElementById('advOperation').value;
+            const valueField = document.getElementById('advValueField').value;
+
+            if(selectedCols.length === 0) return alert("Selecciona al menos una colección.");
+            if(!groupBy) return alert("Selecciona un campo para agrupar.");
+            if(operation === 'sum' && !valueField) return alert("Selecciona qué campo quieres sumar.");
+
+            const dataMap = {}; 
+            
+            db.items.forEach(item => {
+                if(!selectedCols.includes(item._col)) return; 
+                
+                const schema = db.schemas[item._col];
+                const groupFieldDef = schema.find(f => f.name === groupBy);
+                
+                let groupVal = "Desconocido / Sin Campo";
+                if(groupFieldDef) {
+                    const raw = item[groupFieldDef.key];
+                    if(raw && raw.toString().trim() !== "") groupVal = raw.toString();
+                    else groupVal = "(Vacío)";
+                }
+
+                if(!dataMap[groupVal]) dataMap[groupVal] = 0;
+
+                if(operation === 'count') {
+                    dataMap[groupVal]++;
+                } else {
+                    const valFieldDef = schema.find(f => f.name === valueField);
+                    if(valFieldDef) {
+                        let num = item[valFieldDef.key];
+                        if(typeof num === 'string') num = parseFloat(num.replace(/[^0-9.-]+/g,""));
+                        if(!isNaN(num)) dataMap[groupVal] += num;
+                    }
+                }
+            });
+
+            const labels = Object.keys(dataMap);
+            const values = Object.values(dataMap);
+
+            if(labels.length === 0) return alert("No se encontraron datos con esos criterios.");
+
+            const ctx = document.getElementById('advChart').getContext('2d');
+            if(advChartInstance) advChartInstance.destroy();
+
+            const bgColors = labels.map(() => `hsl(${Math.random() * 360}, 70%, 50%)`);
+
+            advChartInstance = new Chart(ctx, {
+                type: 'bar', 
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: operation === 'sum' ? 'Total Valor' : 'Cantidad Ítems',
+                        data: values,
+                        backgroundColor: bgColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: `Reporte: ${operation === 'sum' ? 'Suma de '+valueField : 'Conteo'} por ${groupBy}`, color: '#fff' }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { color: '#aaa' }, grid: { color: '#333' } },
+                        x: { ticks: { color: '#aaa' }, grid: { color: '#333' } }
+                    }
+                }
+            });
+
+            let tableHtml = `
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="bg-zinc-900 text-zinc-400 uppercase">
+                        <th class="p-3 border-b border-zinc-800">${groupBy}</th>
+                        <th class="p-3 border-b border-zinc-800 text-right">${operation === 'sum' ? 'Total ('+valueField+')' : 'Cantidad'}</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            let totalSum = 0;
+            labels.forEach((l, i) => {
+                let v = values[i];
+                totalSum += v;
+                let displayV = v;
+                if(operation === 'sum') displayV = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2 }).format(v);
+                
+                tableHtml += `
+                <tr class="border-b border-zinc-900 hover:bg-zinc-900/50">
+                    <td class="p-3 text-white font-bold">${l}</td>
+                    <td class="p-3 text-right text-blue-400 font-mono">${displayV}</td>
+                </tr>`;
+            });
+
+            let displayTotal = totalSum;
+            if(operation === 'sum') displayTotal = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2 }).format(totalSum);
+
+            tableHtml += `
+                <tr class="bg-zinc-900 font-black text-white">
+                    <td class="p-3 uppercase">TOTAL</td>
+                    <td class="p-3 text-right text-green-400 font-mono">${displayTotal}</td>
+                </tr>
+            </tbody></table>`;
+
+            document.getElementById('advReportTable').innerHTML = tableHtml;
+        }
+
+        function compressImage(file, maxWidth, quality, callback) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = event => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if(maxWidth !== 'original') {
+                        const maxW = parseInt(maxWidth);
+                        if (width > maxW) {
+                            height *= maxW / width;
+                            width = maxW;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    const qual = parseFloat(quality);
+                    const dataUrl = canvas.toDataURL('image/jpeg', qual);
+                    callback(dataUrl);
+                };
+            };
+        }
+
+        function renderGallery(item) { 
+             const g=document.getElementById('itemGallery'); g.innerHTML=""; 
+             document.getElementById('photoCounter').innerText = (item._photos ? item._photos.length : 0) + " IMG";
+
+             if(item._photos) {
+                 item._photos.forEach((p,i)=>{
+                         const btns = isEditing ? 
+                           `<div class="absolute top-1 right-1 flex gap-1">
+                            <button onclick="setMainPhoto(${i})" class="bg-blue-600 text-white text-[9px] p-1 rounded" title="Hacer Principal"><i class="fa-solid fa-star"></i></button>
+                            <button onclick="remPhoto(${i})" class="bg-red-600 text-white text-[9px] p-1 rounded"><i class="fa-solid fa-trash"></i></button>
+                           </div>` : '';
+                         g.innerHTML+=`<div class="gallery-img-container group"><img src="${p}" onclick="window.open('${p}')" class="cursor-pointer">${btns}</div>`;
+                 });
+             }
+        }
+        function remPhoto(i){ 
+             if(!isEditing) return;
+             db.items.find(x=>x.id===activeId)._photos.splice(i,1); renderGallery(db.items.find(x=>x.id===activeId)); save(); 
+        }
+        function setMainPhoto(i) {
+             const item = db.items.find(x=>x.id===activeId);
+             const p = item._photos.splice(i, 1)[0];
+             item._photos.unshift(p);
+             save(); renderGallery(item); renderItems();
+        }
+        function addPh(e) { 
+            const files = Array.from(e.target.files);
+            if(files.length === 0) return;
+            
+            let processed = 0;
+            const item = db.items.find(i=>i.id===activeId);
+            if(!item._photos) item._photos = [];
+
+            const sizeCfg = document.getElementById('uploadSizeSelector').value || "1000";
+            const qualCfg = "0.7"; 
+
+            files.forEach(f => {
+                compressImage(f, sizeCfg, qualCfg, (compressedDataUrl) => {
+                    item._photos.push(compressedDataUrl);
+                    processed++;
+                    if(processed === files.length) {
+                        renderGallery(item);
+                        save();
+                        renderItems();
+                    }
+                });
+            });
+        }
+
+        function newItem() { 
+            const id="it_"+Date.now(); 
+            db.items.push({id:id, _col:db.activeCol, _photos:[]}); 
+            renderItems(); showInspector(id); toggleEditMode(); 
+        }
+        
+        function deleteCurrentItem() { if(!isEditing) return; if(confirm("¿Eliminar?")) { db.items=db.items.filter(i=>i.id!==activeId); hideInspector(); save(); renderItems(); } }
+        function hideInspector() { document.getElementById('inspectorPanel').classList.remove('active'); setTimeout(()=>{document.getElementById('inspectorContent').classList.add('hidden');document.getElementById('inspectorEmpty').classList.remove('hidden');},300); }
+        function toggleRel(){ const t=document.getElementById('newFType').value; document.getElementById('relSet').classList.toggle('hidden',t!=='relation'); }
+        function updRelF(){ const c=document.getElementById('relDest').value; if(c)document.getElementById('relDisp').innerHTML=db.schemas[c].map(f=>`<option value="${f.key}">${f.name}</option>`).join(''); }
+        function changeLogo(e){ const r=new FileReader(); r.onload=ev=>{db.settings.logo=ev.target.result;save();applySettings();}; r.readAsDataURL(e.target.files[0]); }
+        function updateAppName(v) { db.settings.appName = v; save(); applySettings(); }
+        
+        function applySettings(){ 
+            const activeLogo = db.settings.logo || DEFAULT_LOGO;
+            
+            if(activeLogo) {
+                document.getElementById('headerLogo').innerHTML=`<img src="${activeLogo}" class="w-full h-full object-cover">`; 
+            } else {
+                 document.getElementById('headerLogo').innerHTML=`<i class="fa-solid fa-cubes text-white text-lg"></i>`;
+            }
+            const n = db.settings.appName || "Mi Colección";
+            document.getElementById('appTitleHeader').innerText = n;
+        }
+        
+        function openModal(id){document.getElementById(id).classList.remove('hidden'); if(id==='configModal')renderConfig();}
+        function closeModal(id){document.getElementById(id).classList.add('hidden');}
+        function toggleSidebar(){document.getElementById('mainSidebar').classList.toggle('open');}
+        function changeView(v){ db.view=v; renderItems(); save(); }
+
+        function toggleAutoBackup(val) {
+            db.settings.autoBackup = val;
+            save();
+        }
+
+        // (eliminado: ya no se usa ninguna clave API)
+
+        function downloadBackup(isAuto = false) { 
+            const now = new Date();
+            const dateStr = now.getFullYear() + "-" + 
+                            String(now.getMonth()+1).padStart(2, '0') + "-" + 
+                            String(now.getDate()).padStart(2, '0') + "_" + 
+                            String(now.getHours()).padStart(2, '0') + "-" + 
+                            String(now.getMinutes()).padStart(2, '0');
+            
+            const fileName = `MiColeccion_${dateStr}${isAuto ? '_AUTO' : ''}.json`;
+            
+            const dataToSave = { ...db }; 
+            if (isAuto) {
+                dataToSave.backupType = "AUTOMATIC_ON_CLOSE";
+                dataToSave.backupDate = now.toISOString();
+            }
+
+            const a = document.createElement('a'); 
+            a.href = URL.createObjectURL(new Blob([JSON.stringify(dataToSave)],{type:'json'})); 
+            a.download = fileName; 
+            a.click(); 
+        }
+
+        window.addEventListener('beforeunload', (event) => {
+            if (db.settings.autoBackup) {
+                downloadBackup(true);
+            }
+        });
+
+        function openQualityControlModal() { 
+            closeModal('configModal');
+            const colSel = document.getElementById('qcColSelect');
+            colSel.innerHTML = Object.keys(db.schemas).map(c => `<option value="${c}" ${c===db.activeCol ? 'selected':''}>${c}</option>`).join('');
+            updateQualityFields();
+            openModal('qualityControlModal'); 
+        }
+
+        function updateQualityFields() {
+             const c = document.getElementById('qcColSelect').value;
+             const s = db.schemas[c];
+             const mode = document.getElementById('qcModeSelect').value;
+             
+             let options = "";
+             if (mode === 'empty') {
+                 options += `<option value="any">-- Cualquiera (Registro Incompleto) --</option>`;
+             }
+             
+             if (mode === 'photos') {
+                 options = `<option value="photos_check">Verificar Campo Foto</option>`;
+             } else {
+                 options += s.map(f => `<option value="${f.key}">${f.name}</option>`).join('');
+             }
+             
+             document.getElementById('qcFieldSelect').innerHTML = options;
+             document.getElementById('qcResults').innerHTML = "<p class='text-zinc-500 text-center italic text-xs mt-4'>Listo para analizar.</p>";
+        }
+
+        function runQualityCheck() {
+            const col = document.getElementById('qcColSelect').value;
+            const mode = document.getElementById('qcModeSelect').value;
+            const k = document.getElementById('qcFieldSelect').value;
+            const res = document.getElementById('qcResults'); res.innerHTML = "";
+            
+            if (mode === 'duplicates') {
+                const lookup = {}; const dupes = [];
+                db.items.filter(i=>i._col===col).forEach(i => {
+                    const val = (i[k]||"").toString().toLowerCase().trim();
+                    if(val){ if(lookup[val]) { dupes.push(i); if(lookup[val].c===1) dupes.push(lookup[val].i); lookup[val].c++; } else lookup[val]={c:1,i:i}; }
+                });
+                const uniq = [...new Set(dupes.map(d=>d.id))].map(id=>db.items.find(x=>x.id===id));
+                
+                if(!uniq.length) res.innerHTML="<p class='text-green-500 text-center'>¡Limpio! No hay duplicados.</p>";
+                else renderQualityResults(uniq, col);
+            } 
+            else if (mode === 'empty') {
+                let incompleteItems = [];
+                const items = db.items.filter(i=>i._col===col);
+                
+                if (k === 'any') {
+                    incompleteItems = items.filter(item => {
+                         return db.schemas[col].some(f => {
+                             const val = item[f.key];
+                             return !val || (Array.isArray(val) && val.length===0) || val.toString().trim() === "";
+                         });
+                    });
+                } else {
+                    incompleteItems = items.filter(item => {
+                         const val = item[k];
+                         return !val || (Array.isArray(val) && val.length===0) || val.toString().trim() === "";
+                    });
+                }
+                
+                if(!incompleteItems.length) res.innerHTML="<p class='text-green-500 text-center'>¡Todo completo! No faltan datos.</p>";
+                else renderQualityResults(incompleteItems, col, k);
+            }
+            else if (mode === 'photos') {
+                const items = db.items.filter(i=>i._col===col);
+                const noPhotoItems = items.filter(item => {
+                    return !item._photos || item._photos.length === 0;
+                });
+                
+                if(!noPhotoItems.length) res.innerHTML="<p class='text-green-500 text-center'>¡Excelente! Todos los registros tienen foto.</p>";
+                else renderQualityResults(noPhotoItems, col, 'photo_missing');
+            }
+        }
+
+        function renderQualityResults(items, col, specificField = null) {
+            const res = document.getElementById('qcResults');
+            res.innerHTML = items.map(d => {
+                const s = db.schemas[col];
+                const pf = s ? (s.find(z=>z.isTitle)||s.find(z=>z.type==='text')||s[0]) : null;
+                const rTxt = (pf && d[pf.key]) ? d[pf.key] : "Item Sin Título";
+                
+                let extraInfo = "";
+                if(specificField === 'any') {
+                      const missing = s.filter(f => !d[f.key] || d[f.key].toString().trim() === "").map(f=>f.name).join(", ");
+                      extraInfo = `<div class="text-[9px] text-red-400 mt-1">Falta: ${missing}</div>`;
+                }
+                else if(specificField === 'photo_missing') {
+                      extraInfo = `<div class="text-[9px] text-red-400 mt-1"><i class="fa-solid fa-image-slash"></i> Sin imagen adjunta</div>`;
+                }
+
+                return `<div class="bg-zinc-900 p-2 mb-1 rounded border border-zinc-800">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-white font-bold">${rTxt}</span>
+                        <button onclick="showInspector('${d.id}');closeModal('qualityControlModal');closeModal('configModal')" class="bg-blue-900/30 hover:bg-blue-600 text-blue-200 text-[10px] px-2 py-1 rounded font-bold uppercase transition">EDITAR</button>
+                    </div>
+                    ${extraInfo}
+                </div>`;
+            }).join('');
+        }
+        
+        async function impJ(e) { 
+            const r = new FileReader(); 
+            r.onload = async (ev) => { 
+                db = JSON.parse(ev.target.result); 
+                await save(); 
+                location.reload(); 
+            }; 
+            r.readAsText(e.target.files[0]); 
+        }
+
+        function handleCSVSmart(e) {
+             const r = new FileReader();
+             r.onload = ev => {
+                 const text = ev.target.result;
+                 const data = parseCSV(text);
+                 if(!data || data.headers.length < 1) return alert("El CSV está vacío o mal formado.");
+                 csvHeaders = data.headers;
+                 csvData = data.rows;
+                 openImportModal();
+             };
+             r.readAsText(e.target.files[0]);
+             e.target.value = ""; 
+        }
+
+        function parseCSV(text) {
+            const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+            if (lines.length < 2) return null;
+            const headerLine = lines[0];
+            const commaCount = (headerLine.match(/,/g) || []).length;
+            const semiCount = (headerLine.match(/;/g) || []).length;
+            const delimiter = semiCount > commaCount ? ';' : ',';
+            const splitLine = (line) => {
+                const res = [];
+                let current = '';
+                let inQuotes = false;
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') { inQuotes = !inQuotes; } 
+                    else if (char === delimiter && !inQuotes) { res.push(current.replace(/^"|"$/g, '').trim()); current = ''; } 
+                    else { current += char; }
+                }
+                res.push(current.replace(/^"|"$/g, '').trim());
+                return res;
+            };
+            const headers = splitLine(lines[0]);
+            const rows = lines.slice(1).map(splitLine);
+            return { headers, rows };
+        }
+
+        function openImportModal(isUpdate = false) {
+             const body = document.getElementById('importMapBody');
+             body.innerHTML = "";
+             if(!isUpdate) {
+                 const colSelect = document.getElementById('importTargetCol');
+                 colSelect.innerHTML = Object.keys(db.schemas).map(c => `<option value="${c}" ${c === db.activeCol ? 'selected' : ''}>${c}</option>`).join('');
+             }
+             const targetCol = document.getElementById('importTargetCol').value;
+             const existingFields = db.schemas[targetCol] || [];
+             let optionsHTML = `<option value="ignore">-- Ignorar --</option>`;
+             existingFields.forEach(f => { optionsHTML += `<option value="exist_${f.key}">Mapear a: ${f.name} (${f.type})</option>`; });
+             
+             optionsHTML += `<option value="new_text">Crear Nuevo: Número / Texto</option>`;
+             optionsHTML += `<option value="new_textarea">Crear Nuevo: Texto Largo</option>`;
+             optionsHTML += `<option value="new_rating">Crear Nuevo: Valoración (Estrellas)</option>`;
+             optionsHTML += `<option value="new_currency">Crear Nuevo: Moneda (€)</option>`;
+             optionsHTML += `<option value="new_date">Crear Nuevo: Fecha</option>`;
+             optionsHTML += `<option value="new_relation">Crear Nuevo: Relacionado (Búsqueda Global)</option>`;
+
+             csvHeaders.forEach((h, idx) => {
+                 let selected = "ignore";
+                 const match = existingFields.find(f => f.name.toLowerCase() === h.toLowerCase());
+                 if(match) selected = `exist_${match.key}`;
+                 body.innerHTML += `
+                 <tr class="border-b border-zinc-800">
+                     <td class="p-2 text-xs text-white font-bold">${h} <div class="text-[9px] text-zinc-500 font-mono mt-1">Ej: ${csvData[0] ? (csvData[0][idx] || '-') : '-'}</div></td>
+                     <td class="p-2 text-xs"><span class="bg-blue-900/20 text-blue-500 px-2 py-1 rounded">Detectado</span></td>
+                     <td class="p-2">
+                         <select id="map_col_${idx}" class="input-pro text-xs bg-zinc-900 border-zinc-700">${optionsHTML}</select>
+                     </td>
+                     <td class="p-2">
+                        <select id="check_rule_${idx}" class="input-pro text-xs bg-zinc-900 border-zinc-700">
+                            <option value="ignore">Ignorar (Siempre Copiar)</option>
+                            <option value="skip_if_exists">Comprobar si existe y NO copiar</option>
+                            <option value="duplicate">Comprobar y DUPLICAR (Generar Nuevo)</option>
+                        </select>
+                     </td>
+                 </tr>`;
+                 if(match) setTimeout(() => document.getElementById(`map_col_${idx}`).value = `exist_${match.key}`, 0);
+             });
+             closeModal('exportCenterModal');
+             openModal('importModal');
+        }
+
+        async function processImport() {
+             const targetCol = document.getElementById('importTargetCol').value; 
+             const maps = [];
+             let newFieldsCreated = 0;
+             let hasTitleField = db.schemas[targetCol].some(f => f.isTitle);
+
+             csvHeaders.forEach((h, idx) => {
+                 const val = document.getElementById(`map_col_${idx}`).value;
+                 const rule = document.getElementById(`check_rule_${idx}`).value;
+                 if(val !== 'ignore') { maps.push({ colIdx: idx, action: val, headerName: h, rule: rule }); }
+             });
+
+             maps.forEach(m => {
+                 if(m.action.startsWith('new_')) {
+                     const typeMap = { 
+                        'new_text': 'text', 
+                        'new_currency': 'currency', 
+                        'new_date': 'text',
+                        'new_textarea': 'textarea',
+                        'new_rating': 'rating',
+                        'new_relation': 'relation'
+                    };
+                      const type = typeMap[m.action];
+                      const newKey = "k_" + Date.now() + Math.random().toString(16).slice(2);
+                      
+                      let markAsTitle = false;
+                      if (!hasTitleField && type === 'text') { markAsTitle = true; hasTitleField = true; }
+
+                      const fieldDef = { id: Date.now().toString() + Math.random(), name: m.headerName, type: type, key: newKey, isTitle: markAsTitle };
+                      if(type === 'relation') {
+                          const anyCol = Object.keys(db.schemas)[0] || targetCol;
+                          fieldDef.targetCol = anyCol; 
+                      }
+
+                      db.schemas[targetCol].push(fieldDef);
+                      m.targetKey = newKey; newFieldsCreated++;
+                 } else { m.targetKey = m.action.replace('exist_', ''); }
+             });
+
+             let importedCount = 0;
+             let skippedCount = 0;
+
+             const existingItems = db.items.filter(i => i._col === targetCol);
+
+             csvData.forEach(row => {
+                 if(!row.length) return;
+                 
+                 let skipRow = false;
+                 
+                 for(let m of maps) {
+                     if(m.rule === 'skip_if_exists') {
+                         let cellVal = row[m.colIdx] || "";
+                         const match = existingItems.find(exItem => {
+                             const exVal = exItem[m.targetKey] || "";
+                             return exVal.toString().trim() === cellVal.toString().trim();
+                         });
+                         
+                         if(match) {
+                             skipRow = true;
+                             break; 
+                         }
+                     }
+                 }
+
+                 if(skipRow) {
+                     skippedCount++;
+                     return; 
+                 }
+
+                 const newItem = { id: "it_" + Date.now() + Math.random(), _col: targetCol, title: "", _photos: [] };
+                 maps.forEach(m => {
+                     let cellVal = row[m.colIdx] || "";
+                     const fieldSchema = db.schemas[targetCol].find(f => f.key === m.targetKey);
+                     
+                     if(fieldSchema && fieldSchema.type === 'rating') {
+                         let num = parseFloat(cellVal.replace(',', '.'));
+                         if(!isNaN(num)) {
+                             if(num > 5) num = num / 2;
+                             if(num > 5) num = 5; 
+                             newItem[m.targetKey] = num.toString();
+                         } else {
+                             newItem[m.targetKey] = "";
+                         }
+                     }
+                     else if(fieldSchema && fieldSchema.type === 'relation' && cellVal.trim() !== "") {
+                         let foundID = "";
+                         const globalMatch = db.items.find(gItem => {
+                             const gSchema = db.schemas[gItem._col];
+                             const gTitleField = gSchema.find(f => f.isTitle) || gSchema[0];
+                             const gVal = gTitleField ? gItem[gTitleField.key] : "";
+                             return gVal && gVal.toString().toLowerCase() === cellVal.toLowerCase();
+                         });
+
+                         if(globalMatch) {
+                             foundID = globalMatch.id;
+                         } else {
+                             const fuzzyMatch = db.items.find(gItem => {
+                                 const gSchema = db.schemas[gItem._col];
+                                 const gTitleField = gSchema.find(f => f.isTitle) || gSchema[0];
+                                 const gVal = gTitleField ? gItem[gTitleField.key] : "";
+                                 return gVal && gVal.toString().toLowerCase().includes(cellVal.toLowerCase());
+                             });
+                             if(fuzzyMatch) foundID = fuzzyMatch.id;
+                         }
+
+                         if(foundID) { 
+                             newItem[m.targetKey] = foundID; 
+                         } else { 
+                             newItem[m.targetKey] = cellVal; 
+                         }
+                     } 
+                     else { newItem[m.targetKey] = cellVal; }
+                 });
+                 db.items.push(newItem); importedCount++;
+             });
+
+             await save();
+             if(targetCol === db.activeCol) {
+                 renderItems();
+             }
+             
+             closeModal('importModal');
+             let msg = `Importación completada en "${targetCol}":\n- ${importedCount} ítems creados.`;
+             if(skippedCount > 0) msg += `\n- ${skippedCount} ítems ignorados por duplicidad.`;
+             alert(msg);
+        }
+    </script>
+</body>
+</html>
