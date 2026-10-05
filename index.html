@@ -623,7 +623,7 @@
                         <div>
                             <label class="text-[10px] font-bold text-zinc-500 uppercase block mb-2">Logo Personalizado</label>
                             <div class="flex items-center gap-3 mb-2">
-                                <div id="configLogoPreview" class="w-14 h-14 rounded-xl bg-zinc-900 border border-zinc-700 overflow-hidden flex items-center justify-center flex-shrink-0">
+                                <div id="configLogoPreview" class="w-14 h-14 rounded-xl bg-white border border-zinc-600 overflow-hidden flex items-center justify-center flex-shrink-0">
                                     <i class="fa-solid fa-cubes text-zinc-500"></i>
                                 </div>
                                 <div class="flex-1 space-y-1">
@@ -851,21 +851,52 @@
         let activeId = null, edCol = null, isEditing = true, activeFileFieldKey = null;
         let currentUser = null;
 
-        const COL_ICONS = ["fa-gamepad", "fa-joystick", "fa-dice", "fa-puzzle-piece", "fa-ghost", "fa-headset", "fa-vr-cardboard", "fa-robot", "fa-rocket", "fa-dragon", "fa-film", "fa-clapperboard", "fa-tv", "fa-video", "fa-photo-film", "fa-book", "fa-book-open", "fa-bookmark", "fa-newspaper", "fa-scroll", "fa-music", "fa-headphones", "fa-compact-disc", "fa-guitar", "fa-microphone", "fa-desktop", "fa-laptop", "fa-mobile-screen", "fa-tablet-screen-button", "fa-keyboard", "fa-computer-mouse", "fa-hard-drive", "fa-server", "fa-microchip", "fa-memory", "fa-wifi", "fa-router", "fa-network-wired", "fa-satellite-dish", "fa-signal", "fa-print", "fa-scanner", "fa-camera", "fa-camera-retro", "fa-image", "fa-car", "fa-motorcycle", "fa-plane", "fa-ship", "fa-bicycle", "fa-shirt", "fa-shoe-prints", "fa-gem", "fa-watch", "fa-glasses", "fa-bottle-water", "fa-wine-bottle", "fa-mug-hot", "fa-utensils", "fa-pizza-slice", "fa-coins", "fa-money-bill", "fa-credit-card", "fa-wallet", "fa-stamp", "fa-stamp", "fa-envelope", "fa-box", "fa-box-open", "fa-archive", "fa-wrench", "fa-screwdriver-wrench", "fa-hammer", "fa-toolbox", "fa-plug", "fa-battery-full", "fa-bolt", "fa-lightbulb", "fa-fan", "fa-temperature-half", "fa-globe", "fa-map", "fa-map-location-dot", "fa-compass", "fa-flag", "fa-star", "fa-heart", "fa-trophy", "fa-medal", "fa-crown", "fa-child", "fa-user", "fa-users", "fa-house", "fa-building", "fa-palette", "fa-paintbrush", "fa-pen", "fa-pencil", "fa-font", "fa-barcode", "fa-qrcode", "fa-tag", "fa-tags", "fa-layer-group"];
+        const COL_ICONS = [{c:"fa-gamepad",s:"s"},{c:"fa-dice",s:"s"},{c:"fa-dice-d6",s:"s"},{c:"fa-dice-d20",s:"s"},{c:"fa-puzzle-piece",s:"s"},{c:"fa-ghost",s:"s"},{c:"fa-headset",s:"s"},{c:"fa-vr-cardboard",s:"s"},{c:"fa-robot",s:"s"},{c:"fa-rocket",s:"s"},{c:"fa-dragon",s:"s"},{c:"fa-chess",s:"s"},{c:"fa-chess-knight",s:"s"},{c:"fa-chess-rook",s:"s"},{c:"fa-trophy",s:"s"},{c:"fa-medal",s:"s"},{c:"fa-award",s:"s"},{c:"fa-crown",s:"s"},{c:"fa-star",s:"s"},{c:"fa-heart",s:"s"},{c:"fa-fire",s:"s"},{c:"fa-bolt",s:"s"},{c:"fa-wand-magic-sparkles",s:"s"},{c:"fa-hat-wizard",s:"s"},{c:"fa-film",s:"s"},{c:"fa-clapperboard",s:"s"},{c:"fa-video",s:"s"},{c:"fa-tv",s:"s"},{c:"fa-photo-film",s:"s"},{c:"fa-camera",s:"s"},{c:"fa-camera-retro",s:"s"},{c:"fa-image",s:"s"},{c:"fa-images",s:"s"},{c:"fa-panorama",s:"s"},{c:"fa-play",s:"s"},{c:"fa-circle-play",s:"s"},{c:"fa-compact-disc",s:"s"},{c:"fa-record-vinyl",s:"s"},{c:"fa-music",s:"s"},{c:"fa-headphones",s:"s"},{c:"fa-guitar",s:"s"},{c:"fa-microphone",s:"s"},{c:"fa-sliders",s:"s"},{c:"fa-radio",s:"s"},{c:"fa-podcast",s:"s"},{c:"fa-list-ol",s:"s"},{c:"fa-list-ul",s:"s"},{c:"fa-shuffle",s:"s"},{c:"fa-forward",s:"s"},{c:"fa-backward",s:"s"},{c:"fa-book",s:"s"},{c:"fa-book-open",s:"s"},{c:"fa-bookmark",s:"s"},{c:"fa-newspaper",s:"s"},{c:"fa-scroll",s:"s"},{c:"fa-file-lines",s:"s"},{c:"fa-book-atlas",s:"s"},{c:"fa-book-bible",s:"s"},{c:"fa-graduation-cap",s:"s"},{c:"fa-desktop",s:"s"},{c:"fa-laptop",s:"s"},{c:"fa-computer",s:"s"},{c:"fa-server",s:"s"},{c:"fa-hard-drive",s:"s"},{c:"fa-database",s:"s"},{c:"fa-microchip",s:"s"},{c:"fa-memory",s:"s"},{c:"fa-keyboard",s:"s"},{c:"fa-computer-mouse",s:"s"},{c:"fa-plug",s:"s"},{c:"fa-power-off",s:"s"},{c:"fa-battery-full",s:"s"},{c:"fa-battery-half",s:"s"},{c:"fa-print",s:"s"},{c:"fa-display",s:"s"},{c:"fa-tablet-screen-button",s:"s"},{c:"fa-mobile-screen",s:"s"},{c:"fa-mobile-screen-button",s:"s"},{c:"fa-sim-card",s:"s"},{c:"fa-sd-card",s:"s"},{c:"fa-wifi",s:"s"},{c:"fa-network-wired",s:"s"},{c:"fa-ethernet",s:"s"},{c:"fa-satellite-dish",s:"s"},{c:"fa-signal",s:"s"},{c:"fa-globe",s:"s"},{c:"fa-cloud",s:"s"},{c:"fa-cloud-arrow-up",s:"s"},{c:"fa-cloud-arrow-down",s:"s"},{c:"fa-tower-broadcast",s:"s"},{c:"fa-satellite",s:"s"},{c:"fa-wrench",s:"s"},{c:"fa-screwdriver-wrench",s:"s"},{c:"fa-hammer",s:"s"},{c:"fa-toolbox",s:"s"},{c:"fa-gears",s:"s"},{c:"fa-gear",s:"s"},{c:"fa-screwdriver",s:"s"},{c:"fa-tape",s:"s"},{c:"fa-ruler",s:"s"},{c:"fa-magnet",s:"s"},{c:"fa-atom",s:"s"},{c:"fa-flask",s:"s"},{c:"fa-house",s:"s"},{c:"fa-building",s:"s"},{c:"fa-hotel",s:"s"},{c:"fa-store",s:"s"},{c:"fa-warehouse",s:"s"},{c:"fa-industry",s:"s"},{c:"fa-city",s:"s"},{c:"fa-door-open",s:"s"},{c:"fa-couch",s:"s"},{c:"fa-bed",s:"s"},{c:"fa-bath",s:"s"},{c:"fa-lightbulb",s:"s"},{c:"fa-fan",s:"s"},{c:"fa-temperature-half",s:"s"},{c:"fa-snowflake",s:"s"},{c:"fa-fire-flame-simple",s:"s"},{c:"fa-car",s:"s"},{c:"fa-car-side",s:"s"},{c:"fa-motorcycle",s:"s"},{c:"fa-bicycle",s:"s"},{c:"fa-plane",s:"s"},{c:"fa-plane-departure",s:"s"},{c:"fa-ship",s:"s"},{c:"fa-train",s:"s"},{c:"fa-bus",s:"s"},{c:"fa-truck",s:"s"},{c:"fa-helicopter",s:"s"},{c:"fa-shirt",s:"s"},{c:"fa-shoe-prints",s:"s"},{c:"fa-gem",s:"s"},{c:"fa-glasses",s:"s"},{c:"fa-sunglasses",s:"s"},{c:"fa-clock",s:"s"},{c:"fa-stopwatch",s:"s"},{c:"fa-hourglass",s:"s"},{c:"fa-key",s:"s"},{c:"fa-lock",s:"s"},{c:"fa-unlock",s:"s"},{c:"fa-box",s:"s"},{c:"fa-box-open",s:"s"},{c:"fa-boxes-stacked",s:"s"},{c:"fa-archive",s:"s"},{c:"fa-bag-shopping",s:"s"},{c:"fa-cart-shopping",s:"s"},{c:"fa-gift",s:"s"},{c:"fa-coins",s:"s"},{c:"fa-money-bill",s:"s"},{c:"fa-credit-card",s:"s"},{c:"fa-wallet",s:"s"},{c:"fa-piggy-bank",s:"s"},{c:"fa-receipt",s:"s"},{c:"fa-envelope",s:"s"},{c:"fa-stamp",s:"s"},{c:"fa-paperclip",s:"s"},{c:"fa-folder",s:"s"},{c:"fa-folder-open",s:"s"},{c:"fa-tag",s:"s"},{c:"fa-tags",s:"s"},{c:"fa-barcode",s:"s"},{c:"fa-qrcode",s:"s"},{c:"fa-calculator",s:"s"},{c:"fa-chart-line",s:"s"},{c:"fa-chart-pie",s:"s"},{c:"fa-chart-bar",s:"s"},{c:"fa-user",s:"s"},{c:"fa-users",s:"s"},{c:"fa-user-group",s:"s"},{c:"fa-child",s:"s"},{c:"fa-person",s:"s"},{c:"fa-people-group",s:"s"},{c:"fa-user-astronaut",s:"s"},{c:"fa-user-ninja",s:"s"},{c:"fa-user-secret",s:"s"},{c:"fa-id-card",s:"s"},{c:"fa-address-card",s:"s"},{c:"fa-tree",s:"s"},{c:"fa-leaf",s:"s"},{c:"fa-paw",s:"s"},{c:"fa-fish",s:"s"},{c:"fa-cat",s:"s"},{c:"fa-dog",s:"s"},{c:"fa-dove",s:"s"},{c:"fa-mountain",s:"s"},{c:"fa-water",s:"s"},{c:"fa-sun",s:"s"},{c:"fa-moon",s:"s"},{c:"fa-cloud-sun",s:"s"},{c:"fa-umbrella",s:"s"},{c:"fa-palette",s:"s"},{c:"fa-paintbrush",s:"s"},{c:"fa-pen",s:"s"},{c:"fa-pencil",s:"s"},{c:"fa-font",s:"s"},{c:"fa-icons",s:"s"},{c:"fa-shapes",s:"s"},{c:"fa-cube",s:"s"},{c:"fa-cubes",s:"s"},{c:"fa-layer-group",s:"s"},{c:"fa-object-group",s:"s"},{c:"fa-map",s:"s"},{c:"fa-map-location-dot",s:"s"},{c:"fa-compass",s:"s"},{c:"fa-flag",s:"s"},{c:"fa-bell",s:"s"},{c:"fa-comment",s:"s"},{c:"fa-comments",s:"s"},{c:"fa-thumbs-up",s:"s"},{c:"fa-eye",s:"s"},{c:"fa-eye-slash",s:"s"},{c:"fa-circle-info",s:"s"},{c:"fa-circle-check",s:"s"},{c:"fa-triangle-exclamation",s:"s"},{c:"fa-ban",s:"s"},{c:"fa-recycle",s:"s"},{c:"fa-utensils",s:"s"},{c:"fa-pizza-slice",s:"s"},{c:"fa-burger",s:"s"},{c:"fa-mug-hot",s:"s"},{c:"fa-wine-glass",s:"s"},{c:"fa-beer-mug-empty",s:"s"},{c:"fa-bottle-water",s:"s"},{c:"fa-apple-whole",s:"s"},{c:"fa-carrot",s:"s"},{c:"fa-laptop-code",s:"s"},{c:"fa-terminal",s:"s"},{c:"fa-code",s:"s"},{c:"fa-bug",s:"s"},{c:"fa-shield-halved",s:"s"},{c:"fa-fingerprint",s:"s"},{c:"fa-playstation",s:"b"},{c:"fa-xbox",s:"b"},{c:"fa-steam",s:"b"},{c:"fa-steam-symbol",s:"b"},{c:"fa-twitch",s:"b"},{c:"fa-nintendo-switch",s:"b"},{c:"fa-battle-net",s:"b"},{c:"fa-d-and-d",s:"b"},{c:"fa-critical-role",s:"b"},{c:"fa-itch-io",s:"b"},{c:"fa-unity",s:"b"},{c:"fa-pied-piper",s:"b"},{c:"fa-apple",s:"b"},{c:"fa-windows",s:"b"},{c:"fa-linux",s:"b"},{c:"fa-android",s:"b"},{c:"fa-ubuntu",s:"b"},{c:"fa-fedora",s:"b"},{c:"fa-raspberry-pi",s:"b"},{c:"fa-github",s:"b"},{c:"fa-gitlab",s:"b"},{c:"fa-stack-overflow",s:"b"},{c:"fa-chrome",s:"b"},{c:"fa-firefox",s:"b"},{c:"fa-edge",s:"b"},{c:"fa-safari",s:"b"},{c:"fa-spotify",s:"b"},{c:"fa-soundcloud",s:"b"},{c:"fa-youtube",s:"b"},{c:"fa-vimeo",s:"b"},{c:"fa-tiktok",s:"b"},{c:"fa-discord",s:"b"},{c:"fa-reddit",s:"b"},{c:"fa-x-twitter",s:"b"},{c:"fa-facebook",s:"b"},{c:"fa-instagram",s:"b"},{c:"fa-amazon",s:"b"},{c:"fa-ebay",s:"b"},{c:"fa-paypal",s:"b"},{c:"fa-cc-visa",s:"b"},{c:"fa-cc-mastercard",s:"b"},{c:"fa-bluetooth",s:"b"},{c:"fa-usb",s:"b"},{c:"fa-node",s:"b"},{c:"fa-python",s:"b"},{c:"fa-java",s:"b"},{c:"fa-php",s:"b"},{c:"fa-html5",s:"b"},{c:"fa-css3-alt",s:"b"},{c:"fa-js",s:"b"},{c:"fa-react",s:"b"},{c:"fa-vuejs",s:"b"}];
+
+        function iconHtml(iconVal, sizeClass) {
+            sizeClass = sizeClass || 'text-lg';
+            if (!iconVal) return `<i class="fa-solid fa-folder ${sizeClass}"></i>`;
+            // Custom uploaded image
+            if (typeof iconVal === 'string' && iconVal.indexOf('data:image') === 0) {
+                return `<img src="${iconVal}" class="w-6 h-6 object-contain" alt="">`;
+            }
+            // Object {c,s} stored as JSON string or plain fa- class
+            let cls = iconVal, set = 'solid';
+            if (typeof iconVal === 'object' && iconVal.c) {
+                cls = iconVal.c; set = iconVal.s === 'b' ? 'brands' : 'solid';
+            } else if (typeof iconVal === 'string' && iconVal.indexOf('|') > 0) {
+                const p = iconVal.split('|'); cls = p[0]; set = p[1] === 'b' ? 'brands' : 'solid';
+            } else if (typeof iconVal === 'string' && iconVal.indexOf('fa-') === 0) {
+                // detect brands by known list is heavy; try solid first style
+                set = 'solid';
+            }
+            return `<i class="fa-${set} ${cls} ${sizeClass}"></i>`;
+        }
 
         function openIconPicker(colName) {
             document.getElementById('iconPickerColName').innerText = colName || db.activeCol;
             window._iconPickerTarget = colName || db.activeCol;
             const grid = document.getElementById('iconPickerGrid');
             grid.innerHTML = '';
+
+            // Botón subir icono propio
+            const up = document.createElement('button');
+            up.className = 'p-3 rounded-lg bg-blue-900/30 border border-blue-700 text-blue-300 hover:bg-blue-800 transition flex flex-col items-center justify-center gap-1 col-span-2';
+            up.innerHTML = '<i class="fa-solid fa-upload text-lg"></i><span class="text-[9px] font-bold uppercase">Subir icono</span>';
+            up.onclick = () => uploadCustomColIcon();
+            grid.appendChild(up);
+
             COL_ICONS.forEach(ic => {
+                const cls = typeof ic === 'object' ? ic.c : ic;
+                const set = (typeof ic === 'object' && ic.s === 'b') ? 'brands' : 'solid';
+                const storeVal = cls + '|' + (set === 'brands' ? 'b' : 's');
                 const btn = document.createElement('button');
                 btn.className = 'p-3 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-blue-500 hover:bg-zinc-800 text-zinc-300 hover:text-white transition flex items-center justify-center';
-                btn.innerHTML = `<i class="fa-solid ${ic} text-lg"></i>`;
-                btn.title = ic;
+                btn.innerHTML = `<i class="fa-${set} ${cls} text-lg"></i>`;
+                btn.title = cls;
                 btn.onclick = () => {
                     if (!db.settings.colIcons) db.settings.colIcons = {};
-                    db.settings.colIcons[window._iconPickerTarget] = ic;
+                    db.settings.colIcons[window._iconPickerTarget] = storeVal;
                     save();
                     renderColNav();
                     renderConfig();
@@ -874,6 +905,53 @@
                 grid.appendChild(btn);
             });
             openModal('iconPickerModal');
+        }
+
+        function uploadCustomColIcon() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/png,image/jpeg,image/webp,image/svg+xml';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                // Convertir a icono pequeño PNG con fondo transparente cuando sea posible
+                compressIconTransparent(file, (dataUrl) => {
+                    if (!dataUrl) return alert('No se pudo procesar el icono');
+                    if (!db.settings.colIcons) db.settings.colIcons = {};
+                    db.settings.colIcons[window._iconPickerTarget] = dataUrl;
+                    save();
+                    renderColNav();
+                    renderConfig();
+                    closeModal('iconPickerModal');
+                });
+            };
+            input.click();
+        }
+
+        function compressIconTransparent(file, callback) {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const size = 128;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    // NO rellenar fondo: respeta transparencia PNG
+                    const scale = Math.min(size / img.width, size / img.height);
+                    const w = img.width * scale;
+                    const h = img.height * scale;
+                    const x = (size - w) / 2;
+                    const y = (size - h) / 2;
+                    ctx.drawImage(img, x, y, w, h);
+                    // PNG para mantener transparencia
+                    callback(canvas.toDataURL('image/png'));
+                };
+                img.onerror = () => callback(null);
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
         }
 
 
@@ -1391,10 +1469,10 @@
             const nav = document.getElementById('colNav'); nav.innerHTML = "";
             if (!db.settings.colIcons) db.settings.colIcons = {};
             Object.keys(db.schemas).forEach(c => {
-                const iconClass = db.settings.colIcons[c] || 'fa-folder';
+                const iconVal = (db.settings.colIcons && db.settings.colIcons[c]) ? db.settings.colIcons[c] : 'fa-folder|s';
                 const b = document.createElement('button');
                 b.className = `w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-black transition mb-1 ${db.activeCol===c?'bg-blue-600/10 text-blue-400 border border-blue-600/20':'text-zinc-500 hover:text-white hover:bg-zinc-900'}`;
-                b.innerHTML = `<span class="flex items-center gap-2 truncate"><i class="fa-solid ${iconClass} text-sm opacity-80"></i> ${c}</span>`; 
+                b.innerHTML = `<span class="flex items-center gap-2 truncate">${iconHtml(iconVal, 'text-sm opacity-80')} ${c}</span>`; 
                 b.onclick = () => { db.activeCol=c; activeId=null; renderColNav(); renderItems(); hideInspector(); if(window.innerWidth < 768) toggleSidebar(); };
                 nav.appendChild(b);
             });
@@ -2375,10 +2453,10 @@
             if (!db.settings.colIcons) db.settings.colIcons = {};
             Object.keys(db.schemas).forEach(c => {
                 const isActive = edCol === c ? "border-blue-500 bg-blue-900/10" : "border-zinc-800 bg-zinc-950";
-                const ic = db.settings.colIcons[c] || 'fa-folder';
+                const ic = (db.settings.colIcons && db.settings.colIcons[c]) ? db.settings.colIcons[c] : 'fa-folder|s';
                 l.innerHTML += `
                 <div class="${isActive} p-3 rounded flex justify-between items-center border mb-1 cursor-pointer hover:bg-zinc-900" onclick="editFields('${c}')">
-                    <span class="text-xs font-bold text-white uppercase truncate flex items-center gap-2"><i class="fa-solid ${ic}"></i> ${c}</span>
+                    <span class="text-xs font-bold text-white uppercase truncate flex items-center gap-2">${iconHtml(ic, '')} ${c}</span>
                     <div class="flex gap-1">
                         <button onclick="event.stopPropagation();openIconPicker('${c}')" class="bg-zinc-800 text-blue-400 px-2 py-1 rounded hover:text-white mr-1" title="Elegir icono"><i class="fa-solid fa-icons"></i></button>
                         <button onclick="event.stopPropagation();renameCol('${c}')" class="bg-zinc-800 text-zinc-400 px-2 py-1 rounded hover:text-white mr-1" title="Renombrar"><i class="fa-solid fa-pen"></i></button>
@@ -3311,13 +3389,37 @@
         function changeLogo(e){
             const file = e.target.files[0];
             if (!file) return;
-            // Comprimir logo también
-            compressImage(file, "200", "0.7", (dataUrl) => {
-                if (!db.settings) db.settings = {};
-                db.settings.logo = dataUrl;
-                save();
-                applySettings();
-            });
+            // PNG/WebP: mantener transparencia; JPEG: fondo claro suave
+            const isPng = /png|webp|svg/i.test(file.type) || /\.png|\.webp|\.svg$/i.test(file.name);
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const max = 256;
+                    let w = img.width, h = img.height;
+                    if (w > max || h > max) {
+                        const s = Math.min(max/w, max/h);
+                        w = Math.round(w*s); h = Math.round(h*s);
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w; canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    if (!isPng) {
+                        // Solo JPEG opaco: fondo blanco para que se lea bien
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0,0,w,h);
+                    }
+                    // PNG: sin relleno → transparencia
+                    ctx.drawImage(img, 0, 0, w, h);
+                    const dataUrl = isPng ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.85);
+                    if (!db.settings) db.settings = {};
+                    db.settings.logo = dataUrl;
+                    save();
+                    applySettings();
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
             e.target.value = '';
         }
         function updateAppName(v) {
@@ -3334,7 +3436,7 @@
             const headerLogo = document.getElementById('headerLogo');
             if (headerLogo) {
                 if(activeLogo) {
-                    headerLogo.innerHTML=`<img src="${activeLogo}" class="w-full h-full object-cover">`; 
+                    headerLogo.innerHTML=`<img src="${activeLogo}" class="w-full h-full object-contain bg-white">`; 
                 } else {
                     headerLogo.innerHTML=`<i class="fa-solid fa-cubes text-white text-lg"></i>`;
                 }
@@ -3346,11 +3448,24 @@
             const prev = document.getElementById('configLogoPreview');
             if (prev) {
                 if (db.settings.logo) {
-                    prev.innerHTML = `<img src="${db.settings.logo}" class="w-full h-full object-cover">`;
+                    prev.innerHTML = `<img src="${db.settings.logo}" class="w-full h-full object-contain bg-white">`;
                 } else {
                     prev.innerHTML = `<i class="fa-solid fa-cubes text-zinc-500"></i>`;
                 }
             }
+            // Logo en pantalla de acceso
+            const loginBox = document.getElementById('loginLogoBox');
+            if (loginBox) {
+                if (db.settings.logo) {
+                    loginBox.innerHTML = `<img src="${db.settings.logo}" class="w-full h-full object-contain p-1">`;
+                    loginBox.className = "w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg overflow-hidden bg-white border border-zinc-600";
+                } else {
+                    loginBox.innerHTML = `<i class="fa-solid fa-lock text-zinc-500 text-2xl"></i>`;
+                    loginBox.className = "w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg overflow-hidden bg-zinc-900 border border-zinc-700";
+                }
+            }
+            const loginTitle = document.getElementById('loginAppTitle');
+            if (loginTitle) loginTitle.innerText = n;
             const appNameEl = document.getElementById('configAppName');
             if (appNameEl && document.activeElement !== appNameEl) {
                 appNameEl.value = n;
@@ -3731,10 +3846,10 @@
     <div id="loginOverlay" class="modal-overlay" style="z-index:9999; display:flex;">
         <div class="bg-black border border-zinc-800 p-8 rounded-2xl w-full max-w-sm shadow-2xl">
             <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                    <i class="fa-solid fa-lock text-white text-2xl"></i>
+                <div id="loginLogoBox" class="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg overflow-hidden bg-white border border-zinc-700">
+                    <i class="fa-solid fa-lock text-zinc-500 text-2xl"></i>
                 </div>
-                <h2 class="text-white font-black uppercase text-xl tracking-tighter">Acceso</h2>
+                <h2 id="loginAppTitle" class="text-white font-black uppercase text-xl tracking-tighter">Acceso</h2>
                 <p class="text-zinc-500 text-xs mt-1">Introduce usuario y contraseña</p>
             </div>
             <div class="space-y-4">
