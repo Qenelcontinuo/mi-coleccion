@@ -172,7 +172,7 @@
         <div class="flex items-center gap-4">
             <button onclick="toggleSidebar()" class="menu-toggle text-white text-xl"><i class="fa-solid fa-bars"></i></button>
             <div class="cursor-pointer" title="Cambiar Logo">
-                <div id="headerLogo" class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+                <div id="headerLogo" class="w-12 h-12 bg-transparent rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
                     <i class="fa-solid fa-cubes text-white text-lg"></i>
                 </div>
             </div>
@@ -623,7 +623,7 @@
                         <div>
                             <label class="text-[10px] font-bold text-zinc-500 uppercase block mb-2">Logo Personalizado</label>
                             <div class="flex items-center gap-3 mb-2">
-                                <div id="configLogoPreview" class="w-14 h-14 rounded-xl bg-white border border-zinc-600 overflow-hidden flex items-center justify-center flex-shrink-0">
+                                <div id="configLogoPreview" class="w-16 h-16 rounded-xl bg-zinc-950 border border-zinc-700 overflow-hidden flex items-center justify-center flex-shrink-0">
                                     <i class="fa-solid fa-cubes text-zinc-500"></i>
                                 </div>
                                 <div class="flex-1 space-y-1">
@@ -759,6 +759,20 @@
 
                 
                 <details>
+                    
+                <details>
+                    <summary>Papelera de reciclaje</summary>
+                    <div class="space-y-3">
+                        <p class="text-[10px] text-zinc-400">Los elementos eliminados se guardan aquí <strong class="text-white">60 días</strong>. Después se borran solos. Puedes recuperarlos o vaciar la papelera.</p>
+                        <div id="trashList" class="space-y-2 max-h-64 overflow-y-auto"></div>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <button onclick="renderTrashList()" class="flex-1 bg-zinc-800 py-2 rounded text-[10px] font-black uppercase">Actualizar lista</button>
+                            <button onclick="emptyTrash()" class="flex-1 border border-red-900 text-red-500 py-2 rounded text-[10px] font-black uppercase hover:bg-red-900/20">Vaciar papelera</button>
+                        </div>
+                    </div>
+                </details>
+
+                <details>
                     <summary>Copias de Seguridad y Exportación</summary>
                     <div class="grid grid-cols-1 gap-3">
                         <p class="text-[10px] text-zinc-400 mb-2">
@@ -851,7 +865,210 @@
         let activeId = null, edCol = null, isEditing = true, activeFileFieldKey = null;
         let currentUser = null;
 
-        const COL_ICONS = [{c:"fa-gamepad",s:"s"},{c:"fa-dice",s:"s"},{c:"fa-dice-d6",s:"s"},{c:"fa-dice-d20",s:"s"},{c:"fa-puzzle-piece",s:"s"},{c:"fa-ghost",s:"s"},{c:"fa-headset",s:"s"},{c:"fa-vr-cardboard",s:"s"},{c:"fa-robot",s:"s"},{c:"fa-rocket",s:"s"},{c:"fa-dragon",s:"s"},{c:"fa-chess",s:"s"},{c:"fa-chess-knight",s:"s"},{c:"fa-chess-rook",s:"s"},{c:"fa-trophy",s:"s"},{c:"fa-medal",s:"s"},{c:"fa-award",s:"s"},{c:"fa-crown",s:"s"},{c:"fa-star",s:"s"},{c:"fa-heart",s:"s"},{c:"fa-fire",s:"s"},{c:"fa-bolt",s:"s"},{c:"fa-wand-magic-sparkles",s:"s"},{c:"fa-hat-wizard",s:"s"},{c:"fa-film",s:"s"},{c:"fa-clapperboard",s:"s"},{c:"fa-video",s:"s"},{c:"fa-tv",s:"s"},{c:"fa-photo-film",s:"s"},{c:"fa-camera",s:"s"},{c:"fa-camera-retro",s:"s"},{c:"fa-image",s:"s"},{c:"fa-images",s:"s"},{c:"fa-panorama",s:"s"},{c:"fa-play",s:"s"},{c:"fa-circle-play",s:"s"},{c:"fa-compact-disc",s:"s"},{c:"fa-record-vinyl",s:"s"},{c:"fa-music",s:"s"},{c:"fa-headphones",s:"s"},{c:"fa-guitar",s:"s"},{c:"fa-microphone",s:"s"},{c:"fa-sliders",s:"s"},{c:"fa-radio",s:"s"},{c:"fa-podcast",s:"s"},{c:"fa-list-ol",s:"s"},{c:"fa-list-ul",s:"s"},{c:"fa-shuffle",s:"s"},{c:"fa-forward",s:"s"},{c:"fa-backward",s:"s"},{c:"fa-book",s:"s"},{c:"fa-book-open",s:"s"},{c:"fa-bookmark",s:"s"},{c:"fa-newspaper",s:"s"},{c:"fa-scroll",s:"s"},{c:"fa-file-lines",s:"s"},{c:"fa-book-atlas",s:"s"},{c:"fa-book-bible",s:"s"},{c:"fa-graduation-cap",s:"s"},{c:"fa-desktop",s:"s"},{c:"fa-laptop",s:"s"},{c:"fa-computer",s:"s"},{c:"fa-server",s:"s"},{c:"fa-hard-drive",s:"s"},{c:"fa-database",s:"s"},{c:"fa-microchip",s:"s"},{c:"fa-memory",s:"s"},{c:"fa-keyboard",s:"s"},{c:"fa-computer-mouse",s:"s"},{c:"fa-plug",s:"s"},{c:"fa-power-off",s:"s"},{c:"fa-battery-full",s:"s"},{c:"fa-battery-half",s:"s"},{c:"fa-print",s:"s"},{c:"fa-display",s:"s"},{c:"fa-tablet-screen-button",s:"s"},{c:"fa-mobile-screen",s:"s"},{c:"fa-mobile-screen-button",s:"s"},{c:"fa-sim-card",s:"s"},{c:"fa-sd-card",s:"s"},{c:"fa-wifi",s:"s"},{c:"fa-network-wired",s:"s"},{c:"fa-ethernet",s:"s"},{c:"fa-satellite-dish",s:"s"},{c:"fa-signal",s:"s"},{c:"fa-globe",s:"s"},{c:"fa-cloud",s:"s"},{c:"fa-cloud-arrow-up",s:"s"},{c:"fa-cloud-arrow-down",s:"s"},{c:"fa-tower-broadcast",s:"s"},{c:"fa-satellite",s:"s"},{c:"fa-wrench",s:"s"},{c:"fa-screwdriver-wrench",s:"s"},{c:"fa-hammer",s:"s"},{c:"fa-toolbox",s:"s"},{c:"fa-gears",s:"s"},{c:"fa-gear",s:"s"},{c:"fa-screwdriver",s:"s"},{c:"fa-tape",s:"s"},{c:"fa-ruler",s:"s"},{c:"fa-magnet",s:"s"},{c:"fa-atom",s:"s"},{c:"fa-flask",s:"s"},{c:"fa-house",s:"s"},{c:"fa-building",s:"s"},{c:"fa-hotel",s:"s"},{c:"fa-store",s:"s"},{c:"fa-warehouse",s:"s"},{c:"fa-industry",s:"s"},{c:"fa-city",s:"s"},{c:"fa-door-open",s:"s"},{c:"fa-couch",s:"s"},{c:"fa-bed",s:"s"},{c:"fa-bath",s:"s"},{c:"fa-lightbulb",s:"s"},{c:"fa-fan",s:"s"},{c:"fa-temperature-half",s:"s"},{c:"fa-snowflake",s:"s"},{c:"fa-fire-flame-simple",s:"s"},{c:"fa-car",s:"s"},{c:"fa-car-side",s:"s"},{c:"fa-motorcycle",s:"s"},{c:"fa-bicycle",s:"s"},{c:"fa-plane",s:"s"},{c:"fa-plane-departure",s:"s"},{c:"fa-ship",s:"s"},{c:"fa-train",s:"s"},{c:"fa-bus",s:"s"},{c:"fa-truck",s:"s"},{c:"fa-helicopter",s:"s"},{c:"fa-shirt",s:"s"},{c:"fa-shoe-prints",s:"s"},{c:"fa-gem",s:"s"},{c:"fa-glasses",s:"s"},{c:"fa-sunglasses",s:"s"},{c:"fa-clock",s:"s"},{c:"fa-stopwatch",s:"s"},{c:"fa-hourglass",s:"s"},{c:"fa-key",s:"s"},{c:"fa-lock",s:"s"},{c:"fa-unlock",s:"s"},{c:"fa-box",s:"s"},{c:"fa-box-open",s:"s"},{c:"fa-boxes-stacked",s:"s"},{c:"fa-archive",s:"s"},{c:"fa-bag-shopping",s:"s"},{c:"fa-cart-shopping",s:"s"},{c:"fa-gift",s:"s"},{c:"fa-coins",s:"s"},{c:"fa-money-bill",s:"s"},{c:"fa-credit-card",s:"s"},{c:"fa-wallet",s:"s"},{c:"fa-piggy-bank",s:"s"},{c:"fa-receipt",s:"s"},{c:"fa-envelope",s:"s"},{c:"fa-stamp",s:"s"},{c:"fa-paperclip",s:"s"},{c:"fa-folder",s:"s"},{c:"fa-folder-open",s:"s"},{c:"fa-tag",s:"s"},{c:"fa-tags",s:"s"},{c:"fa-barcode",s:"s"},{c:"fa-qrcode",s:"s"},{c:"fa-calculator",s:"s"},{c:"fa-chart-line",s:"s"},{c:"fa-chart-pie",s:"s"},{c:"fa-chart-bar",s:"s"},{c:"fa-user",s:"s"},{c:"fa-users",s:"s"},{c:"fa-user-group",s:"s"},{c:"fa-child",s:"s"},{c:"fa-person",s:"s"},{c:"fa-people-group",s:"s"},{c:"fa-user-astronaut",s:"s"},{c:"fa-user-ninja",s:"s"},{c:"fa-user-secret",s:"s"},{c:"fa-id-card",s:"s"},{c:"fa-address-card",s:"s"},{c:"fa-tree",s:"s"},{c:"fa-leaf",s:"s"},{c:"fa-paw",s:"s"},{c:"fa-fish",s:"s"},{c:"fa-cat",s:"s"},{c:"fa-dog",s:"s"},{c:"fa-dove",s:"s"},{c:"fa-mountain",s:"s"},{c:"fa-water",s:"s"},{c:"fa-sun",s:"s"},{c:"fa-moon",s:"s"},{c:"fa-cloud-sun",s:"s"},{c:"fa-umbrella",s:"s"},{c:"fa-palette",s:"s"},{c:"fa-paintbrush",s:"s"},{c:"fa-pen",s:"s"},{c:"fa-pencil",s:"s"},{c:"fa-font",s:"s"},{c:"fa-icons",s:"s"},{c:"fa-shapes",s:"s"},{c:"fa-cube",s:"s"},{c:"fa-cubes",s:"s"},{c:"fa-layer-group",s:"s"},{c:"fa-object-group",s:"s"},{c:"fa-map",s:"s"},{c:"fa-map-location-dot",s:"s"},{c:"fa-compass",s:"s"},{c:"fa-flag",s:"s"},{c:"fa-bell",s:"s"},{c:"fa-comment",s:"s"},{c:"fa-comments",s:"s"},{c:"fa-thumbs-up",s:"s"},{c:"fa-eye",s:"s"},{c:"fa-eye-slash",s:"s"},{c:"fa-circle-info",s:"s"},{c:"fa-circle-check",s:"s"},{c:"fa-triangle-exclamation",s:"s"},{c:"fa-ban",s:"s"},{c:"fa-recycle",s:"s"},{c:"fa-utensils",s:"s"},{c:"fa-pizza-slice",s:"s"},{c:"fa-burger",s:"s"},{c:"fa-mug-hot",s:"s"},{c:"fa-wine-glass",s:"s"},{c:"fa-beer-mug-empty",s:"s"},{c:"fa-bottle-water",s:"s"},{c:"fa-apple-whole",s:"s"},{c:"fa-carrot",s:"s"},{c:"fa-laptop-code",s:"s"},{c:"fa-terminal",s:"s"},{c:"fa-code",s:"s"},{c:"fa-bug",s:"s"},{c:"fa-shield-halved",s:"s"},{c:"fa-fingerprint",s:"s"},{c:"fa-playstation",s:"b"},{c:"fa-xbox",s:"b"},{c:"fa-steam",s:"b"},{c:"fa-steam-symbol",s:"b"},{c:"fa-twitch",s:"b"},{c:"fa-nintendo-switch",s:"b"},{c:"fa-battle-net",s:"b"},{c:"fa-d-and-d",s:"b"},{c:"fa-critical-role",s:"b"},{c:"fa-itch-io",s:"b"},{c:"fa-unity",s:"b"},{c:"fa-pied-piper",s:"b"},{c:"fa-apple",s:"b"},{c:"fa-windows",s:"b"},{c:"fa-linux",s:"b"},{c:"fa-android",s:"b"},{c:"fa-ubuntu",s:"b"},{c:"fa-fedora",s:"b"},{c:"fa-raspberry-pi",s:"b"},{c:"fa-github",s:"b"},{c:"fa-gitlab",s:"b"},{c:"fa-stack-overflow",s:"b"},{c:"fa-chrome",s:"b"},{c:"fa-firefox",s:"b"},{c:"fa-edge",s:"b"},{c:"fa-safari",s:"b"},{c:"fa-spotify",s:"b"},{c:"fa-soundcloud",s:"b"},{c:"fa-youtube",s:"b"},{c:"fa-vimeo",s:"b"},{c:"fa-tiktok",s:"b"},{c:"fa-discord",s:"b"},{c:"fa-reddit",s:"b"},{c:"fa-x-twitter",s:"b"},{c:"fa-facebook",s:"b"},{c:"fa-instagram",s:"b"},{c:"fa-amazon",s:"b"},{c:"fa-ebay",s:"b"},{c:"fa-paypal",s:"b"},{c:"fa-cc-visa",s:"b"},{c:"fa-cc-mastercard",s:"b"},{c:"fa-bluetooth",s:"b"},{c:"fa-usb",s:"b"},{c:"fa-node",s:"b"},{c:"fa-python",s:"b"},{c:"fa-java",s:"b"},{c:"fa-php",s:"b"},{c:"fa-html5",s:"b"},{c:"fa-css3-alt",s:"b"},{c:"fa-js",s:"b"},{c:"fa-react",s:"b"},{c:"fa-vuejs",s:"b"}];
+        // ---- Diálogos integrados (no usan alert/confirm/prompt del navegador) ----
+        let _dialogResolver = null;
+
+        function appAlert(msg, title) {
+            return appDialog({ title: title || 'Aviso', message: msg, showCancel: false, okText: 'Entendido' });
+        }
+
+        function appConfirm(msg, title) {
+            return appDialog({ title: title || 'Confirmar', message: msg, showCancel: true, okText: 'Sí', cancelText: 'No' });
+        }
+
+        function appPrompt(msg, title, defaultVal, placeholder) {
+            return appDialog({
+                title: title || 'Introducir',
+                message: msg,
+                showCancel: true,
+                okText: 'Aceptar',
+                input: true,
+                inputValue: defaultVal || '',
+                inputLabel: placeholder || ''
+            });
+        }
+
+        /** Confirmación fuerte: hay que escribir una palabra exacta */
+        function appConfirmTyped(msg, requiredWord, title) {
+            return appDialog({
+                title: title || 'Confirmación requerida',
+                message: msg + '\n\nEscribe exactamente: ' + requiredWord,
+                showCancel: true,
+                okText: 'Confirmar',
+                input: true,
+                inputValue: '',
+                inputLabel: 'Escribe «' + requiredWord + '» para continuar',
+                requiredWord: requiredWord
+            });
+        }
+
+        function appDialog(opts) {
+            return new Promise((resolve) => {
+                _dialogResolver = resolve;
+                const box = document.getElementById('appDialog');
+                const title = document.getElementById('appDialogTitle');
+                const msg = document.getElementById('appDialogMsg');
+                const inputWrap = document.getElementById('appDialogInputWrap');
+                const input = document.getElementById('appDialogInput');
+                const inputLabel = document.getElementById('appDialogInputLabel');
+                const btnOk = document.getElementById('appDialogOk');
+                const btnCancel = document.getElementById('appDialogCancel');
+
+                title.innerText = opts.title || '';
+                msg.innerText = opts.message || '';
+                btnOk.innerText = opts.okText || 'Aceptar';
+                btnCancel.innerText = opts.cancelText || 'Cancelar';
+                btnCancel.style.display = opts.showCancel === false ? 'none' : '';
+
+                if (opts.input) {
+                    inputWrap.classList.remove('hidden');
+                    inputLabel.innerText = opts.inputLabel || '';
+                    input.value = opts.inputValue || '';
+                    input.placeholder = opts.requiredWord || '';
+                    setTimeout(() => input.focus(), 100);
+                } else {
+                    inputWrap.classList.add('hidden');
+                    input.value = '';
+                }
+
+                window._dialogOpts = opts;
+                box.classList.remove('hidden');
+                box.style.display = 'flex';
+            });
+        }
+
+        function _closeAppDialog(result) {
+            const box = document.getElementById('appDialog');
+            box.classList.add('hidden');
+            box.style.display = 'none';
+            const r = _dialogResolver;
+            _dialogResolver = null;
+            if (r) r(result);
+        }
+
+        function initAppDialog() {
+            const btnOk = document.getElementById('appDialogOk');
+            const btnCancel = document.getElementById('appDialogCancel');
+            const input = document.getElementById('appDialogInput');
+            if (!btnOk) return;
+            btnOk.onclick = () => {
+                const opts = window._dialogOpts || {};
+                if (opts.input) {
+                    const val = (input.value || '').trim();
+                    if (opts.requiredWord && val !== opts.requiredWord) {
+                        input.classList.add('border-red-500');
+                        input.focus();
+                        return;
+                    }
+                    _closeAppDialog(val);
+                } else {
+                    _closeAppDialog(true);
+                }
+            };
+            btnCancel.onclick = () => _closeAppDialog(optsShowCancelFalse());
+            function optsShowCancelFalse() {
+                const opts = window._dialogOpts || {};
+                return opts.input ? null : false;
+            }
+            input && input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') btnOk.click();
+                if (e.key === 'Escape') btnCancel.click();
+            });
+        }
+
+        // ---- Papelera (60 días) ----
+        const TRASH_DAYS = 60;
+
+        function ensureTrash() {
+            if (!db.trash) db.trash = [];
+            // Purgar caducados
+            const now = Date.now();
+            const limit = TRASH_DAYS * 24 * 60 * 60 * 1000;
+            const before = db.trash.length;
+            db.trash = db.trash.filter(t => (now - (t.deletedAt || 0)) < limit);
+            if (db.trash.length !== before) save();
+        }
+
+        function moveToTrash(item, reason) {
+            ensureTrash();
+            db.trash.push({
+                deletedAt: Date.now(),
+                reason: reason || 'manual',
+                item: JSON.parse(JSON.stringify(item))
+            });
+        }
+
+        function daysLeft(deletedAt) {
+            const elapsed = Date.now() - deletedAt;
+            const left = TRASH_DAYS - Math.floor(elapsed / (24 * 60 * 60 * 1000));
+            return Math.max(0, left);
+        }
+
+        function renderTrashList() {
+            ensureTrash();
+            const list = document.getElementById('trashList');
+            if (!list) return;
+            if (!db.trash.length) {
+                list.innerHTML = '<p class="text-zinc-600 text-xs text-center py-4">Papelera vacía</p>';
+                return;
+            }
+            list.innerHTML = db.trash.map((t, idx) => {
+                const it = t.item || {};
+                const title = (typeof getItemTitle === 'function') ? getItemTitle(it) : (it.id || 'Ítem');
+                const col = it._col || '?';
+                const left = daysLeft(t.deletedAt);
+                return `<div class="bg-zinc-900 border border-zinc-800 rounded-lg p-3 flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
+                    <div class="min-w-0">
+                        <div class="text-xs font-bold text-white truncate">${title}</div>
+                        <div class="text-[9px] text-zinc-500 uppercase">${col} · ${left} días restantes</div>
+                    </div>
+                    <div class="flex gap-2 flex-shrink-0">
+                        <button onclick="restoreFromTrash(${idx})" class="bg-green-900/30 text-green-400 text-[10px] font-black uppercase px-3 py-2 rounded">Recuperar</button>
+                        <button onclick="purgeTrashItem(${idx})" class="text-red-500 text-[10px] font-black uppercase px-2 py-2">Borrar</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        async function restoreFromTrash(idx) {
+            ensureTrash();
+            const t = db.trash[idx];
+            if (!t || !t.item) return;
+            const ok = await appConfirm('¿Recuperar «' + ((typeof getItemTitle==='function')?getItemTitle(t.item):t.item.id) + '» a la colección «' + t.item._col + '»?', 'Recuperar');
+            if (!ok) return;
+            // Si la colección ya no existe, recrearla
+            if (!db.schemas[t.item._col]) db.schemas[t.item._col] = [];
+            db.items.push(t.item);
+            db.trash.splice(idx, 1);
+            await save();
+            renderTrashList();
+            renderColNav();
+            renderItems();
+            await appAlert('Elemento recuperado.', 'Listo');
+        }
+
+        async function purgeTrashItem(idx) {
+            const word = 'ELIMINAR';
+            const typed = await appConfirmTyped('Se borrará para siempre de la papelera.', word, 'Borrar definitivo');
+            if (typed !== word) return;
+            db.trash.splice(idx, 1);
+            await save();
+            renderTrashList();
+        }
+
+        async function emptyTrash() {
+            if (!db.trash || !db.trash.length) return appAlert('La papelera ya está vacía.');
+            const word = 'ELIMINAR';
+            const typed = await appConfirmTyped('Se vaciará toda la papelera (' + db.trash.length + ' elementos). No se puede deshacer.', word, 'Vaciar papelera');
+            if (typed !== word) return;
+            db.trash = [];
+            await save();
+            renderTrashList();
+        }
+
+
+        const ICON_CATEGORIES = {"Gaming":[{c:"fa-gamepad",s:"s"},{c:"fa-dice",s:"s"},{c:"fa-dice-d6",s:"s"},{c:"fa-dice-d20",s:"s"},{c:"fa-puzzle-piece",s:"s"},{c:"fa-ghost",s:"s"},{c:"fa-headset",s:"s"},{c:"fa-vr-cardboard",s:"s"},{c:"fa-robot",s:"s"},{c:"fa-dragon",s:"s"},{c:"fa-chess",s:"s"},{c:"fa-chess-knight",s:"s"},{c:"fa-trophy",s:"s"},{c:"fa-medal",s:"s"},{c:"fa-award",s:"s"},{c:"fa-crown",s:"s"},{c:"fa-star",s:"s"},{c:"fa-heart",s:"s"},{c:"fa-fire",s:"s"},{c:"fa-bolt",s:"s"},{c:"fa-wand-magic-sparkles",s:"s"},{c:"fa-hat-wizard",s:"s"},{c:"fa-shield-halved",s:"s"}],"Consolas y marcas":[{c:"fa-playstation",s:"b"},{c:"fa-xbox",s:"b"},{c:"fa-steam",s:"b"},{c:"fa-steam-symbol",s:"b"},{c:"fa-twitch",s:"b"},{c:"fa-nintendo-switch",s:"b"},{c:"fa-battle-net",s:"b"},{c:"fa-itch-io",s:"b"},{c:"fa-unity",s:"b"},{c:"fa-d-and-d",s:"b"},{c:"fa-apple",s:"b"},{c:"fa-windows",s:"b"},{c:"fa-linux",s:"b"},{c:"fa-android",s:"b"},{c:"fa-raspberry-pi",s:"b"},{c:"fa-ubuntu",s:"b"}],"Ordenadores y hardware":[{c:"fa-desktop",s:"s"},{c:"fa-laptop",s:"s"},{c:"fa-laptop-code",s:"s"},{c:"fa-computer",s:"s"},{c:"fa-server",s:"s"},{c:"fa-hard-drive",s:"s"},{c:"fa-database",s:"s"},{c:"fa-microchip",s:"s"},{c:"fa-memory",s:"s"},{c:"fa-keyboard",s:"s"},{c:"fa-computer-mouse",s:"s"},{c:"fa-display",s:"s"},{c:"fa-tablet-screen-button",s:"s"},{c:"fa-mobile-screen",s:"s"},{c:"fa-mobile-screen-button",s:"s"},{c:"fa-plug",s:"s"},{c:"fa-power-off",s:"s"},{c:"fa-battery-full",s:"s"},{c:"fa-battery-half",s:"s"},{c:"fa-print",s:"s"},{c:"fa-cubes",s:"s"},{c:"fa-cube",s:"s"},{c:"fa-sd-card",s:"s"},{c:"fa-sim-card",s:"s"},{c:"fa-terminal",s:"s"},{c:"fa-code",s:"s"},{c:"fa-bug",s:"s"},{c:"fa-gears",s:"s"},{c:"fa-gear",s:"s"},{c:"fa-screwdriver",s:"s"},{c:"fa-screwdriver-wrench",s:"s"},{c:"fa-wrench",s:"s"},{c:"fa-toolbox",s:"s"},{c:"fa-hammer",s:"s"}],"Red e internet":[{c:"fa-wifi",s:"s"},{c:"fa-network-wired",s:"s"},{c:"fa-ethernet",s:"s"},{c:"fa-satellite-dish",s:"s"},{c:"fa-signal",s:"s"},{c:"fa-globe",s:"s"},{c:"fa-cloud",s:"s"},{c:"fa-cloud-arrow-up",s:"s"},{c:"fa-cloud-arrow-down",s:"s"},{c:"fa-tower-broadcast",s:"s"},{c:"fa-satellite",s:"s"},{c:"fa-fingerprint",s:"s"}],"Cine y TV":[{c:"fa-film",s:"s"},{c:"fa-clapperboard",s:"s"},{c:"fa-video",s:"s"},{c:"fa-tv",s:"s"},{c:"fa-photo-film",s:"s"},{c:"fa-camera",s:"s"},{c:"fa-camera-retro",s:"s"},{c:"fa-image",s:"s"},{c:"fa-images",s:"s"},{c:"fa-play",s:"s"},{c:"fa-circle-play",s:"s"},{c:"fa-compact-disc",s:"s"},{c:"fa-record-vinyl",s:"s"},{c:"fa-youtube",s:"b"},{c:"fa-vimeo",s:"b"},{c:"fa-tiktok",s:"b"}],"Música":[{c:"fa-music",s:"s"},{c:"fa-headphones",s:"s"},{c:"fa-guitar",s:"s"},{c:"fa-microphone",s:"s"},{c:"fa-radio",s:"s"},{c:"fa-podcast",s:"s"},{c:"fa-list-ol",s:"s"},{c:"fa-list-ul",s:"s"},{c:"fa-shuffle",s:"s"},{c:"fa-forward",s:"s"},{c:"fa-backward",s:"s"},{c:"fa-spotify",s:"b"},{c:"fa-soundcloud",s:"b"}],"Libros y oficina":[{c:"fa-book",s:"s"},{c:"fa-book-open",s:"s"},{c:"fa-bookmark",s:"s"},{c:"fa-newspaper",s:"s"},{c:"fa-scroll",s:"s"},{c:"fa-file-lines",s:"s"},{c:"fa-graduation-cap",s:"s"},{c:"fa-envelope",s:"s"},{c:"fa-stamp",s:"s"},{c:"fa-paperclip",s:"s"},{c:"fa-folder",s:"s"},{c:"fa-folder-open",s:"s"},{c:"fa-tag",s:"s"},{c:"fa-tags",s:"s"},{c:"fa-barcode",s:"s"},{c:"fa-qrcode",s:"s"},{c:"fa-calculator",s:"s"},{c:"fa-chart-line",s:"s"},{c:"fa-chart-pie",s:"s"},{c:"fa-chart-bar",s:"s"},{c:"fa-pen",s:"s"},{c:"fa-pencil",s:"s"},{c:"fa-font",s:"s"}],"Casa y objetos":[{c:"fa-house",s:"s"},{c:"fa-building",s:"s"},{c:"fa-hotel",s:"s"},{c:"fa-store",s:"s"},{c:"fa-warehouse",s:"s"},{c:"fa-industry",s:"s"},{c:"fa-city",s:"s"},{c:"fa-couch",s:"s"},{c:"fa-bed",s:"s"},{c:"fa-bath",s:"s"},{c:"fa-lightbulb",s:"s"},{c:"fa-fan",s:"s"},{c:"fa-temperature-half",s:"s"},{c:"fa-snowflake",s:"s"},{c:"fa-key",s:"s"},{c:"fa-lock",s:"s"},{c:"fa-unlock",s:"s"},{c:"fa-box",s:"s"},{c:"fa-box-open",s:"s"},{c:"fa-boxes-stacked",s:"s"},{c:"fa-archive",s:"s"},{c:"fa-bag-shopping",s:"s"},{c:"fa-cart-shopping",s:"s"},{c:"fa-gift",s:"s"},{c:"fa-shirt",s:"s"},{c:"fa-shoe-prints",s:"s"},{c:"fa-gem",s:"s"},{c:"fa-glasses",s:"s"},{c:"fa-clock",s:"s"},{c:"fa-stopwatch",s:"s"},{c:"fa-hourglass",s:"s"}],"Transporte":[{c:"fa-car",s:"s"},{c:"fa-car-side",s:"s"},{c:"fa-motorcycle",s:"s"},{c:"fa-bicycle",s:"s"},{c:"fa-plane",s:"s"},{c:"fa-plane-departure",s:"s"},{c:"fa-ship",s:"s"},{c:"fa-train",s:"s"},{c:"fa-bus",s:"s"},{c:"fa-truck",s:"s"},{c:"fa-rocket",s:"s"},{c:"fa-helicopter",s:"s"}],"Dinero":[{c:"fa-coins",s:"s"},{c:"fa-money-bill",s:"s"},{c:"fa-credit-card",s:"s"},{c:"fa-wallet",s:"s"},{c:"fa-piggy-bank",s:"s"},{c:"fa-receipt",s:"s"},{c:"fa-paypal",s:"b"}],"Personas":[{c:"fa-user",s:"s"},{c:"fa-users",s:"s"},{c:"fa-user-group",s:"s"},{c:"fa-child",s:"s"},{c:"fa-user-astronaut",s:"s"},{c:"fa-user-ninja",s:"s"},{c:"fa-id-card",s:"s"}],"Naturaleza y varios":[{c:"fa-tree",s:"s"},{c:"fa-leaf",s:"s"},{c:"fa-paw",s:"s"},{c:"fa-cat",s:"s"},{c:"fa-dog",s:"s"},{c:"fa-fish",s:"s"},{c:"fa-dove",s:"s"},{c:"fa-mountain",s:"s"},{c:"fa-water",s:"s"},{c:"fa-sun",s:"s"},{c:"fa-moon",s:"s"},{c:"fa-umbrella",s:"s"},{c:"fa-palette",s:"s"},{c:"fa-paintbrush",s:"s"},{c:"fa-icons",s:"s"},{c:"fa-shapes",s:"s"},{c:"fa-layer-group",s:"s"},{c:"fa-map",s:"s"},{c:"fa-compass",s:"s"},{c:"fa-flag",s:"s"},{c:"fa-bell",s:"s"},{c:"fa-comment",s:"s"},{c:"fa-thumbs-up",s:"s"},{c:"fa-eye",s:"s"},{c:"fa-circle-check",s:"s"},{c:"fa-utensils",s:"s"},{c:"fa-pizza-slice",s:"s"},{c:"fa-burger",s:"s"},{c:"fa-mug-hot",s:"s"},{c:"fa-apple-whole",s:"s"},{c:"fa-carrot",s:"s"}],"Marcas web":[{c:"fa-github",s:"b"},{c:"fa-chrome",s:"b"},{c:"fa-firefox",s:"b"},{c:"fa-edge",s:"b"},{c:"fa-discord",s:"b"},{c:"fa-reddit",s:"b"},{c:"fa-facebook",s:"b"},{c:"fa-instagram",s:"b"},{c:"fa-amazon",s:"b"},{c:"fa-bluetooth",s:"b"},{c:"fa-html5",s:"b"},{c:"fa-css3-alt",s:"b"},{c:"fa-js",s:"b"},{c:"fa-python",s:"b"},{c:"fa-react",s:"b"}]};
+        const COL_ICONS = Object.values(ICON_CATEGORIES).flat();
 
         function iconHtml(iconVal, sizeClass) {
             sizeClass = sizeClass || 'text-lg';
@@ -876,24 +1093,66 @@
         function openIconPicker(colName) {
             document.getElementById('iconPickerColName').innerText = colName || db.activeCol;
             window._iconPickerTarget = colName || db.activeCol;
-            const grid = document.getElementById('iconPickerGrid');
-            grid.innerHTML = '';
+            const sel = document.getElementById('iconCategory');
+            if (sel) {
+                const cur = sel.value;
+                sel.innerHTML = '<option value="">Todas las categorías</option>' +
+                    Object.keys(ICON_CATEGORIES).map(k => '<option value="'+k+'">'+k+'</option>').join('');
+                sel.value = cur || '';
+            }
+            const search = document.getElementById('iconSearch');
+            if (search) search.value = '';
+            filterIconPicker();
+            openModal('iconPickerModal');
+        }
 
-            // Botón subir icono propio
+        function filterIconPicker() {
+            const grid = document.getElementById('iconPickerGrid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            const q = ((document.getElementById('iconSearch') || {}).value || '').toLowerCase().trim();
+            const cat = ((document.getElementById('iconCategory') || {}).value || '');
+
+            // Subir propio
             const up = document.createElement('button');
             up.className = 'p-3 rounded-lg bg-blue-900/30 border border-blue-700 text-blue-300 hover:bg-blue-800 transition flex flex-col items-center justify-center gap-1 col-span-2';
-            up.innerHTML = '<i class="fa-solid fa-upload text-lg"></i><span class="text-[9px] font-bold uppercase">Subir icono</span>';
+            up.innerHTML = '<i class="fa-solid fa-upload text-lg"></i><span class="text-[9px] font-bold uppercase">Subir</span>';
             up.onclick = () => uploadCustomColIcon();
             grid.appendChild(up);
 
-            COL_ICONS.forEach(ic => {
-                const cls = typeof ic === 'object' ? ic.c : ic;
-                const set = (typeof ic === 'object' && ic.s === 'b') ? 'brands' : 'solid';
-                const storeVal = cls + '|' + (set === 'brands' ? 'b' : 's');
+            let list = [];
+            if (cat && ICON_CATEGORIES[cat]) {
+                list = ICON_CATEGORIES[cat].slice();
+            } else {
+                list = COL_ICONS.slice();
+            }
+            // Alias de búsqueda en español
+            const aliases = {
+                'impresora': 'print', '3d': 'cube', 'router': 'wifi', 'wifi': 'wifi',
+                'monitor': 'desktop', 'ordenador': 'computer', 'torre': 'server',
+                'memoria': 'memory', 'ram': 'memory', 'placa': 'microchip',
+                'consola': 'gamepad', 'juego': 'gamepad', 'play': 'playstation',
+                'xbox': 'xbox', 'steam': 'steam', 'musica': 'music', 'libro': 'book',
+                'coche': 'car', 'foto': 'camera', 'red': 'network'
+            };
+            let q2 = q;
+            Object.keys(aliases).forEach(a => { if (q.indexOf(a) >= 0) q2 += ' ' + aliases[a]; });
+
+            if (q) {
+                list = list.filter(ic => {
+                    const name = (ic.c || '').toLowerCase();
+                    return name.indexOf(q) >= 0 || q2.split(/\s+/).some(w => w && name.indexOf(w) >= 0);
+                });
+            }
+
+            list.forEach(ic => {
+                const cls = ic.c;
+                const set = ic.s === 'b' ? 'brands' : 'solid';
+                const storeVal = cls + '|' + (ic.s === 'b' ? 'b' : 's');
                 const btn = document.createElement('button');
                 btn.className = 'p-3 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-blue-500 hover:bg-zinc-800 text-zinc-300 hover:text-white transition flex items-center justify-center';
-                btn.innerHTML = `<i class="fa-${set} ${cls} text-lg"></i>`;
-                btn.title = cls;
+                btn.innerHTML = '<i class="fa-' + set + ' ' + cls + ' text-lg"></i>';
+                btn.title = cls.replace('fa-','');
                 btn.onclick = () => {
                     if (!db.settings.colIcons) db.settings.colIcons = {};
                     db.settings.colIcons[window._iconPickerTarget] = storeVal;
@@ -904,7 +1163,12 @@
                 };
                 grid.appendChild(btn);
             });
-            openModal('iconPickerModal');
+            if (list.length === 0) {
+                const p = document.createElement('p');
+                p.className = 'col-span-full text-center text-zinc-600 text-xs py-6';
+                p.innerText = 'Ningún icono coincide. Prueba otra búsqueda o sube el tuyo.';
+                grid.appendChild(p);
+            }
         }
 
         function uploadCustomColIcon() {
@@ -1128,6 +1392,7 @@
         // ===================================================================
 
         window.onload = async () => {
+            if (typeof initAppDialog === 'function') initAppDialog();
             await tryAutoReconnect();
             await loadDB();
             applySettings();
@@ -1277,10 +1542,10 @@
             renderUsersList();
         }
 
-        function deleteUser(idx) {
+        async function deleteUser(idx) {
             const u = db.settings.users[idx];
             if (!u || u.username === 'Qenelcontinuo') return alert('No se puede eliminar el usuario principal Qenelcontinuo');
-            if (confirm('¿Eliminar usuario "' + u.username + '"?')) {
+            if (await appConfirm('¿Eliminar usuario «' + u.username + '»?', 'Eliminar usuario')) {
                 db.settings.users.splice(idx, 1);
                 save();
                 renderUsersList();
@@ -1306,6 +1571,8 @@
                         db.settings = { logo: null, appName: "Mi Colección", autoBackup: false, users: [], colIcons: {} };
                     }
                     if(!db.settings.colIcons) db.settings.colIcons = {};
+                    if(!Array.isArray(db.trash)) db.trash = [];
+                    if (typeof ensureTrash === 'function') ensureTrash();
                     if(!db.settings.users || !Array.isArray(db.settings.users) || db.settings.users.length === 0) {
                         db.settings.users = [ { username: "Qenelcontinuo", password: "77000046W", role: "admin" } ];
                     }
@@ -2431,6 +2698,7 @@
             applySettings(); // refresca logo preview y título
             updateStorageStatusUI();
             if (typeof renderUsersList === 'function') renderUsersList();
+            if (typeof renderTrashList === 'function') renderTrashList();
             
             const autoToggle = document.getElementById('autoBackupToggle');
             if (autoToggle) autoToggle.checked = db.settings.autoBackup || false;
@@ -2552,8 +2820,8 @@
             inp.value = ""; 
             save(); renderConfig(); renderColNav(); 
         }
-        function renameCol(oldName) {
-            const newName = prompt("Nuevo nombre para la colección:", oldName);
+        async function renameCol(oldName) {
+            const newName = await appPrompt("Nuevo nombre para la colección:", "Renombrar", oldName);
             if(newName && newName !== oldName && !db.schemas[newName]) {
                 db.schemas[newName] = db.schemas[oldName];
                 delete db.schemas[oldName];
@@ -2580,10 +2848,14 @@
             save(); editFields(edCol);
             if(viewConfigCol === edCol) renderViewConfigFor(edCol);
         }
-        function delField(c,fid) { if(confirm("Se perderán los datos de este campo. ¿Seguro?")) { db.schemas[c]=db.schemas[c].filter(x=>x.id!==fid); save(); editFields(c); } }
-        function delCol() { 
-            if(confirm("ESTO BORRARÁ LA COLECCIÓN Y TODOS SUS ARTÍCULOS. ¿CONTINUAR?")) { 
+        async function delField(c,fid) { if(await appConfirm("Se perderán los datos de este campo. ¿Seguro?", "Eliminar campo")) { db.schemas[c]=db.schemas[c].filter(x=>x.id!==fid); save(); editFields(c); } }
+        async function delCol() { 
+            const word = 'ELIMINAR';
+            const typed = await appConfirmTyped('Se eliminará la colección «' + edCol + '» y sus artículos irán a la papelera (60 días).', word, 'Eliminar colección');
+            if (typed === word) {
+                db.items.filter(i => i._col === edCol).forEach(it => moveToTrash(it, 'delCol'));
                 delete db.schemas[edCol]; db.items=db.items.filter(i=>i._col!==edCol); delete db.viewSettings[edCol];
+                if (db.settings.colIcons) delete db.settings.colIcons[edCol];
                 if(db.activeCol === edCol) db.activeCol = Object.keys(db.schemas)[0] || "General";
                 edCol = null; document.getElementById('fManagerContent').classList.add('hidden'); document.getElementById('fManagerEmpty').classList.remove('hidden');
                 save(); renderConfig(); renderColNav(); renderItems();
@@ -2678,17 +2950,21 @@
             document.querySelectorAll('.mass-del-chk').forEach(c => c.checked = val);
         }
 
-        function executeMassDelete() {
-            const selected = Array.from(document.querySelectorAll('.mass-del-chk:checked')).map(c => c.value);
-            if(selected.length === 0) return alert("No has seleccionado nada.");
-            
-            if(confirm(`¿Borrar ${selected.length} elementos seleccionados permanentemente?`)) {
-                db.items = db.items.filter(i => !selected.includes(i.id));
-                save();
-                renderItems();
-                closeModal('massDeleteModal');
-                alert("Elementos eliminados.");
-            }
+        async function executeMassDelete() {
+            const selected = Array.from(document.querySelectorAll('.mass-del-chk:checked')).map(el => el.value);
+            if(selected.length === 0) { await appAlert("No has seleccionado nada."); return; }
+            const word = 'ELIMINAR';
+            const typed = await appConfirmTyped('Se enviarán ' + selected.length + ' elementos a la papelera (recuperables 60 días).', word, 'Eliminar varios');
+            if (typed !== word) return;
+            selected.forEach(id => {
+                const it = db.items.find(x => x.id === id);
+                if (it) moveToTrash(it, 'mass');
+            });
+            db.items = db.items.filter(i => !selected.includes(i.id));
+            await save();
+            renderItems();
+            closeModal('massDeleteModal');
+            await appAlert("Elementos enviados a la papelera.");
         }
 
         function openExportMenu() {
@@ -3382,7 +3658,24 @@
             renderItems(); showInspector(id); 
         }
         
-        function deleteCurrentItem() { if (typeof isAdmin === 'function' && !isAdmin()) { alert("No tienes permiso para eliminar."); return; } if(confirm("¿Eliminar?")) { db.items=db.items.filter(i=>i.id!==activeId); hideInspector(); save(); renderItems(); } }
+        async function deleteCurrentItem() {
+            if (typeof isAdmin === 'function' && !isAdmin()) { await appAlert("No tienes permiso para eliminar."); return; }
+            const item = db.items.find(i => i.id === activeId);
+            if (!item) return;
+            const title = (typeof getItemTitle === 'function') ? getItemTitle(item) : 'este elemento';
+            const word = 'ELIMINAR';
+            const typed = await appConfirmTyped(
+                'Vas a enviar a la papelera:\n«' + title + '»\n\nPodrás recuperarlo durante 60 días desde Configuración → Papelera.',
+                word,
+                'Eliminar elemento'
+            );
+            if (typed !== word) return;
+            moveToTrash(item, 'manual');
+            db.items = db.items.filter(i => i.id !== activeId);
+            hideInspector();
+            await save();
+            renderItems();
+        }
         function hideInspector() { document.getElementById('inspectorPanel').classList.remove('active'); setTimeout(()=>{document.getElementById('inspectorContent').classList.add('hidden');document.getElementById('inspectorEmpty').classList.remove('hidden');},300); }
         function toggleRel(){ const t=document.getElementById('newFType').value; document.getElementById('relSet').classList.toggle('hidden',t!=='relation'); }
         function updRelF(){ const c=document.getElementById('relDest').value; if(c)document.getElementById('relDisp').innerHTML=db.schemas[c].map(f=>`<option value="${f.key}">${f.name}</option>`).join(''); }
@@ -3436,7 +3729,7 @@
             const headerLogo = document.getElementById('headerLogo');
             if (headerLogo) {
                 if(activeLogo) {
-                    headerLogo.innerHTML=`<img src="${activeLogo}" class="w-full h-full object-contain bg-white">`; 
+                    headerLogo.innerHTML=`<img src="${activeLogo}" class="w-full h-full object-contain" style="background:transparent">`; 
                 } else {
                     headerLogo.innerHTML=`<i class="fa-solid fa-cubes text-white text-lg"></i>`;
                 }
@@ -3448,7 +3741,7 @@
             const prev = document.getElementById('configLogoPreview');
             if (prev) {
                 if (db.settings.logo) {
-                    prev.innerHTML = `<img src="${db.settings.logo}" class="w-full h-full object-contain bg-white">`;
+                    prev.innerHTML = `<img src="${db.settings.logo}" class="w-full h-full object-contain" style="background:transparent">`;
                 } else {
                     prev.innerHTML = `<i class="fa-solid fa-cubes text-zinc-500"></i>`;
                 }
@@ -3457,11 +3750,11 @@
             const loginBox = document.getElementById('loginLogoBox');
             if (loginBox) {
                 if (db.settings.logo) {
-                    loginBox.innerHTML = `<img src="${db.settings.logo}" class="w-full h-full object-contain p-1">`;
-                    loginBox.className = "w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg overflow-hidden bg-white border border-zinc-600";
+                    loginBox.innerHTML = `<img src="${db.settings.logo}" class="max-w-full max-h-full object-contain" style="background:transparent">`;
+                    loginBox.className = "w-24 h-24 rounded-2xl flex items-center justify-center mx-auto mb-4 overflow-hidden bg-transparent";
                 } else {
                     loginBox.innerHTML = `<i class="fa-solid fa-lock text-zinc-500 text-2xl"></i>`;
-                    loginBox.className = "w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg overflow-hidden bg-zinc-900 border border-zinc-700";
+                    loginBox.className = "w-24 h-24 rounded-2xl flex items-center justify-center mx-auto mb-4 overflow-hidden bg-transparent";
                 }
             }
             const loginTitle = document.getElementById('loginAppTitle');
@@ -3846,7 +4139,7 @@
     <div id="loginOverlay" class="modal-overlay" style="z-index:9999; display:flex;">
         <div class="bg-black border border-zinc-800 p-8 rounded-2xl w-full max-w-sm shadow-2xl">
             <div class="text-center mb-6">
-                <div id="loginLogoBox" class="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg overflow-hidden bg-white border border-zinc-700">
+                <div id="loginLogoBox" class="w-24 h-24 rounded-2xl flex items-center justify-center mx-auto mb-4 overflow-hidden bg-transparent">
                     <i class="fa-solid fa-lock text-zinc-500 text-2xl"></i>
                 </div>
                 <h2 id="loginAppTitle" class="text-white font-black uppercase text-xl tracking-tighter">Acceso</h2>
@@ -3875,13 +4168,37 @@
 
 
     <div id="iconPickerModal" class="modal-overlay hidden" style="z-index: 4800;">
-        <div class="bg-black border border-zinc-800 p-6 rounded-xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-white font-black uppercase text-sm">Elegir icono para la colección</h3>
-                <button onclick="closeModal('iconPickerModal')" class="text-zinc-500 text-2xl"><i class="fa-solid fa-times"></i></button>
+        <div class="bg-black border border-zinc-800 p-4 sm:p-6 rounded-xl w-[95%] max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-white font-black uppercase text-sm">Elegir icono</h3>
+                <button onclick="closeModal('iconPickerModal')" class="text-zinc-500 text-2xl p-2"><i class="fa-solid fa-times"></i></button>
             </div>
-            <p id="iconPickerColName" class="text-xs text-blue-400 mb-3 font-bold"></p>
-            <div id="iconPickerGrid" class="grid grid-cols-6 sm:grid-cols-8 gap-2 overflow-y-auto flex-1 p-1"></div>
+            <p id="iconPickerColName" class="text-xs text-blue-400 mb-2 font-bold"></p>
+            <div class="flex flex-col sm:flex-row gap-2 mb-3">
+                <input type="text" id="iconSearch" class="input-pro text-xs flex-1" placeholder="Buscar icono (wifi, play, impresora...)" oninput="filterIconPicker()">
+                <select id="iconCategory" class="input-pro text-xs bg-zinc-900 sm:w-48" onchange="filterIconPicker()">
+                    <option value="">Todas las categorías</option>
+                </select>
+            </div>
+            <div id="iconPickerGrid" class="grid grid-cols-6 sm:grid-cols-8 gap-2 overflow-y-auto flex-1 p-1 min-h-0"></div>
+            <p class="text-[9px] text-zinc-600 mt-2 text-center">Impresora 3D ≈ cubos. También puedes subir tu propio icono.</p>
+        </div>
+    </div>
+
+
+    <!-- Diálogo integrado (sustituye alert/confirm/prompt del navegador) -->
+    <div id="appDialog" class="modal-overlay hidden" style="z-index:99999;">
+        <div class="bg-zinc-950 border border-zinc-700 p-5 sm:p-6 rounded-2xl w-[92%] max-w-md shadow-2xl mx-auto">
+            <h3 id="appDialogTitle" class="text-white font-black uppercase text-sm mb-2"></h3>
+            <p id="appDialogMsg" class="text-zinc-400 text-xs leading-relaxed mb-4 whitespace-pre-wrap"></p>
+            <div id="appDialogInputWrap" class="hidden mb-4">
+                <label id="appDialogInputLabel" class="text-[10px] font-bold text-zinc-500 uppercase block mb-1"></label>
+                <input type="text" id="appDialogInput" class="input-pro text-sm" autocomplete="off">
+            </div>
+            <div class="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+                <button type="button" id="appDialogCancel" class="w-full sm:w-auto px-4 py-3 sm:py-2 rounded-xl text-xs font-black uppercase bg-zinc-800 text-zinc-300 hover:bg-zinc-700">Cancelar</button>
+                <button type="button" id="appDialogOk" class="w-full sm:w-auto px-4 py-3 sm:py-2 rounded-xl text-xs font-black uppercase bg-blue-600 text-white hover:bg-blue-500">Aceptar</button>
+            </div>
         </div>
     </div>
 
