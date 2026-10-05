@@ -172,7 +172,7 @@
         <div class="flex items-center gap-4">
             <button onclick="toggleSidebar()" class="menu-toggle text-white text-xl"><i class="fa-solid fa-bars"></i></button>
             <div class="cursor-pointer" title="Cambiar Logo">
-                <div id="headerLogo" class="w-12 h-12 bg-transparent rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
+                <div id="headerLogo" class="h-12 max-w-[4.5rem] min-w-[2.5rem] bg-transparent flex items-center justify-center flex-shrink-0">
                     <i class="fa-solid fa-cubes text-white text-lg"></i>
                 </div>
             </div>
@@ -623,7 +623,7 @@
                         <div>
                             <label class="text-[10px] font-bold text-zinc-500 uppercase block mb-2">Logo Personalizado</label>
                             <div class="flex items-center gap-3 mb-2">
-                                <div id="configLogoPreview" class="w-16 h-16 rounded-xl bg-zinc-950 border border-zinc-700 overflow-hidden flex items-center justify-center flex-shrink-0">
+                                <div id="configLogoPreview" class="h-16 min-w-[4rem] max-w-[6rem] rounded-xl bg-zinc-950 border border-zinc-700 flex items-center justify-center flex-shrink-0 p-1">
                                     <i class="fa-solid fa-cubes text-zinc-500"></i>
                                 </div>
                                 <div class="flex-1 space-y-1">
@@ -3688,7 +3688,8 @@
             reader.onload = (ev) => {
                 const img = new Image();
                 img.onload = () => {
-                    const max = 256;
+                    // Guardar logo entero sin recortar (solo reduce si es enorme)
+                    const max = 512;
                     let w = img.width, h = img.height;
                     if (w > max || h > max) {
                         const s = Math.min(max/w, max/h);
@@ -3729,7 +3730,7 @@
             const headerLogo = document.getElementById('headerLogo');
             if (headerLogo) {
                 if(activeLogo) {
-                    headerLogo.innerHTML=`<img src="${activeLogo}" class="w-full h-full object-contain" style="background:transparent">`; 
+                    headerLogo.innerHTML=`<img src="${activeLogo}" alt="Logo" style="height:48px;width:auto;max-width:72px;object-fit:contain;background:transparent;display:block;">`; 
                 } else {
                     headerLogo.innerHTML=`<i class="fa-solid fa-cubes text-white text-lg"></i>`;
                 }
@@ -3741,7 +3742,7 @@
             const prev = document.getElementById('configLogoPreview');
             if (prev) {
                 if (db.settings.logo) {
-                    prev.innerHTML = `<img src="${db.settings.logo}" class="w-full h-full object-contain" style="background:transparent">`;
+                    prev.innerHTML = `<img src="${db.settings.logo}" alt="Logo" style="height:56px;width:auto;max-width:88px;object-fit:contain;background:transparent;display:block;">`;
                 } else {
                     prev.innerHTML = `<i class="fa-solid fa-cubes text-zinc-500"></i>`;
                 }
@@ -3750,11 +3751,11 @@
             const loginBox = document.getElementById('loginLogoBox');
             if (loginBox) {
                 if (db.settings.logo) {
-                    loginBox.innerHTML = `<img src="${db.settings.logo}" class="max-w-full max-h-full object-contain" style="background:transparent">`;
-                    loginBox.className = "w-24 h-24 rounded-2xl flex items-center justify-center mx-auto mb-4 overflow-hidden bg-transparent";
+                    loginBox.innerHTML = `<img src="${db.settings.logo}" alt="Logo" style="height:96px;width:auto;max-width:160px;object-fit:contain;background:transparent;display:block;">`;
+                    loginBox.className = "h-24 max-w-[10rem] mx-auto mb-4 flex items-center justify-center bg-transparent";
                 } else {
                     loginBox.innerHTML = `<i class="fa-solid fa-lock text-zinc-500 text-2xl"></i>`;
-                    loginBox.className = "w-24 h-24 rounded-2xl flex items-center justify-center mx-auto mb-4 overflow-hidden bg-transparent";
+                    loginBox.className = "h-24 max-w-[10rem] mx-auto mb-4 flex items-center justify-center bg-transparent";
                 }
             }
             const loginTitle = document.getElementById('loginAppTitle');
@@ -4139,7 +4140,7 @@
     <div id="loginOverlay" class="modal-overlay" style="z-index:9999; display:flex;">
         <div class="bg-black border border-zinc-800 p-8 rounded-2xl w-full max-w-sm shadow-2xl">
             <div class="text-center mb-6">
-                <div id="loginLogoBox" class="w-24 h-24 rounded-2xl flex items-center justify-center mx-auto mb-4 overflow-hidden bg-transparent">
+                <div id="loginLogoBox" class="h-24 max-w-[9rem] mx-auto mb-4 flex items-center justify-center bg-transparent">
                     <i class="fa-solid fa-lock text-zinc-500 text-2xl"></i>
                 </div>
                 <h2 id="loginAppTitle" class="text-white font-black uppercase text-xl tracking-tighter">Acceso</h2>
