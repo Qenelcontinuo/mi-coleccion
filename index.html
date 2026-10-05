@@ -239,6 +239,9 @@
                     <button onclick="hideInspector()" class="inspector-back-btn text-white"><i class="fa-solid fa-arrow-left"></i></button>
                     
                     <div class="flex gap-2">
+                        <button id="saveItemBtn" onclick="saveCurrentItem()" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 transition shadow-lg shadow-green-900/20">
+                            <i class="fa-solid fa-floppy-disk"></i> <span>GUARDAR</span>
+                        </button>
                         <button id="autoFetchBtn" onclick="openAutoFetchModal()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 transition shadow-lg shadow-purple-900/20">
                             <i class="fa-solid fa-wand-magic-sparkles"></i> <span>BUSCAR INFO</span>
                         </button>
@@ -597,7 +600,12 @@
         <div class="modal-box">
             <div class="p-6 border-b border-zinc-800 bg-black flex justify-between items-center">
                 <h2 class="text-xl font-black uppercase text-white">Configuración del Sistema</h2>
-                <button onclick="closeModal('configModal')" class="text-zinc-500 text-3xl"><i class="fa-solid fa-times"></i></button>
+                <div class="flex items-center gap-4">
+                    <button onclick="saveConfigAll()" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 transition">
+                        <i class="fa-solid fa-floppy-disk"></i> <span>GUARDAR</span>
+                    </button>
+                    <button onclick="closeModal('configModal')" class="text-zinc-500 text-3xl"><i class="fa-solid fa-times"></i></button>
+                </div>
             </div>
             <div class="flex-1 overflow-y-auto p-8">
                 
@@ -736,7 +744,7 @@
                 </details>
 
                 
-                <details open>
+                <details>
                     <summary>Copias de Seguridad y Exportación</summary>
                     <div class="grid grid-cols-1 gap-3">
                         <p class="text-[10px] text-zinc-400 mb-2">
@@ -762,6 +770,23 @@
                 </details>
 
                 
+            </div>
+        </div>
+    </div>
+
+    <div id="iconPickerModal" class="modal-overlay hidden" style="z-index: 2600;">
+        <div class="modal-box" style="max-width: 720px;">
+            <div class="p-5 border-b border-zinc-800 bg-black flex justify-between items-center">
+                <h2 class="text-sm font-black uppercase text-white">Icono de la colección: <span id="iconPickerColName" class="text-blue-400"></span></h2>
+                <button onclick="closeModal('iconPickerModal')" class="text-zinc-500 text-3xl"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="p-5 overflow-y-auto">
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <button onclick="document.getElementById('iconUploadInp').click()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase"><i class="fa-solid fa-upload mr-2"></i>Subir mi propia imagen</button>
+                    <button onclick="clearColIcon()" class="border border-red-900/50 text-red-500 hover:bg-red-900/20 px-4 py-2 rounded-lg text-[10px] font-black uppercase"><i class="fa-solid fa-ban mr-2"></i>Quitar icono</button>
+                    <input type="file" id="iconUploadInp" accept="image/*" class="hidden" onchange="uploadColIcon(event)">
+                </div>
+                <div id="iconPickerGrid" class="grid grid-cols-5 sm:grid-cols-8 gap-2"></div>
             </div>
         </div>
     </div>
@@ -843,6 +868,8 @@
             if (delBtn) delBtn.style.display = admin ? '' : 'none';
             const afBtn = document.getElementById('autoFetchBtn');
             if (afBtn) afBtn.style.display = admin ? '' : 'none';
+            const saveBtn = document.getElementById('saveItemBtn');
+            if (saveBtn) saveBtn.style.display = admin ? '' : 'none';
             const galCtrl = document.getElementById('galleryControls');
             if (galCtrl) galCtrl.style.display = admin ? '' : 'none';
         }
@@ -995,9 +1022,12 @@
         // ===================================================================
 
         window.onload = async () => {
+            // Todos los desplegables (Configuración, etc.) siempre plegados al cargar la página
+            document.querySelectorAll('details').forEach(d => { d.open = false; });
             await tryAutoReconnect();
             await loadDB();
             applySettings();
+            document.querySelectorAll('details').forEach(d => { d.open = false; });
             // Login: siempre se muestra, salvo si el usuario marcó "Recordar" en ESTE navegador
             currentUser = null;
             tryAutoLoginFromRemember();
@@ -1202,7 +1232,7 @@
             Object.keys(db.schemas).forEach(c => {
                 const b = document.createElement('button');
                 b.className = `w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-black transition mb-1 ${db.activeCol===c?'bg-blue-600/10 text-blue-400 border border-blue-600/20':'text-zinc-500 hover:text-white hover:bg-zinc-900'}`;
-                b.innerHTML = `<span>${c}</span>`; 
+                b.innerHTML = `<span>${c}</span>${colIconHtml(c,'nav')}`; 
                 b.onclick = () => { db.activeCol=c; activeId=null; renderColNav(); renderItems(); hideInspector(); if(window.innerWidth < 768) toggleSidebar(); };
                 nav.appendChild(b);
             });
@@ -2131,6 +2161,7 @@
                 <div class="${isActive} p-3 rounded flex justify-between items-center border mb-1 cursor-pointer hover:bg-zinc-900" onclick="editFields('${c}')">
                     <span class="text-xs font-bold text-white uppercase truncate">${c}</span>
                     <div class="flex gap-1">
+                        <button onclick="event.stopPropagation();openIconPicker('${c}')" class="bg-zinc-800 text-zinc-400 px-2 py-1 rounded hover:text-white mr-1 flex items-center justify-center" style="min-width:30px" title="Cambiar icono">${colIconHtml(c,'cfg')}</button>
                         <button onclick="event.stopPropagation();renameCol('${c}')" class="bg-zinc-800 text-zinc-400 px-2 py-1 rounded hover:text-white mr-1" title="Renombrar"><i class="fa-solid fa-pen"></i></button>
                         <i class="fa-solid fa-chevron-right text-zinc-600 text-xs"></i>
                     </div>
@@ -2233,6 +2264,7 @@
                 if(db.viewSettings[oldName]) { db.viewSettings[newName] = db.viewSettings[oldName]; delete db.viewSettings[oldName]; }
                 if(db.activeCol === oldName) db.activeCol = newName;
                 if(edCol === oldName) edCol = newName;
+                { const im = getColIconMap(); if(im[oldName]) { im[newName] = im[oldName]; delete im[oldName]; } }
                 save(); renderConfig(); renderColNav(); renderItems();
             } else if (db.schemas[newName]) {
                 alert("Ya existe una colección con ese nombre.");
@@ -2255,7 +2287,7 @@
         function delField(c,fid) { if(confirm("Se perderán los datos de este campo. ¿Seguro?")) { db.schemas[c]=db.schemas[c].filter(x=>x.id!==fid); save(); editFields(c); } }
         function delCol() { 
             if(confirm("ESTO BORRARÁ LA COLECCIÓN Y TODOS SUS ARTÍCULOS. ¿CONTINUAR?")) { 
-                delete db.schemas[edCol]; db.items=db.items.filter(i=>i._col!==edCol); delete db.viewSettings[edCol];
+                delete db.schemas[edCol]; db.items=db.items.filter(i=>i._col!==edCol); delete db.viewSettings[edCol]; delete getColIconMap()[edCol];
                 if(db.activeCol === edCol) db.activeCol = Object.keys(db.schemas)[0] || "General";
                 edCol = null; document.getElementById('fManagerContent').classList.add('hidden'); document.getElementById('fManagerEmpty').classList.remove('hidden');
                 save(); renderConfig(); renderColNav(); renderItems();
@@ -2810,6 +2842,222 @@
                     }
                 });
             });
+        }
+
+
+        // ===================================================================
+        // NUEVO: BOTONES GUARDAR + ICONOS / MINIATURAS DE COLECCIONES
+        // ===================================================================
+        function showSavedToast(msg) {
+            let t = document.getElementById('savedToast');
+            if(!t) {
+                t = document.createElement('div');
+                t.id = 'savedToast';
+                t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:12px 22px;border-radius:12px;font-size:12px;font-weight:900;text-transform:uppercase;z-index:9999;box-shadow:0 10px 30px rgba(0,0,0,.5);transition:opacity .3s;pointer-events:none;';
+                document.body.appendChild(t);
+            }
+            t.innerText = msg;
+            t.style.opacity = '1';
+            clearTimeout(t._tm);
+            t._tm = setTimeout(() => { t.style.opacity = '0'; }, 1800);
+        }
+
+        async function saveCurrentItem() {
+            if (typeof isAdmin === 'function' && !isAdmin()) { alert('No tienes permiso para guardar cambios.'); return; }
+            await save();
+            renderItems();
+            showSavedToast('Guardado ✔');
+        }
+
+        async function saveConfigAll() {
+            // Si hay una colección o un campo escrito pero sin añadir, se añaden al guardar
+            const colInp = document.getElementById('newColInp');
+            if(colInp && colInp.value.trim()) addCollection();
+            const fInp = document.getElementById('newFTitle');
+            if(fInp && fInp.value.trim() && edCol && db.schemas[edCol]) addField();
+            await save();
+            renderColNav(); renderItems(); renderConfig();
+            showSavedToast('Configuración guardada ✔');
+        }
+
+        const COL_ICONS = [
+            ["gamepad","Videojuegos"],
+            ["dice","Dados"],
+            ["dice-d20","Rol"],
+            ["chess","Ajedrez"],
+            ["chess-knight","Caballo"],
+            ["puzzle-piece","Puzzle"],
+            ["trophy","Trofeo"],
+            ["ghost","Fantasma"],
+            ["dragon","Dragón"],
+            ["hat-wizard","Mago"],
+            ["skull","Calavera"],
+            ["meteor","Meteorito"],
+            ["crown","Corona"],
+            ["vr-cardboard","Realidad virtual"],
+            ["headset","Auriculares con micro"],
+            ["headphones","Cascos"],
+            ["film","Películas"],
+            ["clapperboard","Claqueta"],
+            ["video","Vídeo"],
+            ["camera","Cámara"],
+            ["camera-retro","Cámara retro"],
+            ["photo-film","Fotos y vídeo"],
+            ["tv","Televisión"],
+            ["ticket","Entradas"],
+            ["book","Libros"],
+            ["book-open","Libro abierto"],
+            ["bookmark","Marcapáginas"],
+            ["newspaper","Revistas"],
+            ["scroll","Pergamino"],
+            ["graduation-cap","Estudios"],
+            ["music","Música"],
+            ["guitar","Guitarra"],
+            ["drum","Batería"],
+            ["microphone","Micrófono"],
+            ["microphone-lines","Micrófono 2"],
+            ["compact-disc","CD"],
+            ["record-vinyl","Vinilo"],
+            ["radio","Radio"],
+            ["podcast","Podcast"],
+            ["volume-high","Altavoz"],
+            ["sliders","Mezclador"],
+            ["wave-square","Amplificador"],
+            ["computer","Ordenador"],
+            ["desktop","Sobremesa"],
+            ["laptop","Portátil"],
+            ["display","Monitor"],
+            ["server","Servidor"],
+            ["hard-drive","Disco duro"],
+            ["memory","Memoria RAM"],
+            ["microchip","Chip"],
+            ["sd-card","Tarjeta SD"],
+            ["floppy-disk","Disquete"],
+            ["keyboard","Teclado"],
+            ["computer-mouse","Ratón"],
+            ["print","Impresora"],
+            ["plug","Enchufe"],
+            ["battery-full","Batería"],
+            ["bolt","Energía"],
+            ["charging-station","Cargador"],
+            ["wifi","Wifi"],
+            ["tower-broadcast","Router"],
+            ["tower-cell","Antena"],
+            ["satellite-dish","Parabólica"],
+            ["satellite","Satélite"],
+            ["network-wired","Red"],
+            ["ethernet","Ethernet"],
+            ["signal","Señal"],
+            ["sim-card","Tarjeta SIM"],
+            ["mobile-screen-button","Móvil"],
+            ["tablet-screen-button","Tableta"],
+            ["walkie-talkie","Walkie-talkie"],
+            ["cloud","Nube"],
+            ["database","Base de datos"],
+            ["code","Código"],
+            ["terminal","Terminal"],
+            ["robot","Robot"],
+            ["gear","Ajustes"],
+            ["screwdriver-wrench","Herramientas"],
+            ["toolbox","Caja de herramientas"],
+            ["lightbulb","Bombilla"],
+            ["cube","Cubo"],
+            ["cubes","Cubos"],
+            ["box","Caja"],
+            ["boxes-stacked","Cajas"],
+            ["tag","Etiqueta"],
+            ["star","Estrella"],
+            ["heart","Corazón"],
+            ["gem","Gema"],
+            ["coins","Monedas"],
+            ["euro-sign","Euro"],
+            ["shirt","Ropa"],
+            ["car","Coche"],
+            ["motorcycle","Moto"],
+            ["bicycle","Bici"],
+            ["plane","Avión"],
+            ["rocket","Cohete"],
+            ["house","Casa"],
+            ["key","Llave"],
+            ["flask","Laboratorio"],
+            ["microscope","Microscopio"],
+            ["dumbbell","Deporte"],
+            ["futbol","Fútbol"],
+            ["palette","Pintura"],
+            ["paw","Mascotas"],
+            ["camera-rotate","Cámara giratoria"],
+            ["wand-magic-sparkles","Magia"],
+            ["folder","Carpeta"],
+            ["gift","Regalo"],
+            ["cart-shopping","Compras"]
+        ];
+
+        function getColIconMap() {
+            if(!db.settings) db.settings = {};
+            if(!db.settings.colIcons) db.settings.colIcons = {};
+            return db.settings.colIcons;
+        }
+
+        function colIconHtml(name, where) {
+            const ic = getColIconMap()[name];
+            if(!ic) {
+                return where === 'cfg' ? '<i class="fa-regular fa-image text-xs"></i>' : '';
+            }
+            const box = where === 'cfg' ? 'width:20px;height:20px;' : 'width:28px;height:28px;';
+            if(ic.type === 'img') {
+                return `<img src="${ic.v}" style="${box}object-fit:cover;border-radius:6px;flex-shrink:0;">`;
+            }
+            return `<i class="fa-solid ${ic.v}" style="${where === 'cfg' ? 'font-size:12px;' : 'font-size:16px;'}"></i>`;
+        }
+
+        let iconPickerCol = null;
+        function openIconPicker(col) {
+            iconPickerCol = col;
+            document.getElementById('iconPickerColName').innerText = col;
+            const g = document.getElementById('iconPickerGrid');
+            const cur = getColIconMap()[col];
+            g.innerHTML = COL_ICONS.map(([cls, label]) => {
+                const sel = (cur && cur.type === 'fa' && cur.v === 'fa-' + cls) ? 'border-blue-500 bg-blue-900/20 text-blue-400' : 'border-zinc-800 bg-zinc-950 text-zinc-300';
+                return `<button onclick="selectColIcon('fa-${cls}')" title="${label}" class="${sel} border rounded-lg py-3 hover:border-blue-500 hover:text-blue-400 transition flex items-center justify-center"><i class="fa-solid fa-${cls} text-lg"></i></button>`;
+            }).join('');
+            openModal('iconPickerModal');
+        }
+
+        function selectColIcon(cls) {
+            if(!iconPickerCol) return;
+            getColIconMap()[iconPickerCol] = { type: 'fa', v: cls };
+            save(); renderColNav(); renderConfig();
+            closeModal('iconPickerModal');
+        }
+
+        function clearColIcon() {
+            if(!iconPickerCol) return;
+            delete getColIconMap()[iconPickerCol];
+            save(); renderColNav(); renderConfig();
+            closeModal('iconPickerModal');
+        }
+
+        function uploadColIcon(e) {
+            const file = e.target.files && e.target.files[0];
+            if(!file || !iconPickerCol) return;
+            const col = iconPickerCol;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                const img = new Image();
+                img.onload = () => {
+                    const S = 96;
+                    const cv = document.createElement('canvas'); cv.width = S; cv.height = S;
+                    const ctx = cv.getContext('2d');
+                    const m = Math.min(img.width, img.height);
+                    ctx.drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, S, S);
+                    getColIconMap()[col] = { type: 'img', v: cv.toDataURL('image/png') };
+                    save(); renderColNav(); renderConfig();
+                    closeModal('iconPickerModal');
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
         }
 
         function newItem() { 
