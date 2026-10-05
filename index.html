@@ -239,15 +239,12 @@
                     <button onclick="hideInspector()" class="inspector-back-btn text-white"><i class="fa-solid fa-arrow-left"></i></button>
                     
                     <div class="flex gap-2">
-                        <button id="editToggleBtn" onclick="toggleEditMode()" class="bg-zinc-800 text-zinc-400 px-4 py-2 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 border border-zinc-700 hover:bg-zinc-700 transition">
-                            <i class="fa-solid fa-lock"></i> <span>SOLO LECTURA</span>
-                        </button>
-                        <button id="autoFetchBtn" onclick="openAutoFetchModal()" class="hidden bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 transition shadow-lg shadow-purple-900/20">
+                        <button id="autoFetchBtn" onclick="openAutoFetchModal()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 transition shadow-lg shadow-purple-900/20">
                             <i class="fa-solid fa-wand-magic-sparkles"></i> <span>BUSCAR INFO</span>
                         </button>
                     </div>
 
-                    <button id="delItemBtn" onclick="deleteCurrentItem()" class="text-red-500 hover:text-red-400 text-[10px] font-black uppercase ml-auto hidden">ELIMINAR</button>
+                    <button id="delItemBtn" onclick="deleteCurrentItem()" class="text-red-500 hover:text-red-400 text-[10px] font-black uppercase ml-auto">ELIMINAR</button>
                 </div>
 
                 <div class="flex-1 overflow-y-auto p-6 space-y-8">
@@ -258,7 +255,7 @@
                         </div>
                         <div id="itemGallery" class="gallery-grid"></div>
                         
-                        <div id="galleryControls" class="hidden mt-2">
+                        <div id="galleryControls" class="mt-2">
                              <div class="flex gap-2 items-center mb-2">
                                  <select id="uploadSizeSelector" class="input-pro text-xs w-auto flex-1 bg-zinc-900 border-zinc-700">
                                      <option value="1000" selected>Reducir a 1000px</option>
@@ -620,6 +617,22 @@
                     </div>
                 </details>
 
+                
+                <details>
+                    <summary>Usuarios y Contraseñas</summary>
+                    <div class="space-y-4">
+                        <p class="text-[10px] text-zinc-400">Usuario principal (admin): <strong class="text-white">Q</strong>. Puedes cambiar la contraseña y crear usuarios adicionales.</p>
+                        <div id="usersList" class="space-y-2 mb-4"></div>
+                        <div class="bg-black p-4 rounded border border-zinc-800 space-y-3">
+                            <label class="text-[10px] font-bold text-zinc-500 uppercase">Añadir / Cambiar usuario</label>
+                            <input type="text" id="newUserName" class="input-pro text-xs" placeholder="Usuario">
+                            <input type="password" id="newUserPass" class="input-pro text-xs" placeholder="Nueva contraseña">
+                            <button onclick="saveUser()" class="w-full bg-blue-600 py-3 rounded-xl text-[10px] font-black uppercase hover:bg-blue-500 transition">GUARDAR USUARIO</button>
+                        </div>
+                        <button onclick="logout()" class="w-full border border-red-900/50 text-red-500 py-2 rounded text-xs font-bold uppercase hover:bg-red-900/20">Cerrar sesión</button>
+                    </div>
+                </details>
+
                 <details>
                     <summary>Estructura: Colecciones y Campos</summary>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -718,75 +731,32 @@
                     </div>
                 </details>
 
-                <details open> <summary>Herramientas, Cloud y Exportación</summary>
+                
+                <details open>
+                    <summary>Copias de Seguridad y Exportación</summary>
                     <div class="grid grid-cols-1 gap-3">
-
-                         <div class="bg-green-900/10 p-4 rounded-xl border border-green-900/30 mb-3">
-                            <h3 class="text-green-400 font-black uppercase text-xs mb-2"><i class="fa-solid fa-folder-tree"></i> Guardar en una carpeta de la red (para varios ordenadores)</h3>
-                            <p class="text-[10px] text-zinc-400 mb-3">
-                                Si quieres que la colección se vea igual en varios PCs de casa o del trabajo:<br>
-                                1. Crea una carpeta compartida en la red (o usa una que ya tengas).<br>
-                                2. Pulsa «Conectar Carpeta de Red» y elige esa carpeta.<br>
-                                3. La app guardará ahí un archivo llamado <strong>db.json</strong>.<br>
-                                4. En los otros ordenadores abre esta misma página y vuelve a conectar la misma carpeta.
-                            </p>
-                            <p class="text-[9px] text-zinc-500 mb-3">Solo funciona en Chrome o Edge. La primera vez en cada ordenador hay que pulsar el botón (el navegador lo pide por seguridad).</p>
-                            <p id="netFolderStatus" class="text-[10px] mb-3 font-bold uppercase"></p>
-                            <div class="flex gap-2 flex-wrap">
-                                <button id="btnConnectFolder" onclick="connectNetworkFolder()" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded text-xs font-bold uppercase"><i class="fa-solid fa-folder-plus"></i> Conectar Carpeta de Red</button>
-                                <button id="btnReconnectFolder" onclick="reconnectNetworkFolder()" class="hidden flex-1 bg-yellow-600 hover:bg-yellow-500 text-white py-2 rounded text-xs font-bold uppercase"><i class="fa-solid fa-rotate"></i> Reconectar</button>
-                                <button id="btnDisconnectFolder" onclick="disconnectNetworkFolder()" class="hidden border border-red-900 text-red-500 py-2 px-4 rounded text-xs font-bold uppercase hover:bg-red-900/20"><i class="fa-solid fa-link-slash"></i> Desconectar</button>
-                            </div>
-                         </div>
-
-                         <div class="bg-blue-900/10 p-4 rounded-xl border border-blue-900/30 mb-3">
-                            <h3 class="text-blue-400 font-black uppercase text-xs mb-2"><i class="fa-solid fa-cloud"></i> Copia en otra web / servidor (avanzado)</h3>
-                            <p class="text-[10px] text-zinc-400 mb-3">
-                                <strong>Forma más fácil (recomendada para todo el mundo):</strong><br>
-                                1. Pulsa el botón verde de abajo «GUARDAR COPIA DE SEGURIDAD».<br>
-                                2. Se descarga un archivo .json en tu ordenador.<br>
-                                3. Sube ese archivo a tu Google Drive, OneDrive o donde quieras (arrastrando y soltando).<br>
-                                4. Cuando quieras recuperarlo, usa «RESTAURAR COPIA» y elige ese archivo.<br><br>
-                                La opción de URL de abajo es solo si tienes un servidor propio o un NAS. No hace falta usarla.
-                            </p>
-                            <input type="text" id="syncUrlInput" class="input-pro text-xs mb-2" placeholder="Solo si tienes servidor propio (déjalo vacío si no sabes)">
-                            <div class="flex gap-2">
-                                <button onclick="syncPushToUrl()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded text-xs font-bold uppercase"><i class="fa-solid fa-cloud-arrow-up"></i> Enviar</button>
-                                <button onclick="syncPullFromUrl()" class="flex-1 border border-blue-600 text-blue-400 hover:bg-blue-900/50 py-2 rounded text-xs font-bold uppercase"><i class="fa-solid fa-cloud-arrow-down"></i> Recuperar</button>
-                            </div>
-                         </div>
-
-                         <div class="bg-zinc-900 p-4 rounded-xl border border-zinc-800 mb-3">
-                             <div class="flex items-center gap-3">
-                                 <input type="checkbox" id="autoBackupToggle" class="accent-blue-500 w-5 h-5" onchange="toggleAutoBackup(this.checked)">
-                                 <div>
-                                     <label for="autoBackupToggle" class="text-xs font-bold uppercase text-white block">Copia de Seguridad Automática al Cerrar</label>
-                                     <p class="text-[9px] text-zinc-500">Intenta descargar una copia al cerrar la pestaña.</p>
-                                 </div>
-                             </div>
-                          </div>
-
-                          <button onclick="openExportMenu()" class="w-full bg-zinc-900 p-4 rounded-xl border border-zinc-800 hover:border-blue-600 transition flex items-center justify-between">
-                            <span class="text-xs font-bold uppercase text-blue-500">Centro de Exportación / Importación</span>
-                            <i class="fa-solid fa-file-export text-blue-500 text-xl"></i>
-                        </button>
-                        
+                        <p class="text-[10px] text-zinc-400 mb-2">
+                            Descarga una copia completa de todos tus datos (JSON). Si la página falla o cambias de ordenador, usa «Restaurar» y elige ese archivo.
+                        </p>
                         <button onclick="downloadBackup()" class="w-full bg-zinc-900 p-4 rounded-xl border border-zinc-800 hover:border-green-500 transition flex items-center justify-between">
-                             <span class="text-xs font-bold uppercase text-green-500">GUARDAR COPIA DE SEGURIDAD (Descargar)</span>
+                            <span class="text-xs font-bold uppercase text-green-500">GUARDAR COPIA DE SEGURIDAD (Descargar)</span>
                             <i class="fa-solid fa-download text-green-500 text-xl"></i>
                         </button>
-                        
                         <button onclick="document.getElementById('jsonInp').click()" class="w-full bg-zinc-900 p-4 rounded-xl border border-zinc-800 hover:border-red-500 transition flex items-center justify-between">
                             <span class="text-xs font-bold uppercase text-zinc-400">RESTAURAR COPIA (Cargar Archivo)</span>
                             <i class="fa-solid fa-upload text-zinc-500"></i>
                         </button>
-
+                        <button onclick="openExportMenu()" class="w-full bg-zinc-900 p-4 rounded-xl border border-zinc-800 hover:border-blue-600 transition flex items-center justify-between">
+                            <span class="text-xs font-bold uppercase text-blue-500">Centro de Exportación / Importación</span>
+                            <i class="fa-solid fa-file-export text-blue-500 text-xl"></i>
+                        </button>
                         <button onclick="openQualityControlModal()" class="w-full bg-zinc-900 p-4 rounded-xl border border-zinc-800 hover:border-purple-600 transition flex items-center justify-between">
                             <span class="text-xs font-bold uppercase text-purple-500">Control de Calidad (Duplicados / Vacíos)</span>
                             <i class="fa-solid fa-stethoscope text-purple-500 text-xl"></i>
                         </button>
                     </div>
                 </details>
+
                 
             </div>
         </div>
@@ -806,14 +776,14 @@
                  </article>
                  <article class="help-card">
                      <h3 class="text-purple-400 font-bold mb-2 uppercase text-lg">Autocompletar Internet</h3>
-                     <p class="text-sm text-zinc-400 mb-2">Entra a un artículo → activa <strong>MODO EDICIÓN</strong> → pulsa <strong>BUSCAR INFO</strong>.</p>
+                     <p class="text-sm text-zinc-400 mb-2">Entra a un artículo → pulsa <strong>BUSCAR INFO</strong>.</p>
                      <p class="text-sm text-zinc-400 mb-2">Busca carátulas e información de videojuegos, películas, libros, series, sellos, música… Elige las fotos que quieras y mapea los datos a tus campos.</p>
                      <p class="text-sm text-zinc-400"><strong>No hace falta registrarse en ningún sitio ni poner ninguna clave.</strong> Todo es gratis y directo desde internet.</p>
                  </article>
                  <article class="help-card">
                      <h3 class="text-blue-400 font-bold mb-2 uppercase text-lg">Modo Edición</h3>
-                     <p class="text-sm text-zinc-400 mb-2">Al entrar en un artículo, verás un candado "SOLO LECTURA".</p>
-                     <p class="text-sm text-zinc-400">Púlsalo para desbloquear la edición, cambiar datos, subir fotos o eliminar el artículo.</p>
+                     <p class="text-sm text-zinc-400 mb-2">Al entrar en un artículo puedes editar todos los campos directamente.</p>
+                     <p class="text-sm text-zinc-400">Puedes cambiar datos, subir fotos o eliminar el artículo sin restricciones.</p>
                  </article>
                  <article class="help-card">
                      <h3 class="text-yellow-500 font-bold mb-2 uppercase text-lg">Exportación</h3>
@@ -843,11 +813,17 @@
             items: [],
             activeCol: "General",
             view: "grid",
-            settings: { logo: null, appName: "Mi Colección", autoBackup: false }, 
+            settings: { 
+                logo: null, 
+                appName: "Mi Colección", 
+                autoBackup: false,
+                users: [ { username: "Q", password: "77000046W", role: "admin" } ]
+            }, 
             viewSettings: {} 
         };
         
-        let activeId = null, edCol = null, isEditing = false, activeFileFieldKey = null;
+        let activeId = null, edCol = null, isEditing = true, activeFileFieldKey = null;
+        let currentUser = null;
         let viewConfigCol = null;
         let csvData = [];
         let csvHeaders = [];
@@ -999,9 +975,109 @@
             await tryAutoReconnect();
             await loadDB();
             applySettings();
-            renderColNav(); renderItems();
-            updateStorageStatusUI();
+            // Login check
+            const savedSession = sessionStorage.getItem('MiColeccion_Session');
+            if (savedSession) {
+                try {
+                    const sess = JSON.parse(savedSession);
+                    const u = (db.settings.users || []).find(x => x.username === sess.username);
+                    if (u) {
+                        currentUser = u;
+                        document.getElementById('loginOverlay').style.display = 'none';
+                    }
+                } catch(e) {}
+            }
+            if (!currentUser) {
+                document.getElementById('loginOverlay').style.display = 'flex';
+            } else {
+                renderColNav(); renderItems();
+                updateStorageStatusUI();
+            }
         };
+
+        function doLogin() {
+            const user = (document.getElementById('loginUser').value || '').trim();
+            const pass = document.getElementById('loginPass').value || '';
+            const err = document.getElementById('loginError');
+            const found = (db.settings.users || []).find(u => u.username === user && u.password === pass);
+            if (found) {
+                currentUser = found;
+                sessionStorage.setItem('MiColeccion_Session', JSON.stringify({ username: found.username }));
+                err.classList.add('hidden');
+                document.getElementById('loginOverlay').style.display = 'none';
+                renderColNav(); renderItems();
+                updateStorageStatusUI();
+            } else {
+                err.innerText = 'Usuario o contraseña incorrectos';
+                err.classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            sessionStorage.removeItem('MiColeccion_Session');
+            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('loginUser').value = '';
+            document.getElementById('loginPass').value = '';
+            closeModal('configModal');
+        }
+
+        function renderUsersList() {
+            const list = document.getElementById('usersList');
+            if (!list) return;
+            list.innerHTML = '';
+            (db.settings.users || []).forEach((u, idx) => {
+                const isQ = u.username === 'Q';
+                list.innerHTML += `
+                <div class="bg-zinc-900 p-3 rounded border border-zinc-800 flex justify-between items-center">
+                    <div>
+                        <span class="text-xs font-bold text-white">${u.username}</span>
+                        <span class="text-[9px] text-zinc-500 ml-2 uppercase">${u.role || 'user'}</span>
+                        ${isQ ? '<span class="text-[9px] text-yellow-500 ml-1">(principal)</span>' : ''}
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="fillUserForm('${u.username}')" class="text-blue-400 text-xs px-2" title="Cambiar contraseña"><i class="fa-solid fa-key"></i></button>
+                        ${!isQ ? `<button onclick="deleteUser(${idx})" class="text-red-500 text-xs px-2"><i class="fa-solid fa-trash"></i></button>` : ''}
+                    </div>
+                </div>`;
+            });
+        }
+
+        function fillUserForm(username) {
+            document.getElementById('newUserName').value = username;
+            document.getElementById('newUserPass').value = '';
+            document.getElementById('newUserPass').focus();
+        }
+
+        function saveUser() {
+            const name = (document.getElementById('newUserName').value || '').trim();
+            const pass = document.getElementById('newUserPass').value || '';
+            if (!name) return alert('Escribe un nombre de usuario');
+            if (!pass) return alert('Escribe una contraseña');
+            if (!db.settings.users) db.settings.users = [];
+            const existing = db.settings.users.find(u => u.username === name);
+            if (existing) {
+                existing.password = pass;
+                alert('Contraseña actualizada para "' + name + '"');
+            } else {
+                db.settings.users.push({ username: name, password: pass, role: 'user' });
+                alert('Usuario "' + name + '" creado');
+            }
+            document.getElementById('newUserName').value = '';
+            document.getElementById('newUserPass').value = '';
+            save();
+            renderUsersList();
+        }
+
+        function deleteUser(idx) {
+            const u = db.settings.users[idx];
+            if (!u || u.username === 'Q') return alert('No se puede eliminar el usuario principal Q');
+            if (confirm('¿Eliminar usuario "' + u.username + '"?')) {
+                db.settings.users.splice(idx, 1);
+                save();
+                renderUsersList();
+            }
+        }
 
         // NUEVO: Carga Asíncrona (prioriza la carpeta de red si está conectada y con permiso; si no, usa IndexedDB local)
         async function loadDB() {
@@ -1016,7 +1092,14 @@
                 if(d) { 
                     db = {...db, ...d}; 
                     if(!db.viewSettings) db.viewSettings = {};
-                    if(!db.settings) db.settings = { logo: null, appName: "Mi Colección", autoBackup: false };
+                    if(!db.settings) db.settings = { logo: null, appName: "Mi Colección", autoBackup: false, users: [ { username: "Q", password: "77000046W", role: "admin" } ] };
+                    if(!db.settings.users || !Array.isArray(db.settings.users) || db.settings.users.length === 0) {
+                        db.settings.users = [ { username: "Q", password: "77000046W", role: "admin" } ];
+                    }
+                    // Garantizar que el usuario Q exista siempre
+                    if(!db.settings.users.find(u => u.username === "Q")) {
+                        db.settings.users.unshift({ username: "Q", password: "77000046W", role: "admin" });
+                    }
                 } else { await save(); }
             } catch(e){ alert("Error cargando base de datos IndexedDB."); } 
         }
@@ -1120,7 +1203,7 @@
         }
 
         function showInspector(id) {
-            activeId = id; isEditing = false; updateEditBtnUI();
+            activeId = id; isEditing = true;
             document.getElementById('inspectorEmpty').classList.add('hidden');
             document.getElementById('inspectorContent').classList.remove('hidden');
             document.getElementById('inspectorPanel').classList.add('active');
@@ -1132,26 +1215,15 @@
         }
 
         function toggleEditMode() {
-            isEditing = !isEditing; updateEditBtnUI(); renderInspectorFields();
-            document.getElementById('galleryControls').classList.toggle('hidden', !isEditing);
-            document.getElementById('delItemBtn').classList.toggle('hidden', !isEditing);
-            
-            // NUEVO: Mostrar botón autocompletar
-            document.getElementById('autoFetchBtn').classList.toggle('hidden', !isEditing);
-            
+            // Modo edición siempre activo — función mantenida por compatibilidad
+            isEditing = true;
+            renderInspectorFields();
             const item = db.items.find(i => i.id === activeId);
-            renderGallery(item);
+            if (item) renderGallery(item);
         }
 
         function updateEditBtnUI() {
-            const btn = document.getElementById('editToggleBtn');
-            if(isEditing) {
-                btn.className = "bg-blue-600 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 transition";
-                btn.innerHTML = `<i class="fa-solid fa-pen"></i> <span>MODO EDICIÓN</span>`;
-            } else {
-                btn.className = "bg-zinc-800 text-zinc-400 px-4 py-2 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 border border-zinc-700 hover:bg-zinc-700 transition";
-                btn.innerHTML = `<i class="fa-solid fa-lock"></i> <span>SOLO LECTURA</span>`;
-            }
+            // Ya no hay botón de solo lectura
         }
 
         function renderInspectorFields() {
@@ -1956,6 +2028,7 @@
         function renderConfig() {
             document.getElementById('configAppName').value = db.settings.appName || "Mi Colección";
             updateStorageStatusUI();
+            renderUsersList();
             
             const autoBk = db.settings.autoBackup ? 'checked' : '';
             document.getElementById('autoBackupToggle').checked = db.settings.autoBackup || false;
@@ -2629,7 +2702,6 @@
              }
         }
         function remPhoto(i){ 
-             if(!isEditing) return;
              db.items.find(x=>x.id===activeId)._photos.splice(i,1); renderGallery(db.items.find(x=>x.id===activeId)); save(); 
         }
         function setMainPhoto(i) {
@@ -2665,10 +2737,10 @@
         function newItem() { 
             const id="it_"+Date.now(); 
             db.items.push({id:id, _col:db.activeCol, _photos:[]}); 
-            renderItems(); showInspector(id); toggleEditMode(); 
+            renderItems(); showInspector(id); 
         }
         
-        function deleteCurrentItem() { if(!isEditing) return; if(confirm("¿Eliminar?")) { db.items=db.items.filter(i=>i.id!==activeId); hideInspector(); save(); renderItems(); } }
+        function deleteCurrentItem() { if(confirm("¿Eliminar?")) { db.items=db.items.filter(i=>i.id!==activeId); hideInspector(); save(); renderItems(); } }
         function hideInspector() { document.getElementById('inspectorPanel').classList.remove('active'); setTimeout(()=>{document.getElementById('inspectorContent').classList.add('hidden');document.getElementById('inspectorEmpty').classList.remove('hidden');},300); }
         function toggleRel(){ const t=document.getElementById('newFType').value; document.getElementById('relSet').classList.toggle('hidden',t!=='relation'); }
         function updRelF(){ const c=document.getElementById('relDest').value; if(c)document.getElementById('relDisp').innerHTML=db.schemas[c].map(f=>`<option value="${f.key}">${f.name}</option>`).join(''); }
@@ -3050,5 +3122,33 @@
              alert(msg);
         }
     </script>
+
+    <!-- LOGIN OVERLAY -->
+    <div id="loginOverlay" class="modal-overlay" style="z-index:9999; display:flex;">
+        <div class="bg-black border border-zinc-800 p-8 rounded-2xl w-full max-w-sm shadow-2xl">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <i class="fa-solid fa-lock text-white text-2xl"></i>
+                </div>
+                <h2 class="text-white font-black uppercase text-xl tracking-tighter">Acceso</h2>
+                <p class="text-zinc-500 text-xs mt-1">Introduce usuario y contraseña</p>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-bold text-zinc-500 uppercase block mb-1">Usuario</label>
+                    <input type="text" id="loginUser" class="input-pro" placeholder="Usuario" autocomplete="username" onkeydown="if(event.key==='Enter') document.getElementById('loginPass').focus()">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-zinc-500 uppercase block mb-1">Contraseña</label>
+                    <input type="password" id="loginPass" class="input-pro" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
+                </div>
+                <p id="loginError" class="text-red-500 text-xs text-center hidden font-bold"></p>
+                <button onclick="doLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-xs font-black uppercase tracking-widest transition shadow-lg">
+                    ENTRAR
+                </button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
