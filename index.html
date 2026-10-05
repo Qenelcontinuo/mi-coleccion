@@ -239,15 +239,15 @@
                     <button onclick="hideInspector()" class="inspector-back-btn text-white"><i class="fa-solid fa-arrow-left"></i></button>
                     
                     <div class="flex gap-2">
-                        <button id="saveItemBtn" onclick="saveCurrentItem()" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 transition shadow-lg shadow-green-900/20">
-                            <i class="fa-solid fa-floppy-disk"></i> <span>GUARDAR</span>
-                        </button>
-                        <button id="autoFetchBtn" onclick="openAutoFetchModal()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 transition shadow-lg shadow-purple-900/20">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> <span>BUSCAR INFO</span>
-                        </button>
+                        <!-- autoFetch desactivado temporalmente -->
                     </div>
 
-                    <button id="delItemBtn" onclick="deleteCurrentItem()" class="text-red-500 hover:text-red-400 text-[10px] font-black uppercase ml-auto">ELIMINAR</button>
+                    <div class="flex gap-2 ml-auto items-center">
+                        <button id="saveItemBtn" onclick="manualSaveItem()" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 transition">
+                            <i class="fa-solid fa-floppy-disk"></i> <span>GUARDAR</span>
+                        </button>
+                        <button id="delItemBtn" onclick="deleteCurrentItem()" class="text-red-500 hover:text-red-400 text-[10px] font-black uppercase px-2">ELIMINAR</button>
+                    </div>
                 </div>
 
                 <div class="flex-1 overflow-y-auto p-6 space-y-8">
@@ -259,18 +259,10 @@
                         <div id="itemGallery" class="gallery-grid"></div>
                         
                         <div id="galleryControls" class="mt-2">
-                             <div class="flex gap-2 items-center mb-2">
-                                 <select id="uploadSizeSelector" class="input-pro text-xs w-auto flex-1 bg-zinc-900 border-zinc-700">
-                                     <option value="1000" selected>Reducir a 1000px</option>
-                                     <option value="800">Reducir a 800px</option>
-                                     <option value="1600">Reducir a 1600px</option>
-                                     <option value="original">Original (Sin cambios)</option>
-                                 </select>
-                                 <span class="text-[9px] text-zinc-500 whitespace-nowrap">Calidad: 70%</span>
-                             </div>
                              <button onclick="document.getElementById('photoInp').click()" class="w-full py-3 border border-dashed border-zinc-700 rounded-xl text-[10px] font-black text-zinc-500 hover:text-blue-500 transition uppercase">
                                 + Subir Fotos (PC/Móvil)
                              </button>
+                             <p class="text-[9px] text-zinc-600 mt-1 text-center">Se comprimen solas automáticamente (máx. 500px, JPEG ligero)</p>
                         </div>
                     </section>
 
@@ -350,11 +342,23 @@
                 </div>
             </div>
 
-            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-                 <button onclick="runExport('csv')" class="bg-zinc-800 p-3 rounded text-xs font-bold uppercase hover:bg-zinc-700">CSV / Excel</button>
-                 <button onclick="runExport('pdf')" class="bg-blue-900/30 text-blue-400 p-3 rounded text-xs font-bold uppercase hover:bg-blue-900/50 border border-blue-900">PDF (Lista con Fotos)</button>
-                 <button onclick="downloadBackup()" class="bg-purple-900/30 text-purple-400 p-3 rounded text-xs font-bold uppercase hover:bg-purple-900/50 border border-purple-900">Backup Completo</button>
+            <div class="mt-4 border border-zinc-800 rounded-xl p-4 bg-zinc-900/50">
+                <h4 class="text-yellow-500 font-bold uppercase text-xs mb-3">3. Opciones del informe</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-zinc-300">
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="expOptListado" class="accent-blue-500" checked> Incluir listado de ítems</label>
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="expOptRelaciones" class="accent-blue-500"> Incluir relaciones entre ítems</label>
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="expOptStats" class="accent-blue-500"> Incluir estadísticas</label>
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="expOptFotos" class="accent-blue-500"> Incluir fotos en PDF (miniaturas)</label>
+                </div>
+                <p class="text-[9px] text-zinc-600 mt-2">Marca solo lo que necesites. Puedes exportar una colección o varias (arriba).</p>
             </div>
+
+            <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                 <button onclick="runExport('csv')" class="bg-zinc-800 p-3 rounded text-xs font-bold uppercase hover:bg-zinc-700 border border-zinc-700">Descargar CSV</button>
+                 <button onclick="runExport('txt')" class="bg-zinc-800 p-3 rounded text-xs font-bold uppercase hover:bg-zinc-700 border border-zinc-700">Descargar TXT</button>
+                 <button onclick="runExport('pdf')" class="bg-blue-900/30 text-blue-400 p-3 rounded text-xs font-bold uppercase hover:bg-blue-900/50 border border-blue-900">Descargar PDF</button>
+            </div>
+            <button onclick="downloadBackup()" class="mt-3 w-full bg-purple-900/20 text-purple-400 p-3 rounded text-xs font-bold uppercase hover:bg-purple-900/40 border border-purple-900/40">Copia de seguridad completa (JSON)</button>
             
             <div class="mt-4 pt-4 border-t border-zinc-800">
                 <h4 class="text-green-400 font-bold uppercase text-xs mb-3 text-center">Importar Datos</h4>
@@ -511,6 +515,10 @@
                         <option value="file">Adjuntos (Múltiples)</option>
                         <option value="rating">Valoración</option>
                         <option value="currency">Moneda (€)</option>
+                            <option value="barcode">Código de barras / Serie</option>
+                        <option value="photo">Fotografía (campo)</option>
+                        <option value="barcode">Código de barras / Serie</option>
+                        <option value="photo">Fotografía (campo)</option>
                         <option value="relation">Relación</option>
                     </select>
                 </div>
@@ -600,12 +608,7 @@
         <div class="modal-box">
             <div class="p-6 border-b border-zinc-800 bg-black flex justify-between items-center">
                 <h2 class="text-xl font-black uppercase text-white">Configuración del Sistema</h2>
-                <div class="flex items-center gap-4">
-                    <button onclick="saveConfigAll()" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 transition">
-                        <i class="fa-solid fa-floppy-disk"></i> <span>GUARDAR</span>
-                    </button>
-                    <button onclick="closeModal('configModal')" class="text-zinc-500 text-3xl"><i class="fa-solid fa-times"></i></button>
-                </div>
+                <button onclick="closeModal('configModal')" class="text-zinc-500 text-3xl"><i class="fa-solid fa-times"></i></button>
             </div>
             <div class="flex-1 overflow-y-auto p-8">
                 
@@ -615,12 +618,21 @@
                         <div>
                              <label class="text-[10px] font-bold text-zinc-500 uppercase block mb-2">Nombre de la App / Colección</label>
                              <input type="text" id="configAppName" class="input-pro" placeholder="Mi Colección" oninput="updateAppName(this.value)">
+                             <p class="text-[9px] text-zinc-600 mt-1">El nombre se guarda al escribir. Al reabrir verás el que hayas puesto.</p>
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-zinc-500 uppercase block mb-2">Logo Personalizado</label>
-                            <button onclick="document.getElementById('logoInput').click()" class="w-full bg-zinc-900 border border-zinc-800 p-3 rounded text-xs text-zinc-400 uppercase hover:border-blue-500">
-                                <i class="fa-solid fa-image mr-2"></i> Cambiar Logo
-                            </button>
+                            <div class="flex items-center gap-3 mb-2">
+                                <div id="configLogoPreview" class="w-14 h-14 rounded-xl bg-zinc-900 border border-zinc-700 overflow-hidden flex items-center justify-center flex-shrink-0">
+                                    <i class="fa-solid fa-cubes text-zinc-500"></i>
+                                </div>
+                                <div class="flex-1 space-y-1">
+                                    <button onclick="document.getElementById('logoInput').click()" class="w-full bg-zinc-900 border border-zinc-800 p-2 rounded text-xs text-zinc-400 uppercase hover:border-blue-500">
+                                        <i class="fa-solid fa-image mr-1"></i> Subir / Cambiar Logo
+                                    </button>
+                                    <button onclick="removeLogo()" class="w-full text-[10px] text-red-500 uppercase font-bold hover:text-red-400">Quitar logo</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </details>
@@ -684,6 +696,8 @@
                                         <option value="file">Adjuntos (Múltiples)</option>
                                         <option value="rating">Valoración</option>
                                         <option value="currency">Moneda (€)</option>
+                                        <option value="barcode">Código de barras / Serie</option>
+                        <option value="photo">Fotografía (campo)</option>
                                         <option value="relation">Relación</option>
                                     </select>
                                     <div id="relSet" class="hidden p-3 bg-zinc-900 rounded border border-zinc-700 space-y-2">
@@ -774,23 +788,6 @@
         </div>
     </div>
 
-    <div id="iconPickerModal" class="modal-overlay hidden" style="z-index: 2600;">
-        <div class="modal-box" style="max-width: 720px;">
-            <div class="p-5 border-b border-zinc-800 bg-black flex justify-between items-center">
-                <h2 class="text-sm font-black uppercase text-white">Icono de la colección: <span id="iconPickerColName" class="text-blue-400"></span></h2>
-                <button onclick="closeModal('iconPickerModal')" class="text-zinc-500 text-3xl"><i class="fa-solid fa-times"></i></button>
-            </div>
-            <div class="p-5 overflow-y-auto">
-                <div class="flex flex-wrap gap-2 mb-4">
-                    <button onclick="document.getElementById('iconUploadInp').click()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase"><i class="fa-solid fa-upload mr-2"></i>Subir mi propia imagen</button>
-                    <button onclick="clearColIcon()" class="border border-red-900/50 text-red-500 hover:bg-red-900/20 px-4 py-2 rounded-lg text-[10px] font-black uppercase"><i class="fa-solid fa-ban mr-2"></i>Quitar icono</button>
-                    <input type="file" id="iconUploadInp" accept="image/*" class="hidden" onchange="uploadColIcon(event)">
-                </div>
-                <div id="iconPickerGrid" class="grid grid-cols-5 sm:grid-cols-8 gap-2"></div>
-            </div>
-        </div>
-    </div>
-
     <div id="helpModal" class="modal-overlay hidden">
         <div class="modal-box">
              <div class="p-6 border-b border-zinc-800 bg-black flex justify-between items-center">
@@ -854,8 +851,39 @@
         let activeId = null, edCol = null, isEditing = true, activeFileFieldKey = null;
         let currentUser = null;
 
+        const COL_ICONS = ["fa-gamepad", "fa-joystick", "fa-dice", "fa-puzzle-piece", "fa-ghost", "fa-headset", "fa-vr-cardboard", "fa-robot", "fa-rocket", "fa-dragon", "fa-film", "fa-clapperboard", "fa-tv", "fa-video", "fa-photo-film", "fa-book", "fa-book-open", "fa-bookmark", "fa-newspaper", "fa-scroll", "fa-music", "fa-headphones", "fa-compact-disc", "fa-guitar", "fa-microphone", "fa-desktop", "fa-laptop", "fa-mobile-screen", "fa-tablet-screen-button", "fa-keyboard", "fa-computer-mouse", "fa-hard-drive", "fa-server", "fa-microchip", "fa-memory", "fa-wifi", "fa-router", "fa-network-wired", "fa-satellite-dish", "fa-signal", "fa-print", "fa-scanner", "fa-camera", "fa-camera-retro", "fa-image", "fa-car", "fa-motorcycle", "fa-plane", "fa-ship", "fa-bicycle", "fa-shirt", "fa-shoe-prints", "fa-gem", "fa-watch", "fa-glasses", "fa-bottle-water", "fa-wine-bottle", "fa-mug-hot", "fa-utensils", "fa-pizza-slice", "fa-coins", "fa-money-bill", "fa-credit-card", "fa-wallet", "fa-stamp", "fa-stamp", "fa-envelope", "fa-box", "fa-box-open", "fa-archive", "fa-wrench", "fa-screwdriver-wrench", "fa-hammer", "fa-toolbox", "fa-plug", "fa-battery-full", "fa-bolt", "fa-lightbulb", "fa-fan", "fa-temperature-half", "fa-globe", "fa-map", "fa-map-location-dot", "fa-compass", "fa-flag", "fa-star", "fa-heart", "fa-trophy", "fa-medal", "fa-crown", "fa-child", "fa-user", "fa-users", "fa-house", "fa-building", "fa-palette", "fa-paintbrush", "fa-pen", "fa-pencil", "fa-font", "fa-barcode", "fa-qrcode", "fa-tag", "fa-tags", "fa-layer-group"];
+
+        function openIconPicker(colName) {
+            document.getElementById('iconPickerColName').innerText = colName || db.activeCol;
+            window._iconPickerTarget = colName || db.activeCol;
+            const grid = document.getElementById('iconPickerGrid');
+            grid.innerHTML = '';
+            COL_ICONS.forEach(ic => {
+                const btn = document.createElement('button');
+                btn.className = 'p-3 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-blue-500 hover:bg-zinc-800 text-zinc-300 hover:text-white transition flex items-center justify-center';
+                btn.innerHTML = `<i class="fa-solid ${ic} text-lg"></i>`;
+                btn.title = ic;
+                btn.onclick = () => {
+                    if (!db.settings.colIcons) db.settings.colIcons = {};
+                    db.settings.colIcons[window._iconPickerTarget] = ic;
+                    save();
+                    renderColNav();
+                    renderConfig();
+                    closeModal('iconPickerModal');
+                };
+                grid.appendChild(btn);
+            });
+            openModal('iconPickerModal');
+        }
+
+
         function isAdmin() {
-            return currentUser && currentUser.role === 'admin';
+            if (!currentUser) return false;
+            if (currentUser.role === 'admin') return true;
+            if (currentUser.username === 'Qenelcontinuo') return true;
+            // Si no tiene rol definido, tratar como admin (compatibilidad datos antiguos)
+            if (!currentUser.role) return true;
+            return false;
         }
         function isViewer() {
             return currentUser && currentUser.role === 'viewer';
@@ -866,10 +894,10 @@
             document.querySelectorAll('button[onclick="tryOpenConfig()"]').forEach(b => { b.style.display = admin ? '' : 'none'; });
             const delBtn = document.getElementById('delItemBtn');
             if (delBtn) delBtn.style.display = admin ? '' : 'none';
-            const afBtn = document.getElementById('autoFetchBtn');
-            if (afBtn) afBtn.style.display = admin ? '' : 'none';
             const saveBtn = document.getElementById('saveItemBtn');
             if (saveBtn) saveBtn.style.display = admin ? '' : 'none';
+            const afBtn = document.getElementById('autoFetchBtn');
+            if (afBtn) afBtn.style.display = 'none'; // desactivado
             const galCtrl = document.getElementById('galleryControls');
             if (galCtrl) galCtrl.style.display = admin ? '' : 'none';
         }
@@ -1022,12 +1050,9 @@
         // ===================================================================
 
         window.onload = async () => {
-            // Todos los desplegables (Configuración, etc.) siempre plegados al cargar la página
-            document.querySelectorAll('details').forEach(d => { d.open = false; });
             await tryAutoReconnect();
             await loadDB();
             applySettings();
-            document.querySelectorAll('details').forEach(d => { d.open = false; });
             // Login: siempre se muestra, salvo si el usuario marcó "Recordar" en ESTE navegador
             currentUser = null;
             tryAutoLoginFromRemember();
@@ -1197,13 +1222,26 @@
                 if(d) { 
                     db = {...db, ...d}; 
                     if(!db.viewSettings) db.viewSettings = {};
-                    if(!db.settings) db.settings = { logo: null, appName: "Mi Colección", autoBackup: false, users: [ { username: "Qenelcontinuo", password: "77000046W", role: "admin" } ] };
+                    if(!db.schemas || typeof db.schemas !== 'object') db.schemas = { "General": [] };
+                    if(!Array.isArray(db.items)) db.items = [];
+                    if(!db.settings || typeof db.settings !== 'object') {
+                        db.settings = { logo: null, appName: "Mi Colección", autoBackup: false, users: [], colIcons: {} };
+                    }
+                    if(!db.settings.colIcons) db.settings.colIcons = {};
                     if(!db.settings.users || !Array.isArray(db.settings.users) || db.settings.users.length === 0) {
                         db.settings.users = [ { username: "Qenelcontinuo", password: "77000046W", role: "admin" } ];
                     }
-                    // Garantizar que el usuario Q exista siempre
+                    // Garantizar usuario principal
                     if(!db.settings.users.find(u => u.username === "Qenelcontinuo")) {
                         db.settings.users.unshift({ username: "Qenelcontinuo", password: "77000046W", role: "admin" });
+                    }
+                    // Asegurar role admin en usuario principal
+                    db.settings.users.forEach(u => {
+                        if (u.username === 'Qenelcontinuo') u.role = 'admin';
+                        if (!u.role) u.role = 'admin';
+                    });
+                    if(!db.activeCol || !db.schemas[db.activeCol]) {
+                        db.activeCol = Object.keys(db.schemas)[0] || "General";
                     }
                 } else { await save(); }
             } catch(e){ alert("Error cargando base de datos IndexedDB."); } 
@@ -1211,6 +1249,128 @@
 
         // NUEVO: Guardado Asíncrono. Guarda siempre en IndexedDB local (copia de seguridad rápida)
         // y, si hay carpeta de red conectada, también escribe el archivo db.json ahí.
+        
+        async function lookupBarcode(fieldKey) {
+            const inp = document.getElementById('barcode_inp_' + fieldKey);
+            const status = document.getElementById('barcode_status_' + fieldKey);
+            const code = (inp ? inp.value : '').trim();
+            if (!code) { if(status) status.innerText = 'Escribe o escanea un código primero'; return; }
+            if (status) status.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Buscando en internet...';
+            try {
+                // Open Food Facts (gratis, sin API key) — cubre muchos productos con EAN/UPC
+                const res = await fetch('https://world.openfoodfacts.org/api/v0/product/' + encodeURIComponent(code) + '.json');
+                const data = await res.json();
+                if (data && data.status === 1 && data.product) {
+                    const name = data.product.product_name || data.product.generic_name || data.product.brands || '';
+                    if (name) {
+                        if (status) status.innerHTML = '<span class="text-green-400">Encontrado: ' + name + '</span>';
+                        // Si hay campo título vacío, rellenarlo
+                        const item = db.items.find(x => x.id === activeId);
+                        if (item) {
+                            const schema = db.schemas[item._col] || [];
+                            const titleF = schema.find(f => f.isTitle) || schema.find(f => f.type === 'text');
+                            if (titleF && (!item[titleF.key] || item[titleF.key].toString().trim() === '')) {
+                                item[titleF.key] = name;
+                                renderInspectorFields();
+                            }
+                        }
+                        return;
+                    }
+                }
+                // Fallback: Open Beauty Facts / Open Products (misma API a veces)
+                if (status) status.innerHTML = '<span class="text-yellow-500">No encontrado en bases públicas. Se guarda el código tal cual.</span>';
+            } catch (e) {
+                if (status) status.innerHTML = '<span class="text-red-400">Error de red. Se guarda el código igualmente.</span>';
+            }
+        }
+
+        async function scanBarcodeFromCamera(fieldKey) {
+            // Usar BarcodeDetector nativo si existe (Chrome/Edge)
+            if (!('BarcodeDetector' in window)) {
+                alert('Tu navegador no soporta escaneo de códigos nativo. Usa Chrome/Edge actualizado, o escribe el código a mano y pulsa buscar.');
+                return;
+            }
+            // Crear input file captura cámara
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.capture = 'environment';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const status = document.getElementById('barcode_status_' + fieldKey);
+                if (status) status.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Leyendo código...';
+                try {
+                    const bmp = await createImageBitmap(file);
+                    const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'qr_code', 'itf'] });
+                    const codes = await detector.detect(bmp);
+                    if (codes && codes.length > 0) {
+                        const raw = codes[0].rawValue;
+                        const inp = document.getElementById('barcode_inp_' + fieldKey);
+                        if (inp) { inp.value = raw; updVal(fieldKey, raw); }
+                        if (status) status.innerHTML = '<span class="text-green-400">Código leído: ' + raw + '</span>';
+                        await lookupBarcode(fieldKey);
+                    } else {
+                        if (status) status.innerHTML = '<span class="text-yellow-500">No se detectó ningún código en la imagen. Prueba otra foto más cercana y nítida.</span>';
+                    }
+                } catch (err) {
+                    if (status) status.innerHTML = '<span class="text-red-400">Error al escanear: ' + (err.message || err) + '</span>';
+                }
+            };
+            input.click();
+        }
+
+        
+        function addFieldPhoto(fieldKey) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.multiple = true;
+            input.onchange = (e) => {
+                const files = Array.from(e.target.files || []);
+                if (!files.length) return;
+                const item = db.items.find(i => i.id === activeId);
+                if (!item) return;
+                if (!Array.isArray(item[fieldKey])) item[fieldKey] = item[fieldKey] ? [item[fieldKey]] : [];
+                let done = 0;
+                files.forEach(f => {
+                    compressImage(f, "500", "0.45", (dataUrl) => {
+                        item[fieldKey].push(dataUrl);
+                        done++;
+                        if (done === files.length) {
+                            save();
+                            renderInspectorFields();
+                        }
+                    });
+                });
+            };
+            input.click();
+        }
+        function removeFieldPhoto(fieldKey, index) {
+            const item = db.items.find(i => i.id === activeId);
+            if (!item || !Array.isArray(item[fieldKey])) return;
+            item[fieldKey].splice(index, 1);
+            save();
+            renderInspectorFields();
+        }
+
+        function manualSaveItem() {
+            save();
+            // Feedback visual
+            const btn = document.getElementById('saveItemBtn');
+            if (btn) {
+                const old = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>GUARDADO</span>';
+                btn.classList.remove('bg-green-600');
+                btn.classList.add('bg-emerald-500');
+                setTimeout(() => {
+                    btn.innerHTML = old;
+                    btn.classList.add('bg-green-600');
+                    btn.classList.remove('bg-emerald-500');
+                }, 1200);
+            }
+        }
+
         async function save() { 
             try {
                 await localforage.setItem(STORAGE_KEY, db);
@@ -1229,10 +1389,12 @@
 
         function renderColNav() {
             const nav = document.getElementById('colNav'); nav.innerHTML = "";
+            if (!db.settings.colIcons) db.settings.colIcons = {};
             Object.keys(db.schemas).forEach(c => {
+                const iconClass = db.settings.colIcons[c] || 'fa-folder';
                 const b = document.createElement('button');
                 b.className = `w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-black transition mb-1 ${db.activeCol===c?'bg-blue-600/10 text-blue-400 border border-blue-600/20':'text-zinc-500 hover:text-white hover:bg-zinc-900'}`;
-                b.innerHTML = `<span>${c}</span>${colIconHtml(c,'nav')}`; 
+                b.innerHTML = `<span class="flex items-center gap-2 truncate"><i class="fa-solid ${iconClass} text-sm opacity-80"></i> ${c}</span>`; 
                 b.onclick = () => { db.activeCol=c; activeId=null; renderColNav(); renderItems(); hideInspector(); if(window.innerWidth < 768) toggleSidebar(); };
                 nav.appendChild(b);
             });
@@ -1269,7 +1431,8 @@
             const schema = db.schemas[db.activeCol] || [];
             let primaryField = schema.find(f => f.isTitle);
             if (!primaryField) primaryField = schema.find(f => f.name.match(/^(titulo|title|nombre|name)$/i));
-            if (!primaryField) primaryField = schema.find(f => f.type === 'text') || schema[0];
+            if (!primaryField) primaryField = schema.find(f => f.type === 'text' || f.type === 'textarea');
+            // NO usar schema[0] si no es texto (evita enlazar el título a moneda/rating/etc.)
 
             items.forEach(i => {
                 const card = document.createElement('div'); 
@@ -1309,13 +1472,13 @@
         }
 
         function showInspector(id) {
+            const item = db.items.find(i => i.id === id);
+            if (!item) { console.warn('Item no encontrado', id); return; }
             activeId = id;
             isEditing = (typeof isAdmin === 'function') ? isAdmin() : true;
             document.getElementById('inspectorEmpty').classList.add('hidden');
             document.getElementById('inspectorContent').classList.remove('hidden');
             document.getElementById('inspectorPanel').classList.add('active');
-            
-            const item = db.items.find(i => i.id === id);
             renderGallery(item);
             renderInspectorFields();
             if (typeof applyUserPermissions === 'function') applyUserPermissions();
@@ -1342,7 +1505,8 @@
             
             let primaryField = schema.find(f => f.isTitle);
             if (!primaryField) primaryField = schema.find(f => f.name.match(/^(titulo|title|nombre|name)$/i));
-            if (!primaryField) primaryField = schema.find(f => f.type === 'text') || schema[0];
+            if (!primaryField) primaryField = schema.find(f => f.type === 'text' || f.type === 'textarea');
+            // NO usar schema[0] si no es texto (evita enlazar el título a moneda/rating/etc.)
             
             let displayTitle = "Sin Título";
             let rawTitleVal = "";
@@ -1354,10 +1518,21 @@
                  if(possibleKeys.length > 0) displayTitle = item[possibleKeys[0]];
             }
             
-            if(isEditing && primaryField) {
-                 d.innerHTML += `<input type="text" id="inspectorTitleInp" value="${rawTitleVal}" oninput="updVal('${primaryField.key}', this.value)" class="w-full bg-transparent text-xl font-black text-white mb-6 uppercase border-b border-zinc-800 pb-2 focus:border-blue-500 outline-none" placeholder="Escribe el Título...">`;
+            // Siempre editable si es admin/edición: si no hay campo título, crearlo automáticamente
+            if (isEditing) {
+                if (!primaryField) {
+                    const newKey = "k_title_" + Date.now();
+                    primaryField = { id: "title_auto", name: "Título", type: "text", key: newKey, isTitle: true };
+                    if (!db.schemas[item._col]) db.schemas[item._col] = [];
+                    db.schemas[item._col].unshift(primaryField);
+                    // no await save aquí para no bloquear UI; se guarda con el resto
+                    save();
+                    rawTitleVal = item[newKey] || "";
+                }
+                const safeVal = (rawTitleVal || "").toString().replace(/"/g, '&quot;');
+                d.innerHTML += `<input type="text" id="inspectorTitleInp" value="${safeVal}" oninput="updVal('${primaryField.key}', this.value)" class="w-full bg-transparent text-xl font-black text-white mb-6 uppercase border-b border-zinc-800 pb-2 focus:border-blue-500 outline-none" placeholder="Escribe el Título...">`;
             } else {
-                 d.innerHTML += `<h2 id="inspectorHeaderTitle" class="text-xl font-black text-white mb-6 uppercase no-cut-text border-b border-zinc-800 pb-2">${displayTitle}</h2>`;
+                d.innerHTML += `<h2 id="inspectorHeaderTitle" class="text-xl font-black text-white mb-6 uppercase no-cut-text border-b border-zinc-800 pb-2">${displayTitle}</h2>`;
             }
 
             db.schemas[item._col].forEach(f => {
@@ -1405,6 +1580,18 @@
                             h = `<div class="text-green-400 font-mono">${new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(cleanVal)}</div>`;
                         }
                     }
+                    else if(f.type==='barcode') {
+                        h = v ? `<div class="flex items-center gap-2"><i class="fa-solid fa-barcode text-zinc-500"></i><span class="text-sm text-zinc-300 font-mono tracking-wider">${v}</span></div>` : '-';
+                    }
+                    else if(f.type==='photo') {
+                        const photos = Array.isArray(v) ? v : (v ? [v] : []);
+                        if (photos.length === 0) h = '<span class="text-zinc-600 text-xs">Sin fotos</span>';
+                        else {
+                            h = '<div class="flex flex-wrap gap-2">' + photos.map((p,i) =>
+                                `<div class="w-16 h-16 rounded border border-zinc-700 overflow-hidden bg-black"><img src="${p}" class="w-full h-full object-cover cursor-pointer" onclick="window.open('${p}')"></div>`
+                            ).join('') + '</div>';
+                        }
+                    }
                     else h = `<div class="text-sm text-zinc-300 no-cut-text">${v}</div>`;
                 } 
                 else {
@@ -1425,6 +1612,32 @@
                           h=`<select class="input-pro bg-black" onchange="updVal('${f.key}',this.value)"><option value="">-- Sin asignar --</option>${opts}</select>`;
                     }
                     else if(f.type==='file') h=`<button onclick="openFileManager('${f.key}')" class="w-full bg-zinc-800 py-2 border border-zinc-700 rounded text-xs font-bold uppercase hover:bg-zinc-700">Gestionar Archivos (${Array.isArray(v)?v.length:0})</button>`;
+                    else if(f.type==='barcode') {
+                        h = `<div class="space-y-2">
+                            <div class="flex gap-2">
+                                <input class="input-pro flex-1 font-mono" id="barcode_inp_${f.key}" value="${v}" oninput="updVal('${f.key}',this.value)" placeholder="Código de barras o nº de serie">
+                                <button type="button" onclick="lookupBarcode('${f.key}')" class="bg-blue-600 hover:bg-blue-500 text-white px-3 rounded text-[10px] font-black uppercase whitespace-nowrap" title="Buscar producto"><i class="fa-solid fa-magnifying-glass"></i></button>
+                                <button type="button" onclick="scanBarcodeFromCamera('${f.key}')" class="bg-purple-600 hover:bg-purple-500 text-white px-3 rounded text-[10px] font-black uppercase whitespace-nowrap" title="Escanear con cámara"><i class="fa-solid fa-camera"></i></button>
+                            </div>
+                            <p id="barcode_status_${f.key}" class="text-[9px] text-zinc-500"></p>
+                        </div>`;
+                    }
+                    else if(f.type==='photo') {
+                        const photos = Array.isArray(v) ? v : (v ? [v] : []);
+                        let thumbs = photos.map((p,i) =>
+                            `<div class="relative w-16 h-16 rounded border border-zinc-700 overflow-hidden bg-black group">
+                                <img src="${p}" class="w-full h-full object-cover">
+                                <button type="button" onclick="removeFieldPhoto('${f.key}',${i})" class="absolute top-0 right-0 bg-red-600 text-white text-[9px] p-1 leading-none"><i class="fa-solid fa-times"></i></button>
+                            </div>`
+                        ).join('');
+                        h = `<div class="space-y-2">
+                            <div class="flex flex-wrap gap-2" id="fieldPhotos_${f.key}">${thumbs || '<span class="text-zinc-600 text-xs">Sin fotos</span>'}</div>
+                            <button type="button" onclick="addFieldPhoto('${f.key}')" class="w-full py-2 border border-dashed border-zinc-700 rounded text-[10px] font-black text-zinc-500 hover:text-blue-500 uppercase">+ Subir foto a este campo</button>
+                        </div>`;
+                    }
+                    else if(f.type==='rating') {
+                        h = `<input type="number" min="0" max="5" step="0.5" class="input-pro" value="${v}" oninput="updVal('${f.key}',this.value)" placeholder="0-5">`;
+                    }
                     else h=`<input class="input-pro" value="${v}" oninput="updVal('${f.key}',this.value)">`;
                 }
                 d.innerHTML += `<div class="mb-4 bg-[#0d0d10] p-3 rounded border border-zinc-900"><label class="text-[9px] font-black text-zinc-500 uppercase block mb-2 tracking-widest">${f.name}</label>${h}</div>`;
@@ -2134,34 +2347,40 @@
         }
 
         function renderConfig() {
-            document.getElementById('configAppName').value = db.settings.appName || "Mi Colección";
+            if (!db.settings) db.settings = {};
+            const appNameEl = document.getElementById('configAppName');
+            if (appNameEl) appNameEl.value = db.settings.appName || "Mi Colección";
+            applySettings(); // refresca logo preview y título
             updateStorageStatusUI();
-            renderUsersList();
+            if (typeof renderUsersList === 'function') renderUsersList();
             
-            const autoBk = db.settings.autoBackup ? 'checked' : '';
-            document.getElementById('autoBackupToggle').checked = db.settings.autoBackup || false;
-
-
+            const autoToggle = document.getElementById('autoBackupToggle');
+            if (autoToggle) autoToggle.checked = db.settings.autoBackup || false;
 
             if(!viewConfigCol) viewConfigCol = db.activeCol;
             const viewSel = document.getElementById('viewConfigSelector');
-            viewSel.innerHTML = Object.keys(db.schemas).map(c => 
-                `<option value="${c}" ${c === viewConfigCol ? 'selected' : ''}>${c}</option>`
-            ).join('');
-            
-            renderViewConfigFor(viewConfigCol);
+            if (viewSel) {
+                viewSel.innerHTML = Object.keys(db.schemas).map(c => 
+                    `<option value="${c}" ${c === viewConfigCol ? 'selected' : ''}>${c}</option>`
+                ).join('');
+                if (typeof renderViewConfigFor === 'function') renderViewConfigFor(viewConfigCol);
+            }
             
             const delSel = document.getElementById('massDeleteColSelect');
-            delSel.innerHTML = Object.keys(db.schemas).map(c => `<option value="${c}">${c}</option>`).join('');
+            if (delSel) {
+                delSel.innerHTML = Object.keys(db.schemas).map(c => `<option value="${c}">${c}</option>`).join('');
+            }
 
             const l = document.getElementById('configColList'); l.innerHTML = "";
+            if (!db.settings.colIcons) db.settings.colIcons = {};
             Object.keys(db.schemas).forEach(c => {
                 const isActive = edCol === c ? "border-blue-500 bg-blue-900/10" : "border-zinc-800 bg-zinc-950";
+                const ic = db.settings.colIcons[c] || 'fa-folder';
                 l.innerHTML += `
                 <div class="${isActive} p-3 rounded flex justify-between items-center border mb-1 cursor-pointer hover:bg-zinc-900" onclick="editFields('${c}')">
-                    <span class="text-xs font-bold text-white uppercase truncate">${c}</span>
+                    <span class="text-xs font-bold text-white uppercase truncate flex items-center gap-2"><i class="fa-solid ${ic}"></i> ${c}</span>
                     <div class="flex gap-1">
-                        <button onclick="event.stopPropagation();openIconPicker('${c}')" class="bg-zinc-800 text-zinc-400 px-2 py-1 rounded hover:text-white mr-1 flex items-center justify-center" style="min-width:30px" title="Cambiar icono">${colIconHtml(c,'cfg')}</button>
+                        <button onclick="event.stopPropagation();openIconPicker('${c}')" class="bg-zinc-800 text-blue-400 px-2 py-1 rounded hover:text-white mr-1" title="Elegir icono"><i class="fa-solid fa-icons"></i></button>
                         <button onclick="event.stopPropagation();renameCol('${c}')" class="bg-zinc-800 text-zinc-400 px-2 py-1 rounded hover:text-white mr-1" title="Renombrar"><i class="fa-solid fa-pen"></i></button>
                         <i class="fa-solid fa-chevron-right text-zinc-600 text-xs"></i>
                     </div>
@@ -2264,7 +2483,6 @@
                 if(db.viewSettings[oldName]) { db.viewSettings[newName] = db.viewSettings[oldName]; delete db.viewSettings[oldName]; }
                 if(db.activeCol === oldName) db.activeCol = newName;
                 if(edCol === oldName) edCol = newName;
-                { const im = getColIconMap(); if(im[oldName]) { im[newName] = im[oldName]; delete im[oldName]; } }
                 save(); renderConfig(); renderColNav(); renderItems();
             } else if (db.schemas[newName]) {
                 alert("Ya existe una colección con ese nombre.");
@@ -2287,7 +2505,7 @@
         function delField(c,fid) { if(confirm("Se perderán los datos de este campo. ¿Seguro?")) { db.schemas[c]=db.schemas[c].filter(x=>x.id!==fid); save(); editFields(c); } }
         function delCol() { 
             if(confirm("ESTO BORRARÁ LA COLECCIÓN Y TODOS SUS ARTÍCULOS. ¿CONTINUAR?")) { 
-                delete db.schemas[edCol]; db.items=db.items.filter(i=>i._col!==edCol); delete db.viewSettings[edCol]; delete getColIconMap()[edCol];
+                delete db.schemas[edCol]; db.items=db.items.filter(i=>i._col!==edCol); delete db.viewSettings[edCol];
                 if(db.activeCol === edCol) db.activeCol = Object.keys(db.schemas)[0] || "General";
                 edCol = null; document.getElementById('fManagerContent').classList.add('hidden'); document.getElementById('fManagerEmpty').classList.remove('hidden');
                 save(); renderConfig(); renderColNav(); renderItems();
@@ -2415,116 +2633,324 @@
              });
         }
 
+        
+        function getItemTitle(item) {
+            if (!item) return "Sin título";
+            const schema = db.schemas[item._col] || [];
+            let pf = schema.find(f => f.isTitle)
+                || schema.find(f => f.name && f.name.match(/^(titulo|title|nombre|name)$/i))
+                || schema.find(f => f.type === 'text' || f.type === 'textarea');
+            if (pf && item[pf.key]) return String(item[pf.key]);
+            const keys = Object.keys(item).filter(k => !k.startsWith('_') && k !== 'id');
+            for (const k of keys) {
+                const v = item[k];
+                if (v && typeof v === 'string' && v.trim()) return v;
+            }
+            return "Sin título";
+        }
+
+        function getFieldDisplayValue(item, field) {
+            if (!field) return "";
+            const v = item[field.key];
+            if (v === undefined || v === null || v === "") return "";
+            if (field.type === 'relation') {
+                const rel = db.items.find(x => x.id === v);
+                if (!rel) return String(v);
+                return getItemTitle(rel) + " [" + rel._col + "]";
+            }
+            if (field.type === 'file') {
+                const files = Array.isArray(v) ? v : (v ? [v] : []);
+                return files.map(f => (f && f.name) ? f.name : "archivo").join("; ");
+            }
+            if (field.type === 'photo') {
+                const photos = Array.isArray(v) ? v : (v ? [v] : []);
+                return photos.length ? (photos.length + " foto(s)") : "";
+            }
+            if (field.type === 'currency') {
+                const n = parseFloat(String(v).replace(/[^0-9.-]+/g, ""));
+                if (!isNaN(n)) return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n);
+            }
+            if (Array.isArray(v)) return v.length + " elemento(s)";
+            return String(v);
+        }
+
+        function getExportOptions() {
+            return {
+                listado: !!(document.getElementById('expOptListado') || {}).checked,
+                relaciones: !!(document.getElementById('expOptRelaciones') || {}).checked,
+                stats: !!(document.getElementById('expOptStats') || {}).checked,
+                fotos: !!(document.getElementById('expOptFotos') || {}).checked
+            };
+        }
+
+        function getExportSelection() {
+            const cols = Array.from(document.querySelectorAll('#expColList input:checked')).map(x => x.value);
+            const fieldNames = Array.from(document.querySelectorAll('.field-chk:checked')).map(x => x.value);
+            return { cols, fieldNames, items: db.items.filter(i => cols.includes(i._col)) };
+        }
+
+        function buildStatsText(cols) {
+            const lines = [];
+            lines.push("========== ESTADÍSTICAS ==========");
+            let total = 0;
+            cols.forEach(col => {
+                const n = db.items.filter(i => i._col === col).length;
+                total += n;
+                lines.push("- " + col + ": " + n + " ítem(s)");
+                const schema = db.schemas[col] || [];
+                schema.filter(f => f.type === 'currency').forEach(f => {
+                    let sum = 0;
+                    db.items.filter(i => i._col === col).forEach(i => {
+                        let val = i[f.key];
+                        if (typeof val === 'string') val = parseFloat(val.replace(/[^0-9.-]+/g, ""));
+                        if (!isNaN(val)) sum += val;
+                    });
+                    lines.push("    · Suma " + f.name + ": " + new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(sum));
+                });
+                const withPhoto = db.items.filter(i => i._col === col && i._photos && i._photos.length).length;
+                lines.push("    · Con foto de galería: " + withPhoto + " / " + n);
+            });
+            lines.push("TOTAL ÍTEMS: " + total);
+            lines.push("");
+            return lines;
+        }
+
+        function getRelationsForItem(item) {
+            const outs = [];
+            const schema = db.schemas[item._col] || [];
+            schema.filter(f => f.type === 'relation').forEach(f => {
+                const relId = item[f.key];
+                if (!relId) return;
+                const rel = db.items.find(x => x.id === relId);
+                if (rel) outs.push(f.name + " → " + getItemTitle(rel) + " (" + rel._col + ")");
+                else outs.push(f.name + " → (relación rota)");
+            });
+            // Ítems que apuntan a este
+            const ins = [];
+            db.items.forEach(other => {
+                if (other.id === item.id) return;
+                const os = db.schemas[other._col] || [];
+                os.filter(f => f.type === 'relation').forEach(f => {
+                    if (other[f.key] === item.id) {
+                        ins.push(getItemTitle(other) + " (" + other._col + ") → " + f.name);
+                    }
+                });
+            });
+            return { outs, ins };
+        }
+
         function runExport(type) {
-             const cols = Array.from(document.querySelectorAll('#expColList input:checked')).map(x=>x.value);
-             if(!cols.length) return alert("Selecciona al menos una colección.");
-             const fieldNames = Array.from(document.querySelectorAll('.field-chk:checked')).map(x=>x.value);
-             let itemsToExport = db.items.filter(i => cols.includes(i._col));
-             
-             if(type === 'csv') {
-                 let csv = "Coleccion,Titulo," + fieldNames.join(",") + "\n";
-                 itemsToExport.forEach(item => {
-                           const schema = db.schemas[item._col];
-                           let primaryField = schema.find(f => f.isTitle);
-                           if (!primaryField) primaryField = schema.find(f => f.name.match(/^(titulo|title|nombre|name)$/i));
-                           if (!primaryField) primaryField = schema.find(f => f.type === 'text') || schema[0];
+            const { cols, fieldNames, items } = getExportSelection();
+            if (!cols.length) return alert("Selecciona al menos una colección.");
+            const opt = getExportOptions();
+            if (!opt.listado && !opt.stats && !opt.relaciones) {
+                return alert("Marca al menos una opción: listado, relaciones o estadísticas.");
+            }
 
-                           const titleVal = primaryField ? item[primaryField.key] : "";
-                           
-                           let row = `"${item._col}","${(titleVal||'').replace(/"/g,'""')}"`;
-                           fieldNames.forEach(fn => {
-                            const schemaField = db.schemas[item._col].find(f => f.name === fn);
-                            let val = "";
-                            if(schemaField) {
-                                if(schemaField.type === 'relation') {
-                                    const relId = item[schemaField.key];
-                                    const relItem = db.items.find(x => x.id === relId);
-                                    if(relItem) {
-                                        const relSchema = db.schemas[relItem._col];
-                                        const relTitleField = relSchema.find(k=>k.isTitle) || relSchema.find(k=>k.type==='text') || relSchema[0];
-                                        if(relTitleField) val = relItem[relTitleField.key];
-                                        else val = "Item Relacionado";
-                                    }
-                                } 
-                                else if(schemaField.type === 'file') {
-                                    const files = item[schemaField.key];
-                                    if(Array.isArray(files)) val = files.map(f=>f.name).join('; ');
-                                }
-                                else {
-                                    val = (item[schemaField.key] || "").toString();
-                                }
+            const dateStr = new Date().toISOString().slice(0, 10);
+            const appName = (db.settings && db.settings.appName) ? db.settings.appName : "MiColeccion";
+
+            // ---------- CSV ----------
+            if (type === 'csv') {
+                let csv = "Coleccion;Titulo";
+                fieldNames.forEach(fn => { csv += ";" + fn; });
+                if (opt.relaciones) csv += ";Relaciones_salida;Relaciones_entrada";
+                csv += "\n";
+
+                if (opt.stats) {
+                    csv += buildStatsText(cols).map(l => '"' + l.replace(/"/g, '""') + '"').join("\n") + "\n\n";
+                }
+
+                if (opt.listado || opt.relaciones) {
+                    items.forEach(item => {
+                        const title = getItemTitle(item).replace(/"/g, '""').replace(/;/g, ",");
+                        let row = '"' + item._col + '";"' + title + '"';
+                        fieldNames.forEach(fn => {
+                            const f = (db.schemas[item._col] || []).find(x => x.name === fn);
+                            let val = f ? getFieldDisplayValue(item, f) : "";
+                            val = String(val).replace(/"/g, '""').replace(/;/g, ",");
+                            row += ';"' + val + '"';
+                        });
+                        if (opt.relaciones) {
+                            const rel = getRelationsForItem(item);
+                            row += ';"' + rel.outs.join(" | ").replace(/"/g, '""') + '"';
+                            row += ';"' + rel.ins.join(" | ").replace(/"/g, '""') + '"';
+                        }
+                        csv += row + "\n";
+                    });
+                }
+
+                const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = appName.replace(/\s+/g, "_") + "_" + dateStr + ".csv";
+                a.click();
+                return;
+            }
+
+            // ---------- TXT ----------
+            if (type === 'txt') {
+                const lines = [];
+                lines.push(appName.toUpperCase());
+                lines.push("Exportación generada: " + new Date().toLocaleString("es-ES"));
+                lines.push("Colecciones: " + cols.join(", "));
+                lines.push("=".repeat(50));
+                lines.push("");
+
+                if (opt.stats) {
+                    lines.push(...buildStatsText(cols));
+                }
+
+                cols.forEach(col => {
+                    lines.push("");
+                    lines.push("##### COLECCIÓN: " + col + " #####");
+                    lines.push("-".repeat(40));
+                    const colItems = items.filter(i => i._col === col);
+                    if (colItems.length === 0) {
+                        lines.push("(sin ítems)");
+                        return;
+                    }
+                    colItems.forEach((item, idx) => {
+                        if (opt.listado) {
+                            lines.push("");
+                            lines.push((idx + 1) + ". " + getItemTitle(item));
+                            const schema = db.schemas[col] || [];
+                            schema.forEach(f => {
+                                if (f.isTitle) return;
+                                if (fieldNames.length && !fieldNames.includes(f.name)) return;
+                                const val = getFieldDisplayValue(item, f);
+                                if (val !== "") lines.push("   " + f.name + ": " + val);
+                            });
+                            if (item._photos && item._photos.length) {
+                                lines.push("   Fotos galería: " + item._photos.length);
                             }
-                            row += `,"${val.replace(/"/g,'""')}"`;
-                           });
-                           csv += row + "\n";
-                 });
-                 const b = new Blob([csv],{type:'text/csv;charset=utf-8;'});
-                 const a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='Micoleccion.csv'; a.click();
-             } 
-             else if(type === 'pdf') {
-                 const { jsPDF } = window.jspdf;
-                 const doc = new jsPDF();
-                 
-                 cols.forEach((colName, idx) => {
-                         if(idx > 0) doc.addPage();
-                         doc.setFontSize(16); 
-                         doc.text(`Colección: ${colName}`, 14, 15);
-                         
-                         const colItems = itemsToExport.filter(i => i._col === colName);
-                         
-                         const body = colItems.map(i => {
-                           let img = null;
-                           if(i._photos && i._photos.length) img = i._photos[0];
-                           
-                           const schema = db.schemas[colName] || [];
-                           let primaryField = schema.find(f => f.isTitle);
-                           if (!primaryField) primaryField = schema.find(f => f.name.match(/^(titulo|title|nombre|name)$/i));
-                           if (!primaryField) primaryField = schema.find(f => f.type === 'text') || schema[0];
-
-                           let displayTitle = "Sin Título";
-                           if(primaryField && i[primaryField.key]) displayTitle = i[primaryField.key];
-                           
-                           let textBlock = displayTitle + "\n\n";
-                           fieldNames.forEach(fn => {
-                               const sf = db.schemas[colName].find(f=>f.name===fn);
-                               if(sf && primaryField && sf.key === primaryField.key) return;
-
-                               if(sf) {
-                                   let val = i[sf.key];
-                                   if(sf.type === 'relation' && val) {
-                                        const relItem = db.items.find(x => x.id === val);
-                                        if(relItem) {
-                                            const relSchema = db.schemas[relItem._col];
-                                            const relTitleField = relSchema.find(k=>k.isTitle) || relSchema[0];
-                                            val = relItem[relTitleField.key];
-                                        }
-                                   }
-                                   if(val) textBlock += `${fn}: ${val}\n`;
-                               }
-                           });
-                           
-                           return [img, textBlock]; 
-                         });
-                         
-                         doc.autoTable({
-                            head: [], 
-                            body: body,
-                            startY: 20,
-                            columnStyles: {
-                               0: { cellWidth: 25, minCellHeight: 25, valign: 'middle' },
-                               1: { cellWidth: 'auto', valign: 'middle' }
-                            },
-                            didDrawCell: (data) => {
-                               if(data.column.index === 0 && data.cell.raw && data.section === 'body') {
-                                   try { 
-                                         doc.addImage(data.cell.raw, 'JPEG', data.cell.x + 2, data.cell.y + 2, 20, 20); 
-                                   } catch(e){}
-                               }
+                        }
+                        if (opt.relaciones) {
+                            const rel = getRelationsForItem(item);
+                            if (rel.outs.length || rel.ins.length) {
+                                if (!opt.listado) lines.push((idx + 1) + ". " + getItemTitle(item));
+                                rel.outs.forEach(r => lines.push("   → " + r));
+                                rel.ins.forEach(r => lines.push("   ← " + r));
                             }
-                         });
-                 });
-                 doc.save('Micoleccion.pdf');
-             }
+                        }
+                    });
+                });
+
+                const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = appName.replace(/\s+/g, "_") + "_" + dateStr + ".txt";
+                a.click();
+                return;
+            }
+
+            // ---------- PDF ----------
+            if (type === 'pdf') {
+                if (typeof jspdf === 'undefined' && typeof window.jspdf === 'undefined') {
+                    return alert("No se pudo cargar la librería PDF. Revisa la conexión a internet.");
+                }
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+                const pageW = doc.internal.pageSize.getWidth();
+                let y = 15;
+
+                const ensureSpace = (need) => {
+                    if (y + need > 280) {
+                        doc.addPage();
+                        y = 15;
+                    }
+                };
+
+                doc.setFontSize(16);
+                doc.text(appName, 14, y); y += 8;
+                doc.setFontSize(10);
+                doc.setTextColor(100);
+                doc.text("Exportación: " + new Date().toLocaleString("es-ES"), 14, y); y += 6;
+                doc.text("Colecciones: " + cols.join(", "), 14, y); y += 10;
+                doc.setTextColor(0);
+
+                if (opt.stats) {
+                    ensureSpace(30);
+                    doc.setFontSize(12);
+                    doc.text("Estadísticas", 14, y); y += 6;
+                    doc.setFontSize(9);
+                    buildStatsText(cols).forEach(line => {
+                        ensureSpace(6);
+                        doc.text(line, 14, y);
+                        y += 5;
+                    });
+                    y += 4;
+                }
+
+                cols.forEach(col => {
+                    ensureSpace(20);
+                    doc.setFontSize(13);
+                    doc.setTextColor(30, 64, 175);
+                    doc.text("Colección: " + col, 14, y); y += 7;
+                    doc.setTextColor(0);
+                    doc.setFontSize(9);
+
+                    const colItems = items.filter(i => i._col === col);
+                    if (colItems.length === 0) {
+                        doc.text("(sin ítems)", 14, y); y += 6;
+                        return;
+                    }
+
+                    colItems.forEach((item, idx) => {
+                        ensureSpace(18);
+                        const title = (idx + 1) + ". " + getItemTitle(item);
+                        if (opt.listado) {
+                            // miniatura opcional
+                            if (opt.fotos && item._photos && item._photos[0]) {
+                                try {
+                                    doc.addImage(item._photos[0], "JPEG", 14, y - 3, 12, 12);
+                                    doc.text(title, 30, y + 3);
+                                    y += 14;
+                                } catch (e) {
+                                    doc.text(title, 14, y); y += 5;
+                                }
+                            } else {
+                                doc.setFont(undefined, "bold");
+                                doc.text(title, 14, y); y += 5;
+                                doc.setFont(undefined, "normal");
+                            }
+                            const schema = db.schemas[col] || [];
+                            schema.forEach(f => {
+                                if (f.isTitle) return;
+                                if (fieldNames.length && !fieldNames.includes(f.name)) return;
+                                const val = getFieldDisplayValue(item, f);
+                                if (val === "") return;
+                                ensureSpace(6);
+                                const line = f.name + ": " + val;
+                                const split = doc.splitTextToSize(line, pageW - 28);
+                                doc.text(split, 18, y);
+                                y += split.length * 4.5;
+                            });
+                        } else if (opt.relaciones) {
+                            doc.text(title, 14, y); y += 5;
+                        }
+
+                        if (opt.relaciones) {
+                            const rel = getRelationsForItem(item);
+                            rel.outs.forEach(r => {
+                                ensureSpace(5);
+                                doc.setTextColor(37, 99, 235);
+                                doc.text("→ " + r, 18, y); y += 4.5;
+                            });
+                            rel.ins.forEach(r => {
+                                ensureSpace(5);
+                                doc.setTextColor(22, 163, 74);
+                                doc.text("← " + r, 18, y); y += 4.5;
+                            });
+                            doc.setTextColor(0);
+                        }
+                        y += 3;
+                    });
+                    y += 6;
+                });
+
+                doc.save(appName.replace(/\s+/g, "_") + "_" + dateStr + ".pdf");
+            }
         }
 
         function openConnectionsModal() {
@@ -2764,40 +3190,66 @@
             document.getElementById('advReportTable').innerHTML = tableHtml;
         }
 
-        function compressImage(file, maxWidth, quality, callback) {
+                function compressImage(file, maxWidth, quality, callback) {
             const reader = new FileReader();
+            reader.onerror = () => callback(null);
             reader.readAsDataURL(file);
             reader.onload = event => {
                 const img = new Image();
-                img.src = event.target.result;
+                img.onerror = () => callback(null);
                 img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    
-                    if(maxWidth !== 'original') {
-                        const maxW = parseInt(maxWidth);
+                    try {
+                        const maxW = (maxWidth === 'original') ? img.width : (parseInt(maxWidth) || 500);
+                        let width = img.width;
+                        let height = img.height;
+                        // Siempre limitar al máximo
                         if (width > maxW) {
-                            height *= maxW / width;
+                            height = Math.round(height * maxW / width);
                             width = maxW;
                         }
+                        // También limitar altura excesiva
+                        const maxH = maxW;
+                        if (height > maxH) {
+                            width = Math.round(width * maxH / height);
+                            height = maxH;
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.max(1, width);
+                        canvas.height = Math.max(1, height);
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#fff';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        let qual = parseFloat(quality);
+                        if (isNaN(qual) || qual <= 0 || qual > 1) qual = 0.45;
+                        // Siempre JPEG (mucho más ligero que PNG)
+                        let dataUrl = canvas.toDataURL('image/jpeg', qual);
+                        // Si sigue siendo enorme (>350KB), bajar calidad otra vez
+                        if (dataUrl.length > 350000) {
+                            dataUrl = canvas.toDataURL('image/jpeg', 0.35);
+                        }
+                        if (dataUrl.length > 500000) {
+                            // reescalar más pequeño
+                            const scale = 0.7;
+                            canvas.width = Math.max(1, Math.round(canvas.width * scale));
+                            canvas.height = Math.max(1, Math.round(canvas.height * scale));
+                            ctx.fillStyle = '#fff';
+                            ctx.fillRect(0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            dataUrl = canvas.toDataURL('image/jpeg', 0.35);
+                        }
+                        callback(dataUrl);
+                    } catch (err) {
+                        console.error('compressImage', err);
+                        callback(null);
                     }
-                    
-                    canvas.width = width;
-                    canvas.height = height;
-
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    
-                    const qual = parseFloat(quality);
-                    const dataUrl = canvas.toDataURL('image/jpeg', qual);
-                    callback(dataUrl);
                 };
+                img.src = event.target.result;
             };
         }
 
         function renderGallery(item) { 
-             const g=document.getElementById('itemGallery'); g.innerHTML=""; 
+             const g=document.getElementById('itemGallery'); if(!g) return; g.innerHTML=""; if(!item) return; 
              document.getElementById('photoCounter').innerText = (item._photos ? item._photos.length : 0) + " IMG";
 
              if(item._photos) {
@@ -2828,12 +3280,13 @@
             const item = db.items.find(i=>i.id===activeId);
             if(!item._photos) item._photos = [];
 
-            const sizeCfg = document.getElementById('uploadSizeSelector').value || "1000";
-            const qualCfg = "0.7"; 
+            // Compresión AUTOMÁTICA agresiva (servidor pequeño ~500MB)
+            const sizeCfg = "500";
+            const qualCfg = "0.45"; 
 
             files.forEach(f => {
                 compressImage(f, sizeCfg, qualCfg, (compressedDataUrl) => {
-                    item._photos.push(compressedDataUrl);
+                    if (compressedDataUrl) item._photos.push(compressedDataUrl);
                     processed++;
                     if(processed === files.length) {
                         renderGallery(item);
@@ -2842,222 +3295,6 @@
                     }
                 });
             });
-        }
-
-
-        // ===================================================================
-        // NUEVO: BOTONES GUARDAR + ICONOS / MINIATURAS DE COLECCIONES
-        // ===================================================================
-        function showSavedToast(msg) {
-            let t = document.getElementById('savedToast');
-            if(!t) {
-                t = document.createElement('div');
-                t.id = 'savedToast';
-                t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:12px 22px;border-radius:12px;font-size:12px;font-weight:900;text-transform:uppercase;z-index:9999;box-shadow:0 10px 30px rgba(0,0,0,.5);transition:opacity .3s;pointer-events:none;';
-                document.body.appendChild(t);
-            }
-            t.innerText = msg;
-            t.style.opacity = '1';
-            clearTimeout(t._tm);
-            t._tm = setTimeout(() => { t.style.opacity = '0'; }, 1800);
-        }
-
-        async function saveCurrentItem() {
-            if (typeof isAdmin === 'function' && !isAdmin()) { alert('No tienes permiso para guardar cambios.'); return; }
-            await save();
-            renderItems();
-            showSavedToast('Guardado ✔');
-        }
-
-        async function saveConfigAll() {
-            // Si hay una colección o un campo escrito pero sin añadir, se añaden al guardar
-            const colInp = document.getElementById('newColInp');
-            if(colInp && colInp.value.trim()) addCollection();
-            const fInp = document.getElementById('newFTitle');
-            if(fInp && fInp.value.trim() && edCol && db.schemas[edCol]) addField();
-            await save();
-            renderColNav(); renderItems(); renderConfig();
-            showSavedToast('Configuración guardada ✔');
-        }
-
-        const COL_ICONS = [
-            ["gamepad","Videojuegos"],
-            ["dice","Dados"],
-            ["dice-d20","Rol"],
-            ["chess","Ajedrez"],
-            ["chess-knight","Caballo"],
-            ["puzzle-piece","Puzzle"],
-            ["trophy","Trofeo"],
-            ["ghost","Fantasma"],
-            ["dragon","Dragón"],
-            ["hat-wizard","Mago"],
-            ["skull","Calavera"],
-            ["meteor","Meteorito"],
-            ["crown","Corona"],
-            ["vr-cardboard","Realidad virtual"],
-            ["headset","Auriculares con micro"],
-            ["headphones","Cascos"],
-            ["film","Películas"],
-            ["clapperboard","Claqueta"],
-            ["video","Vídeo"],
-            ["camera","Cámara"],
-            ["camera-retro","Cámara retro"],
-            ["photo-film","Fotos y vídeo"],
-            ["tv","Televisión"],
-            ["ticket","Entradas"],
-            ["book","Libros"],
-            ["book-open","Libro abierto"],
-            ["bookmark","Marcapáginas"],
-            ["newspaper","Revistas"],
-            ["scroll","Pergamino"],
-            ["graduation-cap","Estudios"],
-            ["music","Música"],
-            ["guitar","Guitarra"],
-            ["drum","Batería"],
-            ["microphone","Micrófono"],
-            ["microphone-lines","Micrófono 2"],
-            ["compact-disc","CD"],
-            ["record-vinyl","Vinilo"],
-            ["radio","Radio"],
-            ["podcast","Podcast"],
-            ["volume-high","Altavoz"],
-            ["sliders","Mezclador"],
-            ["wave-square","Amplificador"],
-            ["computer","Ordenador"],
-            ["desktop","Sobremesa"],
-            ["laptop","Portátil"],
-            ["display","Monitor"],
-            ["server","Servidor"],
-            ["hard-drive","Disco duro"],
-            ["memory","Memoria RAM"],
-            ["microchip","Chip"],
-            ["sd-card","Tarjeta SD"],
-            ["floppy-disk","Disquete"],
-            ["keyboard","Teclado"],
-            ["computer-mouse","Ratón"],
-            ["print","Impresora"],
-            ["plug","Enchufe"],
-            ["battery-full","Batería"],
-            ["bolt","Energía"],
-            ["charging-station","Cargador"],
-            ["wifi","Wifi"],
-            ["tower-broadcast","Router"],
-            ["tower-cell","Antena"],
-            ["satellite-dish","Parabólica"],
-            ["satellite","Satélite"],
-            ["network-wired","Red"],
-            ["ethernet","Ethernet"],
-            ["signal","Señal"],
-            ["sim-card","Tarjeta SIM"],
-            ["mobile-screen-button","Móvil"],
-            ["tablet-screen-button","Tableta"],
-            ["walkie-talkie","Walkie-talkie"],
-            ["cloud","Nube"],
-            ["database","Base de datos"],
-            ["code","Código"],
-            ["terminal","Terminal"],
-            ["robot","Robot"],
-            ["gear","Ajustes"],
-            ["screwdriver-wrench","Herramientas"],
-            ["toolbox","Caja de herramientas"],
-            ["lightbulb","Bombilla"],
-            ["cube","Cubo"],
-            ["cubes","Cubos"],
-            ["box","Caja"],
-            ["boxes-stacked","Cajas"],
-            ["tag","Etiqueta"],
-            ["star","Estrella"],
-            ["heart","Corazón"],
-            ["gem","Gema"],
-            ["coins","Monedas"],
-            ["euro-sign","Euro"],
-            ["shirt","Ropa"],
-            ["car","Coche"],
-            ["motorcycle","Moto"],
-            ["bicycle","Bici"],
-            ["plane","Avión"],
-            ["rocket","Cohete"],
-            ["house","Casa"],
-            ["key","Llave"],
-            ["flask","Laboratorio"],
-            ["microscope","Microscopio"],
-            ["dumbbell","Deporte"],
-            ["futbol","Fútbol"],
-            ["palette","Pintura"],
-            ["paw","Mascotas"],
-            ["camera-rotate","Cámara giratoria"],
-            ["wand-magic-sparkles","Magia"],
-            ["folder","Carpeta"],
-            ["gift","Regalo"],
-            ["cart-shopping","Compras"]
-        ];
-
-        function getColIconMap() {
-            if(!db.settings) db.settings = {};
-            if(!db.settings.colIcons) db.settings.colIcons = {};
-            return db.settings.colIcons;
-        }
-
-        function colIconHtml(name, where) {
-            const ic = getColIconMap()[name];
-            if(!ic) {
-                return where === 'cfg' ? '<i class="fa-regular fa-image text-xs"></i>' : '';
-            }
-            const box = where === 'cfg' ? 'width:20px;height:20px;' : 'width:28px;height:28px;';
-            if(ic.type === 'img') {
-                return `<img src="${ic.v}" style="${box}object-fit:cover;border-radius:6px;flex-shrink:0;">`;
-            }
-            return `<i class="fa-solid ${ic.v}" style="${where === 'cfg' ? 'font-size:12px;' : 'font-size:16px;'}"></i>`;
-        }
-
-        let iconPickerCol = null;
-        function openIconPicker(col) {
-            iconPickerCol = col;
-            document.getElementById('iconPickerColName').innerText = col;
-            const g = document.getElementById('iconPickerGrid');
-            const cur = getColIconMap()[col];
-            g.innerHTML = COL_ICONS.map(([cls, label]) => {
-                const sel = (cur && cur.type === 'fa' && cur.v === 'fa-' + cls) ? 'border-blue-500 bg-blue-900/20 text-blue-400' : 'border-zinc-800 bg-zinc-950 text-zinc-300';
-                return `<button onclick="selectColIcon('fa-${cls}')" title="${label}" class="${sel} border rounded-lg py-3 hover:border-blue-500 hover:text-blue-400 transition flex items-center justify-center"><i class="fa-solid fa-${cls} text-lg"></i></button>`;
-            }).join('');
-            openModal('iconPickerModal');
-        }
-
-        function selectColIcon(cls) {
-            if(!iconPickerCol) return;
-            getColIconMap()[iconPickerCol] = { type: 'fa', v: cls };
-            save(); renderColNav(); renderConfig();
-            closeModal('iconPickerModal');
-        }
-
-        function clearColIcon() {
-            if(!iconPickerCol) return;
-            delete getColIconMap()[iconPickerCol];
-            save(); renderColNav(); renderConfig();
-            closeModal('iconPickerModal');
-        }
-
-        function uploadColIcon(e) {
-            const file = e.target.files && e.target.files[0];
-            if(!file || !iconPickerCol) return;
-            const col = iconPickerCol;
-            const reader = new FileReader();
-            reader.onload = ev => {
-                const img = new Image();
-                img.onload = () => {
-                    const S = 96;
-                    const cv = document.createElement('canvas'); cv.width = S; cv.height = S;
-                    const ctx = cv.getContext('2d');
-                    const m = Math.min(img.width, img.height);
-                    ctx.drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, S, S);
-                    getColIconMap()[col] = { type: 'img', v: cv.toDataURL('image/png') };
-                    save(); renderColNav(); renderConfig();
-                    closeModal('iconPickerModal');
-                };
-                img.src = ev.target.result;
-            };
-            reader.readAsDataURL(file);
-            e.target.value = '';
         }
 
         function newItem() { 
@@ -3071,21 +3308,61 @@
         function hideInspector() { document.getElementById('inspectorPanel').classList.remove('active'); setTimeout(()=>{document.getElementById('inspectorContent').classList.add('hidden');document.getElementById('inspectorEmpty').classList.remove('hidden');},300); }
         function toggleRel(){ const t=document.getElementById('newFType').value; document.getElementById('relSet').classList.toggle('hidden',t!=='relation'); }
         function updRelF(){ const c=document.getElementById('relDest').value; if(c)document.getElementById('relDisp').innerHTML=db.schemas[c].map(f=>`<option value="${f.key}">${f.name}</option>`).join(''); }
-        function changeLogo(e){ const r=new FileReader(); r.onload=ev=>{db.settings.logo=ev.target.result;save();applySettings();}; r.readAsDataURL(e.target.files[0]); }
-        function updateAppName(v) { db.settings.appName = v; save(); applySettings(); }
-        
-        function applySettings(){ 
-            const activeLogo = db.settings.logo || DEFAULT_LOGO;
-            
-            if(activeLogo) {
-                document.getElementById('headerLogo').innerHTML=`<img src="${activeLogo}" class="w-full h-full object-cover">`; 
-            } else {
-                 document.getElementById('headerLogo').innerHTML=`<i class="fa-solid fa-cubes text-white text-lg"></i>`;
-            }
-            const n = db.settings.appName || "Mi Colección";
-            document.getElementById('appTitleHeader').innerText = n;
+        function changeLogo(e){
+            const file = e.target.files[0];
+            if (!file) return;
+            // Comprimir logo también
+            compressImage(file, "200", "0.7", (dataUrl) => {
+                if (!db.settings) db.settings = {};
+                db.settings.logo = dataUrl;
+                save();
+                applySettings();
+            });
+            e.target.value = '';
+        }
+        function updateAppName(v) {
+            if (!db.settings) db.settings = {};
+            db.settings.appName = (v || "").trim() || "Mi Colección";
+            save();
+            applySettings();
         }
         
+                function applySettings(){ 
+            if (!db.settings) db.settings = {};
+            const activeLogo = db.settings.logo || (typeof DEFAULT_LOGO !== 'undefined' ? DEFAULT_LOGO : null);
+            
+            const headerLogo = document.getElementById('headerLogo');
+            if (headerLogo) {
+                if(activeLogo) {
+                    headerLogo.innerHTML=`<img src="${activeLogo}" class="w-full h-full object-cover">`; 
+                } else {
+                    headerLogo.innerHTML=`<i class="fa-solid fa-cubes text-white text-lg"></i>`;
+                }
+            }
+            const n = db.settings.appName || "Mi Colección";
+            const titleEl = document.getElementById('appTitleHeader');
+            if (titleEl) titleEl.innerText = n;
+            // Preview en configuración
+            const prev = document.getElementById('configLogoPreview');
+            if (prev) {
+                if (db.settings.logo) {
+                    prev.innerHTML = `<img src="${db.settings.logo}" class="w-full h-full object-cover">`;
+                } else {
+                    prev.innerHTML = `<i class="fa-solid fa-cubes text-zinc-500"></i>`;
+                }
+            }
+            const appNameEl = document.getElementById('configAppName');
+            if (appNameEl && document.activeElement !== appNameEl) {
+                appNameEl.value = n;
+            }
+        }
+        function removeLogo() {
+            if (!db.settings) db.settings = {};
+            db.settings.logo = null;
+            save();
+            applySettings();
+        }
+
         function openModal(id){document.getElementById(id).classList.remove('hidden'); if(id==='configModal')renderConfig();}
         function closeModal(id){document.getElementById(id).classList.add('hidden');}
         function toggleSidebar(){document.getElementById('mainSidebar').classList.toggle('open');}
@@ -3478,6 +3755,18 @@
                     ENTRAR
                 </button>
             </div>
+        </div>
+    </div>
+
+
+    <div id="iconPickerModal" class="modal-overlay hidden" style="z-index: 4800;">
+        <div class="bg-black border border-zinc-800 p-6 rounded-xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-white font-black uppercase text-sm">Elegir icono para la colección</h3>
+                <button onclick="closeModal('iconPickerModal')" class="text-zinc-500 text-2xl"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <p id="iconPickerColName" class="text-xs text-blue-400 mb-3 font-bold"></p>
+            <div id="iconPickerGrid" class="grid grid-cols-6 sm:grid-cols-8 gap-2 overflow-y-auto flex-1 p-1"></div>
         </div>
     </div>
 
