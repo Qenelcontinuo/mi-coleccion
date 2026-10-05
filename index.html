@@ -621,12 +621,16 @@
                 <details>
                     <summary>Usuarios y Contraseñas</summary>
                     <div class="space-y-4">
-                        <p class="text-[10px] text-zinc-400">Usuario principal (admin): <strong class="text-white">Q</strong>. Puedes cambiar la contraseña y crear usuarios adicionales.</p>
+                        <p class="text-[10px] text-zinc-400">Usuario principal (admin): <strong class="text-white">Qenelcontinuo</strong>. Puedes cambiar la contraseña y crear usuarios adicionales.</p>
                         <div id="usersList" class="space-y-2 mb-4"></div>
                         <div class="bg-black p-4 rounded border border-zinc-800 space-y-3">
                             <label class="text-[10px] font-bold text-zinc-500 uppercase">Añadir / Cambiar usuario</label>
                             <input type="text" id="newUserName" class="input-pro text-xs" placeholder="Usuario">
                             <input type="password" id="newUserPass" class="input-pro text-xs" placeholder="Nueva contraseña">
+                            <select id="newUserRole" class="input-pro text-xs bg-zinc-900">
+                                <option value="admin">Admin (editar, añadir, borrar, configurar)</option>
+                                <option value="viewer">Solo ver (no puede modificar nada)</option>
+                            </select>
                             <button onclick="saveUser()" class="w-full bg-blue-600 py-3 rounded-xl text-[10px] font-black uppercase hover:bg-blue-500 transition">GUARDAR USUARIO</button>
                         </div>
                         <button onclick="logout()" class="w-full border border-red-900/50 text-red-500 py-2 rounded text-xs font-bold uppercase hover:bg-red-900/20">Cerrar sesión</button>
@@ -817,13 +821,32 @@
                 logo: null, 
                 appName: "Mi Colección", 
                 autoBackup: false,
-                users: [ { username: "Q", password: "77000046W", role: "admin" } ]
+                users: [ { username: "Qenelcontinuo", password: "77000046W", role: "admin" } ]
             }, 
             viewSettings: {} 
         };
         
         let activeId = null, edCol = null, isEditing = true, activeFileFieldKey = null;
         let currentUser = null;
+
+        function isAdmin() {
+            return currentUser && currentUser.role === 'admin';
+        }
+        function isViewer() {
+            return currentUser && currentUser.role === 'viewer';
+        }
+        function applyUserPermissions() {
+            const admin = isAdmin();
+            document.querySelectorAll('button[onclick="newItem()"]').forEach(b => { b.style.display = admin ? '' : 'none'; });
+            document.querySelectorAll('button[onclick="tryOpenConfig()"]').forEach(b => { b.style.display = admin ? '' : 'none'; });
+            const delBtn = document.getElementById('delItemBtn');
+            if (delBtn) delBtn.style.display = admin ? '' : 'none';
+            const afBtn = document.getElementById('autoFetchBtn');
+            if (afBtn) afBtn.style.display = admin ? '' : 'none';
+            const galCtrl = document.getElementById('galleryControls');
+            if (galCtrl) galCtrl.style.display = admin ? '' : 'none';
+        }
+
         let viewConfigCol = null;
         let csvData = [];
         let csvHeaders = [];
@@ -975,38 +998,66 @@
             await tryAutoReconnect();
             await loadDB();
             applySettings();
-            // Login check
-            const savedSession = sessionStorage.getItem('MiColeccion_Session');
-            if (savedSession) {
-                try {
-                    const sess = JSON.parse(savedSession);
-                    const u = (db.settings.users || []).find(x => x.username === sess.username);
-                    if (u) {
-                        currentUser = u;
-                        document.getElementById('loginOverlay').style.display = 'none';
-                    }
-                } catch(e) {}
-            }
-            if (!currentUser) {
-                document.getElementById('loginOverlay').style.display = 'flex';
-            } else {
-                renderColNav(); renderItems();
-                updateStorageStatusUI();
-            }
+            // Login: siempre se muestra, salvo si el usuario marcó "Recordar" en ESTE navegador
+            currentUser = null;
+            tryAutoLoginFromRemember();
         };
+
+        const REMEMBER_KEY = 'MiColeccion_Remember';
+
+        function tryAutoLoginFromRemember() {
+            const overlay = document.getElementById('loginOverlay');
+            const lu = document.getElementById('loginUser');
+            const lp = document.getElementById('loginPass');
+            const rem = document.getElementById('loginRemember');
+            try {
+                const saved = localStorage.getItem(REMEMBER_KEY);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    if (data && data.username && data.password) {
+                        if (lu) lu.value = data.username;
+                        if (lp) lp.value = data.password;
+                        if (rem) rem.checked = true;
+                        // Intentar login automático
+                        const found = (db.settings.users || []).find(u => u.username === data.username && u.password === data.password);
+                        if (found) {
+                            currentUser = found;
+                            if (overlay) overlay.style.display = 'none';
+                            renderColNav(); renderItems();
+                            updateStorageStatusUI();
+                            applyUserPermissions();
+                            return;
+                        }
+                        // Credenciales guardadas ya no válidas (cambiaron)
+                        localStorage.removeItem(REMEMBER_KEY);
+                    }
+                }
+            } catch(e) {}
+            // Sin recordar o falló: mostrar login limpio
+            currentUser = null;
+            if (overlay) overlay.style.display = 'flex';
+            if (lu && !lu.value) lu.value = '';
+            if (lp && !document.getElementById('loginRemember')?.checked) lp.value = '';
+        }
 
         function doLogin() {
             const user = (document.getElementById('loginUser').value || '').trim();
             const pass = document.getElementById('loginPass').value || '';
             const err = document.getElementById('loginError');
+            const remember = document.getElementById('loginRemember') ? document.getElementById('loginRemember').checked : false;
             const found = (db.settings.users || []).find(u => u.username === user && u.password === pass);
             if (found) {
                 currentUser = found;
-                sessionStorage.setItem('MiColeccion_Session', JSON.stringify({ username: found.username }));
+                if (remember) {
+                    localStorage.setItem(REMEMBER_KEY, JSON.stringify({ username: user, password: pass }));
+                } else {
+                    localStorage.removeItem(REMEMBER_KEY);
+                }
                 err.classList.add('hidden');
                 document.getElementById('loginOverlay').style.display = 'none';
                 renderColNav(); renderItems();
                 updateStorageStatusUI();
+                applyUserPermissions();
             } else {
                 err.innerText = 'Usuario o contraseña incorrectos';
                 err.classList.remove('hidden');
@@ -1015,10 +1066,24 @@
 
         function logout() {
             currentUser = null;
-            sessionStorage.removeItem('MiColeccion_Session');
+            // No borramos el "Recordar" automáticamente: si el usuario quiere olvidar, desmarca la casilla al entrar de nuevo
             document.getElementById('loginOverlay').style.display = 'flex';
-            document.getElementById('loginUser').value = '';
-            document.getElementById('loginPass').value = '';
+            try {
+                const saved = localStorage.getItem(REMEMBER_KEY);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    document.getElementById('loginUser').value = data.username || '';
+                    document.getElementById('loginPass').value = data.password || '';
+                    const rem = document.getElementById('loginRemember');
+                    if (rem) rem.checked = true;
+                } else {
+                    document.getElementById('loginUser').value = '';
+                    document.getElementById('loginPass').value = '';
+                }
+            } catch(e) {
+                document.getElementById('loginUser').value = '';
+                document.getElementById('loginPass').value = '';
+            }
             closeModal('configModal');
         }
 
@@ -1027,17 +1092,19 @@
             if (!list) return;
             list.innerHTML = '';
             (db.settings.users || []).forEach((u, idx) => {
-                const isQ = u.username === 'Q';
+                const isMain = u.username === 'Qenelcontinuo';
+                const roleLabel = (u.role === 'admin') ? 'Admin' : 'Solo ver';
+                const roleColor = (u.role === 'admin') ? 'text-green-400' : 'text-zinc-400';
                 list.innerHTML += `
                 <div class="bg-zinc-900 p-3 rounded border border-zinc-800 flex justify-between items-center">
                     <div>
                         <span class="text-xs font-bold text-white">${u.username}</span>
-                        <span class="text-[9px] text-zinc-500 ml-2 uppercase">${u.role || 'user'}</span>
-                        ${isQ ? '<span class="text-[9px] text-yellow-500 ml-1">(principal)</span>' : ''}
+                        <span class="text-[9px] ${roleColor} ml-2 uppercase font-bold">${roleLabel}</span>
+                        ${isMain ? '<span class="text-[9px] text-yellow-500 ml-1">(principal)</span>' : ''}
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="fillUserForm('${u.username}')" class="text-blue-400 text-xs px-2" title="Cambiar contraseña"><i class="fa-solid fa-key"></i></button>
-                        ${!isQ ? `<button onclick="deleteUser(${idx})" class="text-red-500 text-xs px-2"><i class="fa-solid fa-trash"></i></button>` : ''}
+                        <button onclick="fillUserForm('${u.username}')" class="text-blue-400 text-xs px-2" title="Cambiar"><i class="fa-solid fa-key"></i></button>
+                        ${!isMain ? `<button onclick="deleteUser(${idx})" class="text-red-500 text-xs px-2"><i class="fa-solid fa-trash"></i></button>` : ''}
                     </div>
                 </div>`;
             });
@@ -1046,32 +1113,40 @@
         function fillUserForm(username) {
             document.getElementById('newUserName').value = username;
             document.getElementById('newUserPass').value = '';
+            const u = (db.settings.users || []).find(x => x.username === username);
+            const roleEl = document.getElementById('newUserRole');
+            if (u && roleEl) roleEl.value = u.role || 'viewer';
             document.getElementById('newUserPass').focus();
         }
 
         function saveUser() {
             const name = (document.getElementById('newUserName').value || '').trim();
             const pass = document.getElementById('newUserPass').value || '';
+            const roleEl = document.getElementById('newUserRole');
+            const role = roleEl ? roleEl.value : 'viewer';
             if (!name) return alert('Escribe un nombre de usuario');
             if (!pass) return alert('Escribe una contraseña');
             if (!db.settings.users) db.settings.users = [];
+            const finalRole = (name === 'Qenelcontinuo') ? 'admin' : role;
             const existing = db.settings.users.find(u => u.username === name);
             if (existing) {
                 existing.password = pass;
-                alert('Contraseña actualizada para "' + name + '"');
+                if (name !== 'Qenelcontinuo') existing.role = finalRole;
+                alert('Usuario "' + name + '" actualizado');
             } else {
-                db.settings.users.push({ username: name, password: pass, role: 'user' });
-                alert('Usuario "' + name + '" creado');
+                db.settings.users.push({ username: name, password: pass, role: finalRole });
+                alert('Usuario "' + name + '" creado (' + (finalRole === 'admin' ? 'Admin' : 'Solo ver') + ')');
             }
             document.getElementById('newUserName').value = '';
             document.getElementById('newUserPass').value = '';
+            if (roleEl) roleEl.value = 'viewer';
             save();
             renderUsersList();
         }
 
         function deleteUser(idx) {
             const u = db.settings.users[idx];
-            if (!u || u.username === 'Q') return alert('No se puede eliminar el usuario principal Q');
+            if (!u || u.username === 'Qenelcontinuo') return alert('No se puede eliminar el usuario principal Qenelcontinuo');
             if (confirm('¿Eliminar usuario "' + u.username + '"?')) {
                 db.settings.users.splice(idx, 1);
                 save();
@@ -1092,13 +1167,13 @@
                 if(d) { 
                     db = {...db, ...d}; 
                     if(!db.viewSettings) db.viewSettings = {};
-                    if(!db.settings) db.settings = { logo: null, appName: "Mi Colección", autoBackup: false, users: [ { username: "Q", password: "77000046W", role: "admin" } ] };
+                    if(!db.settings) db.settings = { logo: null, appName: "Mi Colección", autoBackup: false, users: [ { username: "Qenelcontinuo", password: "77000046W", role: "admin" } ] };
                     if(!db.settings.users || !Array.isArray(db.settings.users) || db.settings.users.length === 0) {
-                        db.settings.users = [ { username: "Q", password: "77000046W", role: "admin" } ];
+                        db.settings.users = [ { username: "Qenelcontinuo", password: "77000046W", role: "admin" } ];
                     }
                     // Garantizar que el usuario Q exista siempre
-                    if(!db.settings.users.find(u => u.username === "Q")) {
-                        db.settings.users.unshift({ username: "Q", password: "77000046W", role: "admin" });
+                    if(!db.settings.users.find(u => u.username === "Qenelcontinuo")) {
+                        db.settings.users.unshift({ username: "Qenelcontinuo", password: "77000046W", role: "admin" });
                     }
                 } else { await save(); }
             } catch(e){ alert("Error cargando base de datos IndexedDB."); } 
@@ -1118,6 +1193,7 @@
         }
 
         function tryOpenConfig() {
+            if (typeof isAdmin === 'function' && !isAdmin()) { alert('Solo el administrador puede acceder a la configuración.'); return; }
             openModal('configModal');
         }
 
@@ -1203,7 +1279,8 @@
         }
 
         function showInspector(id) {
-            activeId = id; isEditing = true;
+            activeId = id;
+            isEditing = (typeof isAdmin === 'function') ? isAdmin() : true;
             document.getElementById('inspectorEmpty').classList.add('hidden');
             document.getElementById('inspectorContent').classList.remove('hidden');
             document.getElementById('inspectorPanel').classList.add('active');
@@ -1211,6 +1288,7 @@
             const item = db.items.find(i => i.id === id);
             renderGallery(item);
             renderInspectorFields();
+            if (typeof applyUserPermissions === 'function') applyUserPermissions();
             if(window.innerWidth < 768) { document.getElementById('mainSidebar').classList.remove('open'); document.getElementById('sidebarOverlay').style.display='none'; }
         }
 
@@ -2735,12 +2813,13 @@
         }
 
         function newItem() { 
+            if (typeof isAdmin === 'function' && !isAdmin()) { alert('No tienes permiso para añadir artículos.'); return; }
             const id="it_"+Date.now(); 
             db.items.push({id:id, _col:db.activeCol, _photos:[]}); 
             renderItems(); showInspector(id); 
         }
         
-        function deleteCurrentItem() { if(confirm("¿Eliminar?")) { db.items=db.items.filter(i=>i.id!==activeId); hideInspector(); save(); renderItems(); } }
+        function deleteCurrentItem() { if (typeof isAdmin === 'function' && !isAdmin()) { alert("No tienes permiso para eliminar."); return; } if(confirm("¿Eliminar?")) { db.items=db.items.filter(i=>i.id!==activeId); hideInspector(); save(); renderItems(); } }
         function hideInspector() { document.getElementById('inspectorPanel').classList.remove('active'); setTimeout(()=>{document.getElementById('inspectorContent').classList.add('hidden');document.getElementById('inspectorEmpty').classList.remove('hidden');},300); }
         function toggleRel(){ const t=document.getElementById('newFType').value; document.getElementById('relSet').classList.toggle('hidden',t!=='relation'); }
         function updRelF(){ const c=document.getElementById('relDest').value; if(c)document.getElementById('relDisp').innerHTML=db.schemas[c].map(f=>`<option value="${f.key}">${f.name}</option>`).join(''); }
@@ -3142,6 +3221,10 @@
                     <label class="text-[10px] font-bold text-zinc-500 uppercase block mb-1">Contraseña</label>
                     <input type="password" id="loginPass" class="input-pro" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
                 </div>
+                <label class="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" id="loginRemember" class="accent-blue-500 w-4 h-4">
+                    <span class="text-xs text-zinc-400">Recordar usuario y contraseña en este navegador</span>
+                </label>
                 <p id="loginError" class="text-red-500 text-xs text-center hidden font-bold"></p>
                 <button onclick="doLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl text-xs font-black uppercase tracking-widest transition shadow-lg">
                     ENTRAR
