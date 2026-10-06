@@ -112,11 +112,16 @@
             color: #fff;
             text-align: center;
             border-top: 1px solid #27272a;
+            white-space: normal;
+            overflow: hidden;
+            background: #18181b;
+            min-height: 30px; 
+        }
+        #itemsGrid.view-grid .item-card .card-text-area .truncate {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            background: #18181b;
-            min-height: 30px; 
+            max-width: 100%;
         }
 
         @media (max-width: 640px) {
@@ -164,9 +169,242 @@
         .draggable-item { cursor: grab; }
         .draggable-item:active { cursor: grabbing; background: #1f1f22; }
         .drag-over { border: 1px dashed var(--accent); }
+        .card-marquee {
+            overflow: hidden;
+            width: 100%;
+            mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+            -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+        }
+        .card-marquee-inner {
+            display: inline-block;
+            white-space: nowrap;
+            padding-left: 0;
+            animation: cardMarquee 9s linear infinite;
+        }
+        @keyframes cardMarquee {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(0); }
+            75% { transform: translateX(calc(-100% + 120px)); }
+            100% { transform: translateX(calc(-100% + 120px)); }
+        }
+        .card-icons-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            width: 100%;
+            margin-bottom: 4px;
+            color: #60a5fa;
+            font-size: 14px;
+            line-height: 1;
+        }
+        .card-icons-row.pos-left { justify-content: flex-start; }
+        .card-icons-row.pos-center { justify-content: center; }
+        .card-icons-row.pos-right { justify-content: flex-end; }
     </style>
 </head>
 <body class="h-screen flex flex-col">
+
+<script>
+/* SELECTOR DE ICONOS INDEPENDIENTE — no depende del resto de la app */
+(function(){
+  var FALLBACK_ICONS = [
+    ["fa-gamepad","s"],["fa-dice","s"],["fa-dice-d20","s"],["fa-puzzle-piece","s"],["fa-ghost","s"],
+    ["fa-headset","s"],["fa-robot","s"],["fa-trophy","s"],["fa-medal","s"],["fa-star","s"],
+    ["fa-heart","s"],["fa-fire","s"],["fa-bolt","s"],["fa-crown","s"],["fa-shield-halved","s"],
+    ["fa-playstation","b"],["fa-xbox","b"],["fa-steam","b"],["fa-twitch","b"],["fa-tv","s"],
+    ["fa-desktop","s"],["fa-laptop","s"],["fa-mobile-screen","s"],["fa-tablet-screen-button","s"],
+    ["fa-keyboard","s"],["fa-computer-mouse","s"],["fa-microchip","s"],["fa-memory","s"],
+    ["fa-hard-drive","s"],["fa-server","s"],["fa-wifi","s"],["fa-print","s"],["fa-cube","s"],
+    ["fa-cubes","s"],["fa-film","s"],["fa-video","s"],["fa-camera","s"],["fa-image","s"],
+    ["fa-music","s"],["fa-headphones","s"],["fa-compact-disc","s"],["fa-book","s"],
+    ["fa-car","s"],["fa-plane","s"],["fa-globe","s"],["fa-cloud","s"],["fa-gears","s"],
+    ["fa-wrench","s"],["fa-toolbox","s"],["fa-box","s"],["fa-boxes-stacked","s"],
+    ["fa-cd","s"],["fa-compact-disc","s"],["fa-sd-card","s"],["fa-usb","s"]
+  ];
+
+  function getIconList() {
+    try {
+      if (typeof ICON_CATEGORIES !== "undefined" && ICON_CATEGORIES) {
+        var all = [];
+        Object.keys(ICON_CATEGORIES).forEach(function(k){
+          (ICON_CATEGORIES[k]||[]).forEach(function(ic){ all.push([ic.c, ic.s||"s"]); });
+        });
+        if (all.length) return all;
+      }
+      if (typeof COL_ICONS !== "undefined" && COL_ICONS && COL_ICONS.length) {
+        return COL_ICONS.map(function(ic){ return [ic.c, ic.s||"s"]; });
+      }
+    } catch(e) {}
+    return FALLBACK_ICONS.slice();
+  }
+
+  function getCategories() {
+    try {
+      if (typeof ICON_CATEGORIES !== "undefined" && ICON_CATEGORIES)
+        return Object.keys(ICON_CATEGORIES);
+    } catch(e) {}
+    return [];
+  }
+
+  function applyIconToItem(fieldKey, storeVal) {
+    try {
+      if (typeof setFieldIconValue === "function") {
+        setFieldIconValue(fieldKey, storeVal);
+        return;
+      }
+    } catch(e) {}
+    try {
+      var item = (typeof db !== "undefined" && db.items) ? db.items.find(function(x){ return x.id === activeId; }) : null;
+      if (!item) { alert("No hay artículo seleccionado"); return; }
+      var arr = Array.isArray(item[fieldKey]) ? item[fieldKey].slice() : (item[fieldKey] ? [item[fieldKey]] : []);
+      if (arr.indexOf(storeVal) < 0) arr.push(storeVal);
+      item[fieldKey] = arr;
+      if (typeof save === "function") save();
+      if (typeof renderInspectorFields === "function") renderInspectorFields();
+      if (typeof renderItems === "function") renderItems();
+    } catch(e) {
+      alert("Error guardando icono: " + e.message);
+    }
+  }
+
+  window.openIconChooser = function(fieldKey) {
+    if (!fieldKey) { alert("Campo no válido"); return; }
+    window._iconPickerFieldKey = fieldKey;
+    window._iconPickerMode = "field";
+
+    var old = document.getElementById("iconChooserLive");
+    if (old) old.remove();
+
+    var overlay = document.createElement("div");
+    overlay.id = "iconChooserLive";
+    overlay.setAttribute("style",
+      "position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,0.93);" +
+      "display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;"
+    );
+
+    var box = document.createElement("div");
+    box.setAttribute("style",
+      "background:#0a0a0a;border:1px solid #3f3f46;border-radius:16px;width:100%;max-width:640px;" +
+      "max-height:90vh;display:flex;flex-direction:column;overflow:hidden;"
+    );
+
+    box.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #27272a;">' +
+      '  <div style="color:#fff;font-weight:900;font-size:14px;text-transform:uppercase;letter-spacing:0.05em;">Elegir icono</div>' +
+      '  <button type="button" id="iclose" style="background:none;border:none;color:#a1a1aa;font-size:28px;line-height:1;cursor:pointer;padding:0 6px;">&times;</button>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;padding:12px 16px;flex-wrap:wrap;">' +
+      '  <input id="isearch" type="text" placeholder="Buscar..." style="flex:1;min-width:120px;background:#000;border:1px solid #3f3f46;color:#fff;padding:10px;border-radius:8px;font-size:13px;">' +
+      '  <select id="icat" style="background:#18181b;border:1px solid #3f3f46;color:#fff;padding:10px;border-radius:8px;font-size:13px;min-width:130px;"><option value="">Todas</option></select>' +
+      '</div>' +
+      '<div id="igrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:8px;padding:4px 16px 16px;overflow-y:auto;min-height:220px;max-height:55vh;"></div>';
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    var cats = getCategories();
+    var catSel = box.querySelector("#icat");
+    cats.forEach(function(c){
+      var o = document.createElement("option");
+      o.value = c; o.textContent = c;
+      catSel.appendChild(o);
+    });
+
+    function close() { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }
+    box.querySelector("#iclose").onclick = close;
+    overlay.addEventListener("click", function(e){ if (e.target === overlay) close(); });
+
+    function fill() {
+      var grid = box.querySelector("#igrid");
+      grid.innerHTML = "";
+      var q = (box.querySelector("#isearch").value || "").toLowerCase().trim();
+      var cat = box.querySelector("#icat").value;
+
+      // Subir
+      var up = document.createElement("button");
+      up.type = "button";
+      up.textContent = "⬆ Subir";
+      up.setAttribute("style", "grid-column:span 2;padding:12px;border-radius:10px;background:#1e3a5f;border:1px solid #3b82f6;color:#93c5fd;cursor:pointer;font-weight:700;font-size:12px;");
+      up.onclick = function() {
+        var inp = document.createElement("input");
+        inp.type = "file";
+        inp.accept = "image/png,image/jpeg,image/webp,image/svg+xml";
+        inp.onchange = function(ev) {
+          var f = ev.target.files[0];
+          if (!f) return;
+          var r = new FileReader();
+          r.onload = function() {
+            applyIconToItem(fieldKey, r.result);
+            close();
+          };
+          r.readAsDataURL(f);
+        };
+        inp.click();
+      };
+      grid.appendChild(up);
+
+      var list = [];
+      if (cat && typeof ICON_CATEGORIES !== "undefined" && ICON_CATEGORIES[cat]) {
+        list = ICON_CATEGORIES[cat].map(function(ic){ return [ic.c, ic.s||"s"]; });
+      } else {
+        list = getIconList();
+      }
+      if (q) list = list.filter(function(p){ return (p[0]||"").toLowerCase().indexOf(q) >= 0; });
+
+      list.forEach(function(p){
+        var cls = p[0], set = p[1] === "b" ? "brands" : "solid";
+        var storeVal = cls + "|" + (p[1] === "b" ? "b" : "s");
+        var b = document.createElement("button");
+        b.type = "button";
+        b.title = (cls||"").replace("fa-","");
+        b.setAttribute("style", "padding:12px;border-radius:10px;background:#18181b;border:1px solid #27272a;color:#e4e4e7;cursor:pointer;");
+        b.innerHTML = '<i class="fa-' + set + " " + cls + '" style="font-size:18px;"></i>';
+        b.onclick = function() {
+          applyIconToItem(fieldKey, storeVal);
+          close();
+        };
+        grid.appendChild(b);
+      });
+    }
+
+    box.querySelector("#isearch").oninput = fill;
+    catSel.onchange = fill;
+    fill();
+  };
+
+  // Alias
+  window.toggleIconPanel = window.openIconChooser;
+
+  // Clic global: cualquier botón "Añadir icono"
+  document.addEventListener("click", function(ev) {
+    var t = ev.target;
+    for (var i = 0; i < 6 && t; i++, t = t.parentElement) {
+      if (!t || t.tagName !== "BUTTON") continue;
+      var isAdd = (t.classList && t.classList.contains("btn-add-icon")) ||
+                  (t.getAttribute && t.getAttribute("data-fkey")) ||
+                  ((t.textContent || "").toUpperCase().indexOf("AÑADIR ICONO") >= 0);
+      if (!isAdd) continue;
+      ev.preventDefault();
+      ev.stopPropagation();
+      var key = t.getAttribute("data-fkey") || "";
+      if (!key) {
+        // intentar extraer de onclick antiguo
+        var oc = t.getAttribute("onclick") || "";
+        var m = oc.match(/['"]([k_][^'"]+)['"]/);
+        if (m) key = m[1];
+      }
+      if (!key) {
+        alert("No se pudo identificar el campo de iconos.");
+        return;
+      }
+      window.openIconChooser(key);
+      return;
+    }
+  }, true);
+})();
+</script>
+
+
 
     <header class="h-16 border-b border-zinc-800 bg-black flex items-center justify-between px-6 z-50">
         <div class="flex items-center gap-4">
@@ -547,8 +785,8 @@
                     <label class="text-[9px] text-zinc-400 uppercase font-bold">Posición de la simbología:</label>
                     <select id="editIconPos" class="input-pro text-xs bg-black">
                         <option value="left">Izquierda</option>
+                        <option value="center">Centrado</option>
                         <option value="right">Derecha</option>
-                        <option value="top">Arriba</option>
                     </select>
                     <p class="text-[9px] text-zinc-600">El icono se elige después desde cada artículo.</p>
                 </div>
@@ -765,8 +1003,8 @@
                                         <label class="text-[9px] text-zinc-400 uppercase font-bold">Posición de la simbología:</label>
                                         <select id="iconPos" class="input-pro text-xs bg-black">
                                             <option value="left">Izquierda</option>
+                                            <option value="center">Centrado</option>
                                             <option value="right">Derecha</option>
-                                            <option value="top">Arriba</option>
                                         </select>
                                         <p class="text-[9px] text-zinc-600">El icono se elige después desde cada artículo.</p>
                                     </div>
@@ -1159,6 +1397,194 @@
 
         const ICON_CATEGORIES = {"Gaming":[{c:"fa-gamepad",s:"s"},{c:"fa-dice",s:"s"},{c:"fa-dice-d6",s:"s"},{c:"fa-dice-d20",s:"s"},{c:"fa-puzzle-piece",s:"s"},{c:"fa-ghost",s:"s"},{c:"fa-headset",s:"s"},{c:"fa-vr-cardboard",s:"s"},{c:"fa-robot",s:"s"},{c:"fa-dragon",s:"s"},{c:"fa-chess",s:"s"},{c:"fa-chess-knight",s:"s"},{c:"fa-chess-rook",s:"s"},{c:"fa-trophy",s:"s"},{c:"fa-medal",s:"s"},{c:"fa-award",s:"s"},{c:"fa-crown",s:"s"},{c:"fa-star",s:"s"},{c:"fa-heart",s:"s"},{c:"fa-fire",s:"s"},{c:"fa-bolt",s:"s"},{c:"fa-wand-magic-sparkles",s:"s"},{c:"fa-hat-wizard",s:"s"},{c:"fa-shield-halved",s:"s"},{c:"fa-crosshairs",s:"s"}],"Consolas":[{c:"fa-gamepad",s:"s"},{c:"fa-playstation",s:"b"},{c:"fa-xbox",s:"b"},{c:"fa-steam",s:"b"},{c:"fa-twitch",s:"b"},{c:"fa-tv",s:"s"},{c:"fa-desktop",s:"s"},{c:"fa-headset",s:"s"},{c:"fa-sd-card",s:"s"},{c:"fa-compact-disc",s:"s"},{c:"fa-puzzle-piece",s:"s"}],"Ordenadores":[{c:"fa-desktop",s:"s"},{c:"fa-laptop",s:"s"},{c:"fa-laptop-code",s:"s"},{c:"fa-computer",s:"s"},{c:"fa-server",s:"s"},{c:"fa-hard-drive",s:"s"},{c:"fa-database",s:"s"},{c:"fa-microchip",s:"s"},{c:"fa-memory",s:"s"},{c:"fa-keyboard",s:"s"},{c:"fa-computer-mouse",s:"s"},{c:"fa-display",s:"s"},{c:"fa-tablet-screen-button",s:"s"},{c:"fa-mobile-screen",s:"s"},{c:"fa-plug",s:"s"},{c:"fa-power-off",s:"s"},{c:"fa-battery-full",s:"s"},{c:"fa-print",s:"s"},{c:"fa-cube",s:"s"},{c:"fa-cubes",s:"s"},{c:"fa-terminal",s:"s"},{c:"fa-code",s:"s"},{c:"fa-bug",s:"s"},{c:"fa-gears",s:"s"},{c:"fa-wrench",s:"s"},{c:"fa-toolbox",s:"s"},{c:"fa-hammer",s:"s"}],"Red":[{c:"fa-wifi",s:"s"},{c:"fa-network-wired",s:"s"},{c:"fa-ethernet",s:"s"},{c:"fa-satellite-dish",s:"s"},{c:"fa-signal",s:"s"},{c:"fa-globe",s:"s"},{c:"fa-cloud",s:"s"},{c:"fa-cloud-arrow-up",s:"s"},{c:"fa-cloud-arrow-down",s:"s"},{c:"fa-tower-broadcast",s:"s"},{c:"fa-satellite",s:"s"},{c:"fa-share-nodes",s:"s"},{c:"fa-link",s:"s"},{c:"fa-rss",s:"s"}],"Televisión":[{c:"fa-tv",s:"s"},{c:"fa-display",s:"s"},{c:"fa-satellite-dish",s:"s"},{c:"fa-volume-high",s:"s"},{c:"fa-volume-low",s:"s"},{c:"fa-volume-xmark",s:"s"},{c:"fa-sliders",s:"s"},{c:"fa-signal",s:"s"},{c:"fa-tower-broadcast",s:"s"}],"Cine":[{c:"fa-film",s:"s"},{c:"fa-clapperboard",s:"s"},{c:"fa-video",s:"s"},{c:"fa-photo-film",s:"s"},{c:"fa-camera",s:"s"},{c:"fa-camera-retro",s:"s"},{c:"fa-image",s:"s"},{c:"fa-images",s:"s"},{c:"fa-play",s:"s"},{c:"fa-circle-play",s:"s"},{c:"fa-pause",s:"s"},{c:"fa-stop",s:"s"},{c:"fa-ticket",s:"s"}],"Música":[{c:"fa-music",s:"s"},{c:"fa-headphones",s:"s"},{c:"fa-guitar",s:"s"},{c:"fa-microphone",s:"s"},{c:"fa-radio",s:"s"},{c:"fa-podcast",s:"s"},{c:"fa-list-ol",s:"s"},{c:"fa-shuffle",s:"s"},{c:"fa-repeat",s:"s"},{c:"fa-record-vinyl",s:"s"},{c:"fa-drum",s:"s"},{c:"fa-spotify",s:"b"}],"Libros":[{c:"fa-book",s:"s"},{c:"fa-book-open",s:"s"},{c:"fa-bookmark",s:"s"},{c:"fa-newspaper",s:"s"},{c:"fa-scroll",s:"s"},{c:"fa-book-atlas",s:"s"},{c:"fa-graduation-cap",s:"s"},{c:"fa-glasses",s:"s"}],"Oficina":[{c:"fa-envelope",s:"s"},{c:"fa-stamp",s:"s"},{c:"fa-paperclip",s:"s"},{c:"fa-folder",s:"s"},{c:"fa-folder-open",s:"s"},{c:"fa-file",s:"s"},{c:"fa-file-lines",s:"s"},{c:"fa-calculator",s:"s"},{c:"fa-chart-line",s:"s"},{c:"fa-chart-pie",s:"s"},{c:"fa-pen",s:"s"},{c:"fa-pencil",s:"s"},{c:"fa-clipboard",s:"s"},{c:"fa-calendar",s:"s"},{c:"fa-briefcase",s:"s"}],"Casa":[{c:"fa-house",s:"s"},{c:"fa-building",s:"s"},{c:"fa-hotel",s:"s"},{c:"fa-store",s:"s"},{c:"fa-couch",s:"s"},{c:"fa-bed",s:"s"},{c:"fa-bath",s:"s"},{c:"fa-lightbulb",s:"s"},{c:"fa-fan",s:"s"},{c:"fa-key",s:"s"},{c:"fa-lock",s:"s"},{c:"fa-door-open",s:"s"}],"Objetos":[{c:"fa-box",s:"s"},{c:"fa-box-open",s:"s"},{c:"fa-archive",s:"s"},{c:"fa-gift",s:"s"},{c:"fa-shirt",s:"s"},{c:"fa-gem",s:"s"},{c:"fa-tag",s:"s"},{c:"fa-barcode",s:"s"},{c:"fa-qrcode",s:"s"},{c:"fa-bag-shopping",s:"s"},{c:"fa-cart-shopping",s:"s"}],"Transporte":[{c:"fa-car",s:"s"},{c:"fa-motorcycle",s:"s"},{c:"fa-bicycle",s:"s"},{c:"fa-plane",s:"s"},{c:"fa-ship",s:"s"},{c:"fa-train",s:"s"},{c:"fa-bus",s:"s"},{c:"fa-truck",s:"s"},{c:"fa-rocket",s:"s"},{c:"fa-helicopter",s:"s"},{c:"fa-taxi",s:"s"}],"Dinero":[{c:"fa-coins",s:"s"},{c:"fa-money-bill",s:"s"},{c:"fa-credit-card",s:"s"},{c:"fa-wallet",s:"s"},{c:"fa-piggy-bank",s:"s"},{c:"fa-receipt",s:"s"},{c:"fa-landmark",s:"s"},{c:"fa-dollar-sign",s:"s"},{c:"fa-euro-sign",s:"s"}],"Personas":[{c:"fa-user",s:"s"},{c:"fa-users",s:"s"},{c:"fa-child",s:"s"},{c:"fa-user-astronaut",s:"s"},{c:"fa-id-card",s:"s"},{c:"fa-person",s:"s"},{c:"fa-user-tie",s:"s"}],"Naturaleza":[{c:"fa-tree",s:"s"},{c:"fa-leaf",s:"s"},{c:"fa-paw",s:"s"},{c:"fa-cat",s:"s"},{c:"fa-dog",s:"s"},{c:"fa-fish",s:"s"},{c:"fa-dove",s:"s"},{c:"fa-mountain",s:"s"},{c:"fa-water",s:"s"},{c:"fa-sun",s:"s"},{c:"fa-moon",s:"s"},{c:"fa-umbrella",s:"s"}],"Comida":[{c:"fa-utensils",s:"s"},{c:"fa-pizza-slice",s:"s"},{c:"fa-burger",s:"s"},{c:"fa-mug-hot",s:"s"},{c:"fa-wine-glass",s:"s"},{c:"fa-apple-whole",s:"s"},{c:"fa-carrot",s:"s"},{c:"fa-egg",s:"s"}],"Varios":[{c:"fa-infinity",s:"s"},{c:"fa-hashtag",s:"s"},{c:"fa-at",s:"s"},{c:"fa-percent",s:"s"},{c:"fa-copyright",s:"s"},{c:"fa-palette",s:"s"},{c:"fa-paintbrush",s:"s"},{c:"fa-shapes",s:"s"},{c:"fa-layer-group",s:"s"},{c:"fa-map",s:"s"},{c:"fa-compass",s:"s"},{c:"fa-flag",s:"s"},{c:"fa-bell",s:"s"},{c:"fa-comment",s:"s"},{c:"fa-thumbs-up",s:"s"},{c:"fa-eye",s:"s"},{c:"fa-circle-check",s:"s"},{c:"fa-atom",s:"s"},{c:"fa-flask",s:"s"},{c:"fa-dumbbell",s:"s"},{c:"fa-futbol",s:"s"},{c:"fa-chess-pawn",s:"s"},{c:"fa-chess-queen",s:"s"},{c:"fa-chess-king",s:"s"},{c:"fa-chess-bishop",s:"s"},{c:"fa-person-running",s:"s"},{c:"fa-mobile-screen-button",s:"s"},{c:"fa-battery-half",s:"s"},{c:"fa-sim-card",s:"s"},{c:"fa-gear",s:"s"},{c:"fa-screwdriver",s:"s"},{c:"fa-screwdriver-wrench",s:"s"},{c:"fa-fingerprint",s:"s"},{c:"fa-closed-captioning",s:"s"},{c:"fa-forward",s:"s"},{c:"fa-backward",s:"s"},{c:"fa-list-ul",s:"s"},{c:"fa-book-bible",s:"s"},{c:"fa-file-image",s:"s"},{c:"fa-chart-bar",s:"s"},{c:"fa-font",s:"s"},{c:"fa-clock",s:"s"},{c:"fa-address-book",s:"s"},{c:"fa-warehouse",s:"s"},{c:"fa-industry",s:"s"},{c:"fa-city",s:"s"},{c:"fa-temperature-half",s:"s"},{c:"fa-snowflake",s:"s"},{c:"fa-unlock",s:"s"},{c:"fa-boxes-stacked",s:"s"},{c:"fa-shoe-prints",s:"s"},{c:"fa-binoculars",s:"s"},{c:"fa-scissors",s:"s"},{c:"fa-tags",s:"s"},{c:"fa-car-side",s:"s"},{c:"fa-plane-departure",s:"s"},{c:"fa-tractor",s:"s"},{c:"fa-scale-balanced",s:"s"},{c:"fa-user-group",s:"s"},{c:"fa-user-ninja",s:"s"},{c:"fa-user-secret",s:"s"},{c:"fa-address-card",s:"s"},{c:"fa-people-group",s:"s"},{c:"fa-cloud-sun",s:"s"},{c:"fa-fire-flame-simple",s:"s"},{c:"fa-seedling",s:"s"},{c:"fa-beer-mug-empty",s:"s"},{c:"fa-ice-cream",s:"s"},{c:"fa-comments",s:"s"},{c:"fa-eye-slash",s:"s"},{c:"fa-circle-info",s:"s"},{c:"fa-triangle-exclamation",s:"s"},{c:"fa-ban",s:"s"},{c:"fa-recycle",s:"s"},{c:"fa-dna",s:"s"},{c:"fa-stethoscope",s:"s"},{c:"fa-basketball",s:"s"}],"Marcas":[{c:"fa-playstation",s:"b"},{c:"fa-xbox",s:"b"},{c:"fa-steam",s:"b"},{c:"fa-twitch",s:"b"},{c:"fa-apple",s:"b"},{c:"fa-windows",s:"b"},{c:"fa-linux",s:"b"},{c:"fa-android",s:"b"},{c:"fa-github",s:"b"},{c:"fa-discord",s:"b"},{c:"fa-youtube",s:"b"},{c:"fa-spotify",s:"b"},{c:"fa-amazon",s:"b"},{c:"fa-paypal",s:"b"}]};
         const COL_ICONS = Object.values(ICON_CATEGORIES).flat();
+        // === SELECTOR DE ICONOS (cargado pronto para que el botón siempre funcione) ===
+        function getAllIconList() {
+            try {
+                if (typeof COL_ICONS !== 'undefined' && COL_ICONS && COL_ICONS.length) return COL_ICONS.slice();
+                if (typeof ICON_CATEGORIES !== 'undefined') return Object.values(ICON_CATEGORIES).flat();
+            } catch (e) {}
+            return [
+                {c:'fa-gamepad',s:'s'},{c:'fa-compact-disc',s:'s'},{c:'fa-tv',s:'s'},{c:'fa-film',s:'s'},
+                {c:'fa-music',s:'s'},{c:'fa-book',s:'s'},{c:'fa-desktop',s:'s'},{c:'fa-laptop',s:'s'},
+                {c:'fa-mobile-screen',s:'s'},{c:'fa-star',s:'s'},{c:'fa-heart',s:'s'},{c:'fa-fire',s:'s'},
+                {c:'fa-trophy',s:'s'},{c:'fa-cube',s:'s'},{c:'fa-cubes',s:'s'},{c:'fa-wifi',s:'s'},
+                {c:'fa-print',s:'s'},{c:'fa-camera',s:'s'},{c:'fa-headphones',s:'s'},{c:'fa-keyboard',s:'s'},
+                {c:'fa-microchip',s:'s'},{c:'fa-playstation',s:'b'},{c:'fa-xbox',s:'b'},{c:'fa-steam',s:'b'}
+            ];
+        }
+        function fillIconPanel(fieldKey, query) {
+            const safeKey = String(fieldKey).replace(/[^a-zA-Z0-9_]/g, '_');
+            const grid = document.getElementById('iconGrid_' + safeKey);
+            if (!grid) return;
+            grid.innerHTML = '';
+            const q = (query || '').toLowerCase().trim();
+            let list = getAllIconList();
+            if (q) list = list.filter(ic => (ic.c || '').toLowerCase().indexOf(q) >= 0);
+            list.slice(0, 150).forEach(ic => {
+                const cls = ic.c;
+                const set = ic.s === 'b' ? 'brands' : 'solid';
+                const storeVal = cls + '|' + (ic.s === 'b' ? 'b' : 's');
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.title = (cls || '').replace('fa-','');
+                btn.style.cssText = 'padding:8px;border-radius:8px;background:#18181b;border:1px solid #27272a;color:#d4d4d8;cursor:pointer;';
+                btn.innerHTML = '<i class="fa-' + set + ' ' + cls + '" style="font-size:18px;"></i>';
+                btn.onclick = function(ev) {
+                    if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+                    if (typeof setFieldIconValue === 'function') setFieldIconValue(fieldKey, storeVal);
+                    else {
+                        // fallback directo
+                        const item = (typeof db !== 'undefined' && db.items) ? db.items.find(x => x.id === activeId) : null;
+                        if (!item) return;
+                        let list2 = Array.isArray(item[fieldKey]) ? item[fieldKey].slice() : (item[fieldKey] ? [item[fieldKey]] : []);
+                        if (!list2.includes(storeVal)) list2.push(storeVal);
+                        item[fieldKey] = list2;
+                        if (typeof save === 'function') save();
+                        if (typeof renderInspectorFields === 'function') renderInspectorFields();
+                        if (typeof renderItems === 'function') renderItems();
+                    }
+                };
+                grid.appendChild(btn);
+            });
+            if (!grid.children.length) {
+                grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#71717a;font-size:12px;padding:16px;">Ningún icono coincide</p>';
+            }
+        }
+        function populateIconModalGrid() {
+            const grid = document.getElementById('iconPickerGrid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            const q = ((document.getElementById('iconSearch') || {}).value || '').toLowerCase().trim();
+            const cat = ((document.getElementById('iconCategory') || {}).value || '');
+
+            // Botón subir
+            const up = document.createElement('button');
+            up.type = 'button';
+            up.className = 'p-3 rounded-lg bg-blue-900/30 border border-blue-700 text-blue-300 hover:bg-blue-800 transition flex flex-col items-center justify-center gap-1 col-span-2';
+            up.innerHTML = '<i class="fa-solid fa-upload text-lg"></i><span class="text-[9px] font-bold uppercase">Subir</span>';
+            up.onclick = function() {
+                if (typeof uploadCustomColIcon === 'function') uploadCustomColIcon();
+                else {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/png,image/jpeg,image/webp,image/svg+xml';
+                    input.onchange = function(e) {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = function() {
+                            const dataUrl = reader.result;
+                            if (window._iconPickerMode === 'field' && window._iconPickerFieldKey) {
+                                if (typeof setFieldIconValue === 'function') setFieldIconValue(window._iconPickerFieldKey, dataUrl);
+                            }
+                            const modal = document.getElementById('iconPickerModal');
+                            if (modal) { modal.classList.add('hidden'); modal.style.display = 'none'; }
+                        };
+                        reader.readAsDataURL(file);
+                    };
+                    input.click();
+                }
+            };
+            grid.appendChild(up);
+
+            let list = [];
+            try {
+                if (cat && typeof ICON_CATEGORIES !== 'undefined' && ICON_CATEGORIES[cat]) list = ICON_CATEGORIES[cat].slice();
+                else if (typeof COL_ICONS !== 'undefined' && COL_ICONS) list = COL_ICONS.slice();
+                else if (typeof ICON_CATEGORIES !== 'undefined') list = Object.values(ICON_CATEGORIES).flat();
+            } catch (e) { list = []; }
+            if (!list.length) {
+                list = [
+                    {c:'fa-gamepad',s:'s'},{c:'fa-compact-disc',s:'s'},{c:'fa-tv',s:'s'},{c:'fa-film',s:'s'},
+                    {c:'fa-music',s:'s'},{c:'fa-star',s:'s'},{c:'fa-heart',s:'s'},{c:'fa-cube',s:'s'},
+                    {c:'fa-desktop',s:'s'},{c:'fa-laptop',s:'s'},{c:'fa-mobile-screen',s:'s'},{c:'fa-wifi',s:'s'}
+                ];
+            }
+            if (q) list = list.filter(ic => (ic.c || '').toLowerCase().indexOf(q) >= 0);
+
+            list.forEach(function(ic) {
+                const cls = ic.c;
+                const set = ic.s === 'b' ? 'brands' : 'solid';
+                const storeVal = cls + '|' + (ic.s === 'b' ? 'b' : 's');
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'p-3 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-blue-500 hover:bg-zinc-800 text-zinc-300 hover:text-white transition flex items-center justify-center';
+                btn.title = (cls || '').replace('fa-','');
+                btn.innerHTML = '<i class="fa-' + set + ' ' + cls + ' text-lg"></i>';
+                btn.onclick = function() {
+                    if (window._iconPickerMode === 'field' && window._iconPickerFieldKey) {
+                        if (typeof setFieldIconValue === 'function') {
+                            setFieldIconValue(window._iconPickerFieldKey, storeVal);
+                        } else {
+                            const item = (typeof db !== 'undefined') ? db.items.find(function(x){ return x.id === activeId; }) : null;
+                            if (item) {
+                                var arr = Array.isArray(item[window._iconPickerFieldKey]) ? item[window._iconPickerFieldKey].slice() : (item[window._iconPickerFieldKey] ? [item[window._iconPickerFieldKey]] : []);
+                                if (arr.indexOf(storeVal) < 0) arr.push(storeVal);
+                                item[window._iconPickerFieldKey] = arr;
+                                if (typeof save === 'function') save();
+                                if (typeof renderInspectorFields === 'function') renderInspectorFields();
+                                if (typeof renderItems === 'function') renderItems();
+                            }
+                        }
+                    } else if (window._iconPickerTarget) {
+                        if (!db.settings.colIcons) db.settings.colIcons = {};
+                        db.settings.colIcons[window._iconPickerTarget] = storeVal;
+                        if (typeof save === 'function') save();
+                        if (typeof renderColNav === 'function') renderColNav();
+                        if (typeof renderConfig === 'function') renderConfig();
+                    }
+                    var modal = document.getElementById('iconPickerModal');
+                    if (modal) { modal.classList.add('hidden'); modal.style.display = 'none'; }
+                };
+                grid.appendChild(btn);
+            });
+            if (list.length === 0) {
+                var p = document.createElement('p');
+                p.className = 'col-span-full text-center text-zinc-600 text-xs py-6';
+                p.innerText = 'Ningún icono coincide.';
+                grid.appendChild(p);
+            }
+        }
+
+        function toggleIconPanel(fieldKey) {
+            try {
+                window._iconPickerMode = 'field';
+                window._iconPickerFieldKey = fieldKey;
+                var nameEl = document.getElementById('iconPickerColName');
+                if (nameEl) nameEl.innerText = 'Añadir icono al artículo';
+                var search = document.getElementById('iconSearch');
+                if (search) {
+                    search.value = '';
+                    search.oninput = function() { populateIconModalGrid(); };
+                }
+                var sel = document.getElementById('iconCategory');
+                if (sel) {
+                    var cats = (typeof ICON_CATEGORIES !== 'undefined') ? Object.keys(ICON_CATEGORIES) : [];
+                    sel.innerHTML = '<option value="">Todas las categorías</option>' +
+                        cats.map(function(k){ return '<option value="'+k+'">'+k+'</option>'; }).join('');
+                    sel.value = '';
+                    sel.onchange = function() { populateIconModalGrid(); };
+                }
+                var modal = document.getElementById('iconPickerModal');
+                if (!modal) {
+                    alert('No se encuentra la ventana de iconos en la página.');
+                    return;
+                }
+                modal.classList.remove('hidden');
+                modal.style.cssText = 'display:flex !important; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.95); align-items:center; justify-content:center;';
+                populateIconModalGrid();
+            } catch (err) {
+                alert('Error al abrir iconos: ' + (err && err.message ? err.message : err));
+                console.error(err);
+            }
+        }
+        window.toggleIconPanel = toggleIconPanel;
+        window.populateIconModalGrid = populateIconModalGrid;
+        window.fillIconPanel = fillIconPanel;
+        window.getAllIconList = getAllIconList;
+
+
+
 
         function iconHtml(iconVal, sizeClass) {
             sizeClass = sizeClass || 'text-lg';
@@ -1182,19 +1608,24 @@
 
         function openIconPicker(colName) {
             window._iconPickerMode = 'collection';
-            document.getElementById('iconPickerColName').innerText = colName || db.activeCol;
             window._iconPickerTarget = colName || db.activeCol;
+            const nameEl = document.getElementById('iconPickerColName');
+            if (nameEl) nameEl.innerText = colName || db.activeCol;
             const sel = document.getElementById('iconCategory');
             if (sel) {
-                const cur = sel.value;
                 sel.innerHTML = '<option value="">Todas las categorías</option>' +
                     Object.keys(ICON_CATEGORIES).map(k => '<option value="'+k+'">'+k+'</option>').join('');
-                sel.value = cur || '';
+                sel.value = '';
             }
             const search = document.getElementById('iconSearch');
             if (search) search.value = '';
-            filterIconPicker();
-            openModal('iconPickerModal');
+            const modal = document.getElementById('iconPickerModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+                modal.style.zIndex = '9000';
+            }
+            try { filterIconPicker(); } catch (err) { console.error(err); }
         }
 
         function filterIconPicker() {
@@ -1800,6 +2231,12 @@
 
         function manualSaveItem() {
             save();
+            // Refrescar panel de relacionados y listado por si cambió algún título/relación
+            const item = db.items.find(x => x.id === activeId);
+            if (item) {
+                renderRelatedEntities(item);
+                renderItems();
+            }
             // Feedback visual
             const btn = document.getElementById('saveItemBtn');
             if (btn) {
@@ -1911,11 +2348,45 @@
                 }
                 if(!displayTitle || String(displayTitle).trim() === "") displayTitle = "&nbsp;";
 
+                // Iconos: siempre ARRIBA del título; alineación izq/centro/der
+                const iconFields = schema.filter(f => f && f.type === 'icon');
+                let allIconsHtml = '';
+                let iconAlign = 'center';
+                iconFields.forEach(f => {
+                    let icons = [];
+                    try {
+                        const raw = i[f.key];
+                        if (Array.isArray(raw)) icons = raw.filter(Boolean);
+                        else if (raw) icons = [raw];
+                    } catch (e) {}
+                    if (!icons.length) return;
+                    let pos = (i['_iconPos_' + f.key]) || f.iconPosition || 'left';
+                    if (pos === 'top' || pos === 'bottom') pos = 'center';
+                    iconAlign = pos;
+                    allIconsHtml += icons.map(ic => iconHtml(ic, 'text-sm')).join('');
+                });
+                const posClass = iconAlign === 'right' ? 'pos-right' : (iconAlign === 'left' ? 'pos-left' : 'pos-center');
+                const safeTitle = (displayTitle === '&nbsp;') ? '&nbsp;' : String(displayTitle).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                const titleLong = safeTitle.length > 18 && safeTitle !== '&nbsp;';
+                const titleHtml = titleLong
+                    ? `<div class="card-marquee"><span class="card-marquee-inner">${safeTitle}&nbsp;&nbsp;&nbsp;${safeTitle}</span></div>`
+                    : `<span class="truncate block w-full text-center">${safeTitle}</span>`;
+
                 if (db.view === 'grid') {
                     const imgHtml = cover ? `<img src="${cover}">` : `<div class="w-full h-full flex items-center justify-center bg-zinc-800"><i class="fa-solid fa-image text-zinc-600 text-3xl"></i></div>`;
-                    card.innerHTML = `<div class="card-img-area">${imgHtml}</div><div class="card-text-area">${displayTitle}</div>`;
+                    const iconsRow = allIconsHtml
+                        ? `<div class="card-icons-row ${posClass}">${allIconsHtml}</div>`
+                        : '';
+                    card.innerHTML = `<div class="card-img-area">${imgHtml}</div>
+                    <div class="card-text-area" style="white-space:normal;overflow:visible;display:flex;flex-direction:column;align-items:stretch;gap:2px;">
+                        ${iconsRow}
+                        ${titleHtml}
+                    </div>`;
                 } else {
-                    card.innerHTML = `<div class="card-text-area">${displayTitle}</div><div class="text-zinc-600 text-xs ml-2"><i class="fa-solid fa-chevron-right"></i></div>`;
+                    const iconsRow = allIconsHtml
+                        ? `<span class="flex-shrink-0 text-blue-400 inline-flex gap-1">${allIconsHtml}</span>`
+                        : '';
+                    card.innerHTML = `<div class="card-text-area flex items-center gap-2 min-w-0">${iconsRow}<span class="truncate flex-1">${safeTitle}</span></div><div class="text-zinc-600 text-xs ml-2"><i class="fa-solid fa-chevron-right"></i></div>`;
                 }
                 g.appendChild(card);
             });
@@ -2037,10 +2508,14 @@
                         h = v ? `<div class="flex items-center gap-2"><i class="fa-solid fa-barcode text-zinc-500"></i><span class="text-sm text-zinc-300 font-mono tracking-wider">${v}</span></div>` : '-';
                     }
                     else if(f.type==='icon') {
-                        const icon = v || '';
-                        const iconMarkup = icon ? iconHtml(icon, 'text-xl') : '<span class="text-zinc-600 text-xs">Sin icono</span>';
-                        const wrap = f.iconPosition === 'top' ? 'flex-col' : (f.iconPosition === 'right' ? 'flex-row-reverse' : 'flex-row');
-                        h = `<div class="flex ${wrap} items-center gap-2">${iconMarkup}<span class="text-sm text-zinc-300 no-cut-text">${escapeHtml(f.name)}</span></div>`;
+                        const icons = getItemIconList(item, f.key);
+                        const pos = getIconFieldPosition(item, f);
+                        const iconMarkup = icons.length ? renderIconRow(icons, 'text-xl') : '<span class="text-zinc-600 text-xs">Sin iconos</span>';
+                        let wrap = 'flex-row items-center';
+                        if (pos === 'top') wrap = 'flex-col items-center';
+                        else if (pos === 'bottom') wrap = 'flex-col-reverse items-center';
+                        else if (pos === 'right') wrap = 'flex-row-reverse items-center';
+                        h = `<div class="flex ${wrap} gap-2"><div class="flex flex-wrap gap-2 justify-center">${iconMarkup}</div><span class="text-sm text-zinc-300 no-cut-text">${escapeHtml(f.name)}</span></div>`;
                     }
                     else if(f.type==='photo') {
                         const photos = Array.isArray(v) ? v : (v ? [v] : []);
@@ -2102,7 +2577,40 @@
                         </div>`;
                     }
                     else if(f.type==='icon') {
-                        h = `<div class="flex items-center gap-2"><button type="button" onclick="openFieldIconPicker('${f.key}')" class="bg-zinc-900 border border-zinc-700 hover:border-blue-500 px-3 py-2 rounded text-xs font-bold"><span id="fieldIconPreview_${f.key}">${v ? iconHtml(v,'text-lg') : '<i class="fa-solid fa-icons text-zinc-500 text-lg"></i>'}</span> Elegir icono</button><span class="text-[9px] text-zinc-500 uppercase">Posición: ${escapeHtml(f.iconPosition || 'left')}</span></div>`;
+                        let icons = [];
+                        try {
+                          if (typeof getItemIconList === 'function') icons = getItemIconList(item, f.key);
+                          else {
+                            const raw = item[f.key];
+                            icons = Array.isArray(raw) ? raw.filter(Boolean) : (raw ? [raw] : []);
+                          }
+                        } catch(_e) { icons = []; }
+                        let pos = 'left';
+                        try {
+                          if (typeof getIconFieldPosition === 'function') pos = getIconFieldPosition(item, f);
+                          else pos = (item['_iconPos_'+f.key] || f.iconPosition || 'left');
+                        } catch(_e2) { pos = f.iconPosition || 'left'; }
+                        const safeKey = String(f.key).replace(/[^a-zA-Z0-9_]/g, '_');
+                        const chips = icons.map((ic, idx) =>
+                            `<div class="relative inline-flex items-center justify-center w-11 h-11 rounded-lg bg-zinc-900 border border-zinc-700">
+                                ${iconHtml(ic, 'text-lg')}
+                                <button type="button" onclick="event.stopPropagation();removeFieldIcon('${f.key}',${idx})" class="absolute -top-1.5 -right-1.5 bg-red-600 text-white w-5 h-5 rounded-full text-[10px] leading-none flex items-center justify-center" title="Quitar"><i class="fa-solid fa-times"></i></button>
+                            </div>`
+                        ).join('');
+                        h = `<div class="space-y-3">
+                            <div class="flex flex-wrap gap-2 min-h-[2.5rem]">${chips || '<span class="text-zinc-600 text-xs self-center">Ningún icono aún</span>'}</div>
+                            <button type="button" class="btn-add-icon w-full py-2.5 border border-dashed border-blue-700 rounded-xl text-[10px] font-black text-blue-400 hover:bg-blue-900/20 transition uppercase cursor-pointer" data-fkey="${f.key}" onclick="window.openIconChooser && window.openIconChooser('${f.key}'); return false;">
+                                <i class="fa-solid fa-icons mr-1"></i> Añadir icono
+                            </button>
+                            <div>
+                                <label class="text-[9px] font-black text-zinc-500 uppercase tracking-widest block mb-1">Posición de los iconos</label>
+                                <select class="input-pro text-xs bg-black" onchange="updIconFieldPosition('${f.key}', this.value)">
+                                    <option value="left" ${pos==='left'?'selected':''}>Izquierda</option>
+                                    <option value="center" ${pos==='center'||pos==='top'?'selected':''}>Centrado</option>
+                                    <option value="right" ${pos==='right'?'selected':''}>Derecha</option>
+                                </select>
+                            </div>
+                        </div>`;
                     }
                     else if(f.type==='rating') {
                         h = `<input type="number" min="0" max="5" step="0.5" class="input-pro" value="${v}" oninput="updVal('${f.key}',this.value)" placeholder="0-5">`;
@@ -2117,19 +2625,49 @@
             connContainer.classList.remove('hidden');
             connBtn.innerHTML = '<i class="fa-solid fa-share-nodes"></i> VER CONEXIONES';
             renderRelatedEntities(item);
+            // Enlazar botones de iconos de forma fiable (sin depender solo de onclick)
+            bindIconAddButtons();
+        }
+
+        function bindIconAddButtons() {
+            document.querySelectorAll('button.btn-add-icon').forEach(function(btn) {
+                btn.onclick = null;
+                btn.addEventListener('click', function(ev) {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    var key = btn.getAttribute('data-fkey');
+                    if (!key) return;
+                    if (typeof window.openIconChooser === 'function') window.openIconChooser(key);
+                    else if (typeof toggleIconPanel === 'function') toggleIconPanel(key);
+                    else alert('Error: no hay función de iconos cargada. Recarga el archivo.');
+                });
+            });
         }
 
         function updVal(k,v) { 
             const i=db.items.find(x=>x.id===activeId); 
+            if (!i) return;
             i[k]=v;
             
-            const f = db.schemas[i._col].find(x => x.key === k);
-            let isTitleField = (f && f.isTitle) || (f && f.name.match(/^(titulo|title|nombre|name)$/i));
+            const f = (db.schemas[i._col] || []).find(x => x.key === k);
+            let isTitleField = (f && f.isTitle) || (f && f.name && f.name.match(/^(titulo|title|nombre|name)$/i));
             
             if(isTitleField) {
                 const headerEl = document.getElementById('inspectorHeaderTitle');
                 if(headerEl) headerEl.innerText = v || "Sin Título";
                 renderItems(); 
+            }
+            // Actualización en tiempo real de conexiones al cambiar cualquier relación
+            if (f && f.type === 'relation') {
+                renderRelatedEntities(i);
+                const connBtn = document.getElementById('connectionsBtn');
+                if (connBtn) {
+                    const groups = relationGroupsForItem(i);
+                    const n = groups.reduce((acc, g) => acc + g.targets.length, 0);
+                    connBtn.innerHTML = n
+                        ? `<i class="fa-solid fa-share-nodes"></i> VER CONEXIONES <span class="text-[9px] opacity-70">(${n})</span>`
+                        : '<i class="fa-solid fa-share-nodes"></i> VER CONEXIONES';
+                }
             }
             save(); 
         }
@@ -3469,33 +4007,129 @@
             return f && item[f.key] ? String(item[f.key]) : (item.title ? String(item.title) : 'Sin título');
         }
 
-        function openFieldIconPicker(fieldKey) {
-            window._iconPickerMode = 'field';
-            window._iconPickerFieldKey = fieldKey;
-            const nameEl = document.getElementById('iconPickerColName');
-            if (nameEl) nameEl.innerText = 'Icono del campo';
-            const search = document.getElementById('iconSearch');
-            if (search) search.value = '';
-            const sel = document.getElementById('iconCategory');
-            if (sel) {
-                sel.innerHTML = '<option value="">Todas las categorías</option>' +
-                    Object.keys(ICON_CATEGORIES).map(k => '<option value="'+k+'">'+k+'</option>').join('');
-                sel.value = '';
+        function iconPosLabel(pos) {
+            const map = { left: 'Izquierda', center: 'Centrado', right: 'Derecha', top: 'Centrado', bottom: 'Centrado' };
+            return map[pos] || 'Izquierda';
+        }
+
+        function getItemIconList(item, fieldKey) {
+            if (!item) return [];
+            const v = item[fieldKey];
+            if (v == null || v === '') return [];
+            if (Array.isArray(v)) return v.filter(x => x != null && x !== '');
+            return [v];
+        }
+
+        function getAllIconList() {
+            try {
+                if (typeof COL_ICONS !== 'undefined' && COL_ICONS && COL_ICONS.length) return COL_ICONS.slice();
+                if (typeof ICON_CATEGORIES !== 'undefined') return Object.values(ICON_CATEGORIES).flat();
+            } catch (e) {}
+            return [
+                {c:'fa-gamepad',s:'s'},{c:'fa-compact-disc',s:'s'},{c:'fa-tv',s:'s'},{c:'fa-film',s:'s'},
+                {c:'fa-music',s:'s'},{c:'fa-book',s:'s'},{c:'fa-desktop',s:'s'},{c:'fa-laptop',s:'s'},
+                {c:'fa-mobile-screen',s:'s'},{c:'fa-star',s:'s'},{c:'fa-heart',s:'s'},{c:'fa-fire',s:'s'},
+                {c:'fa-trophy',s:'s'},{c:'fa-cube',s:'s'},{c:'fa-cubes',s:'s'},{c:'fa-wifi',s:'s'},
+                {c:'fa-print',s:'s'},{c:'fa-camera',s:'s'},{c:'fa-headphones',s:'s'},{c:'fa-keyboard',s:'s'},
+                {c:'fa-microchip',s:'s'},{c:'fa-playstation',s:'b'},{c:'fa-xbox',s:'b'},{c:'fa-steam',s:'b'}
+            ];
+        }
+
+        function fillIconPanel(fieldKey, query) {
+            const safeKey = String(fieldKey).replace(/[^a-zA-Z0-9_]/g, '_');
+            const grid = document.getElementById('iconGrid_' + safeKey);
+            if (!grid) return;
+            grid.innerHTML = '';
+            const q = (query || '').toLowerCase().trim();
+            let list = getAllIconList();
+            if (q) list = list.filter(ic => (ic.c || '').toLowerCase().indexOf(q) >= 0);
+            list.slice(0, 150).forEach(ic => {
+                const cls = ic.c;
+                const set = ic.s === 'b' ? 'brands' : 'solid';
+                const storeVal = cls + '|' + (ic.s === 'b' ? 'b' : 's');
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.title = cls.replace('fa-','');
+                btn.style.cssText = 'padding:8px;border-radius:8px;background:#18181b;border:1px solid #27272a;color:#d4d4d8;cursor:pointer;';
+                btn.innerHTML = '<i class="fa-' + set + ' ' + cls + '" style="font-size:18px;"></i>';
+                btn.onclick = function(ev) {
+                    if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+                    setFieldIconValue(fieldKey, storeVal);
+                };
+                grid.appendChild(btn);
+            });
+            if (!grid.children.length) {
+                grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#71717a;font-size:12px;padding:16px;">Ningún icono coincide</p>';
             }
-            filterIconPicker();
-            openModal('iconPickerModal');
+        }
+
+        function toggleIconPanel(fieldKey) {
+            if (typeof window.openIconChooser === 'function') return window.openIconChooser(fieldKey);
+            alert('openIconChooser no disponible');
+        }
+
+        function openFieldIconPicker(fieldKey) {
+            toggleIconPanel(fieldKey);
         }
 
         function setFieldIconValue(fieldKey, storeVal) {
             const item = db.items.find(x => x.id === activeId);
             if (!item) return;
-            item[fieldKey] = storeVal;
+            let list = getItemIconList(item, fieldKey);
+            // Evitar duplicados exactos
+            if (!list.includes(storeVal)) list.push(storeVal);
+            item[fieldKey] = list;
             save();
-            // Actualizar preview del botón si existe
-            const prev = document.getElementById('fieldIconPreview_' + fieldKey);
-            if (prev) prev.innerHTML = iconHtml(storeVal, 'text-lg');
             renderInspectorFields();
             renderItems();
+        }
+
+        function removeFieldIcon(fieldKey, index) {
+            const item = db.items.find(x => x.id === activeId);
+            if (!item) return;
+            let list = getItemIconList(item, fieldKey);
+            list.splice(index, 1);
+            item[fieldKey] = list;
+            save();
+            renderInspectorFields();
+            renderItems();
+        }
+
+        // Exponer en window para que los onclick del HTML siempre las encuentren
+        window.openFieldIconPicker = openFieldIconPicker;
+        window.toggleIconPanel = toggleIconPanel;
+        window.populateIconModalGrid = populateIconModalGrid;
+        window.fillIconPanel = fillIconPanel;
+        window.setFieldIconValue = setFieldIconValue;
+        window.removeFieldIcon = removeFieldIcon;
+        window.filterIconPicker = filterIconPicker;
+        window.openIconPicker = openIconPicker;
+
+        function updIconFieldPosition(fieldKey, pos) {
+            const item = db.items.find(x => x.id === activeId);
+            if (!item) return;
+            const schema = db.schemas[item._col] || [];
+            const f = schema.find(x => x.key === fieldKey);
+            if (f) {
+                f.iconPosition = pos || 'left';
+            }
+            // También guardar por artículo por si el esquema no se edita
+            item['_iconPos_' + fieldKey] = pos || 'left';
+            save();
+            renderInspectorFields();
+            renderItems();
+        }
+
+        function getIconFieldPosition(item, field) {
+            if (!field) return 'left';
+            const perItem = item && item['_iconPos_' + field.key];
+            if (perItem) return perItem;
+            return field.iconPosition || 'left';
+        }
+
+        function renderIconRow(icons, sizeClass) {
+            if (!icons || !icons.length) return '';
+            return icons.map(ic => `<span class="inline-flex items-center justify-center">${iconHtml(ic, sizeClass || 'text-base')}</span>`).join('');
         }
 
         function exportCurrentRelations(type) {
@@ -3521,17 +4155,20 @@
 
         function relationGroupsForItem(item) {
             const groups = [];
+            if (!item) return groups;
             const schema = db.schemas[item._col] || [];
             schema.filter(f => f && f.type === 'relation').forEach(f => {
                 const raw = item[f.key];
                 const ids = Array.isArray(raw) ? raw : (raw ? [raw] : []);
                 const targets = ids.map(id => {
+                    if (!id && id !== 0) return null;
                     const found = db.items.find(x => x.id === id);
                     if (!found) return null;
                     // Si hay targetCol definido, solo aceptar ítems de esa colección
                     if (f.targetCol && found._col !== f.targetCol) return null;
                     return found;
                 }).filter(Boolean);
+                if (!targets.length) return; // vacío no afecta
                 groups.push({ direction: 'out', label: (f.name || 'Relacionado') + (f.targetCol ? ' → ' + f.targetCol : ''), field: f, targets });
             });
             db.items.forEach(other => {
@@ -3540,10 +4177,16 @@
                 os.filter(f => f && f.type === 'relation').forEach(f => {
                     const raw = other[f.key];
                     const ids = Array.isArray(raw) ? raw : (raw ? [raw] : []);
-                    if (!ids.includes(item.id)) return;
-                    let group = groups.find(g => g.direction === 'in' && g.label === f.name && g.sourceCol === other._col);
-                    if (!group) { group = { direction: 'in', label: f.name || 'Relacionado', sourceCol: other._col, field: f, targets: [] }; groups.push(group); }
-                    group.targets.push(other);
+                    if (!ids.length || !ids.includes(item.id)) return;
+                    // Etiqueta clara: nombre del campo + colección de origen
+                    const labelBase = f.name || 'Relacionado';
+                    const label = labelBase + (other._col ? ' ← ' + other._col : '');
+                    let group = groups.find(g => g.direction === 'in' && g.fieldKey === f.key && g.sourceCol === other._col);
+                    if (!group) {
+                        group = { direction: 'in', label, sourceCol: other._col, field: f, fieldKey: f.key, targets: [] };
+                        groups.push(group);
+                    }
+                    if (!group.targets.some(t => t.id === other.id)) group.targets.push(other);
                 });
             });
             return groups.filter(g => g.targets.length);
@@ -3629,7 +4272,7 @@
                     data: { labels: names, datasets: [{ data: counts, backgroundColor: getChartPalette(names.length), borderColor: '#050505', borderWidth: 3 }] },
                     options: {
                         responsive: true, maintainAspectRatio: false, cutout: '48%',
-                        plugins: { legend: { position: 'bottom', labels: { color: '#d4d4d8', boxWidth: 12, padding: 14, font: { size: 10, weight: 'bold' } } },
+                        plugins: { legend: { display: false },
                             tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` } } }
                     }
                 });
@@ -3676,6 +4319,25 @@
             else { pie.classList.add('hidden'); list.classList.remove('hidden'); listBtn.className=active; pieBtn.className=idle; }
         }
 
+        function resolveGroupLabel(val, field) {
+            if (val == null || (typeof val === 'string' && val.trim() === '') || (Array.isArray(val) && !val.length)) return '(Vacío)';
+            if (field && field.type === 'relation') {
+                const ids = Array.isArray(val) ? val : [val];
+                const titles = ids.map(id => {
+                    if (!id && id !== 0) return null;
+                    const found = db.items.find(x => x.id === id);
+                    if (found) return getItemTitleSafe(found);
+                    // Si parece un id interno y no existe, no mostrar el id crudo como "título"
+                    const s = String(id);
+                    if (/^it_/.test(s)) return '(relación rota)';
+                    return s;
+                }).filter(t => t != null && String(t).trim() !== '');
+                return titles.length ? titles.join(', ') : '(Vacío)';
+            }
+            if (Array.isArray(val)) return val.length ? val.map(String).join(', ') : '(Vacío)';
+            return String(val);
+        }
+
         function generateAdvancedReport() {
             const collection = document.getElementById('advCollection').value;
             const groupKey = document.getElementById('advGroupBy').value;
@@ -3688,15 +4350,20 @@
             const dataMap = {};
             const items = db.items.filter(i => i._col === collection);
             items.forEach(item => {
-                let groupVal = item[groupField.key];
-                if (Array.isArray(groupVal)) groupVal = groupVal.length ? groupVal.join(', ') : '(Vacío)';
-                groupVal = groupVal == null || String(groupVal).trim() === '' ? '(Vacío)' : String(groupVal);
+                const raw = item[groupField.key];
+                const groupVal = resolveGroupLabel(raw, groupField);
                 if (!dataMap[groupVal]) dataMap[groupVal] = 0;
                 if (getFieldCountableValue(item, countField)) dataMap[groupVal]++;
             });
 
-            const labels = Object.keys(dataMap);
-            const values = Object.values(dataMap);
+            // Ordenar: primero por cantidad desc, (Vacío) al final
+            const entries = Object.entries(dataMap).sort((a, b) => {
+                if (a[0] === '(Vacío)') return 1;
+                if (b[0] === '(Vacío)') return -1;
+                return b[1] - a[1];
+            });
+            const labels = entries.map(e => e[0]);
+            const values = entries.map(e => e[1]);
             if (!labels.length) return alert('No se encontraron datos para esa combinación.');
 
             const total = values.reduce((a,b)=>a+b,0);
@@ -3719,7 +4386,7 @@
                 advResultChartInstance = new Chart(canvas.getContext('2d'), {
                     type:'doughnut',
                     data:{ labels, datasets:[{ data:values, backgroundColor:colors, borderColor:'#050505', borderWidth:3 }] },
-                    options:{ responsive:true, maintainAspectRatio:false, cutout:'42%', plugins:{ legend:{position:'bottom',labels:{color:'#d4d4d8',boxWidth:12,padding:14,font:{size:10,weight:'bold'}}}, tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw}`}} } }
+                    options:{ responsive:true, maintainAspectRatio:false, cutout:'42%', plugins:{ legend:{ display: false }, tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw}`}} } }
                 });
             }
             advResultData = {collection, groupField, countField, labels, values};
@@ -3954,8 +4621,19 @@
             applySettings();
         }
 
-        function openModal(id){document.getElementById(id).classList.remove('hidden'); if(id==='configModal')renderConfig();}
-        function closeModal(id){document.getElementById(id).classList.add('hidden');}
+        function openModal(id){
+            const el = document.getElementById(id);
+            if (!el) { console.error('openModal: no existe', id); return; }
+            el.classList.remove('hidden');
+            el.style.display = 'flex';
+            if (id === 'configModal') renderConfig();
+        }
+        function closeModal(id){
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.add('hidden');
+            el.style.display = 'none';
+        }
         function toggleSidebar(){document.getElementById('mainSidebar').classList.toggle('open');}
         function changeView(v){ db.view=v; renderItems(); save(); }
 
@@ -4339,21 +5017,21 @@
     </div>
 
 
-    <div id="iconPickerModal" class="modal-overlay hidden" style="z-index: 4800;">
-        <div class="bg-black border border-zinc-800 p-4 sm:p-6 rounded-xl w-[95%] max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
-            <div class="flex justify-between items-center mb-3">
+    <div id="iconPickerModal" class="modal-overlay hidden" style="z-index: 9000; display: none;">
+        <div class="bg-black border border-zinc-800 p-4 sm:p-6 rounded-xl w-[95%] max-w-2xl shadow-2xl" style="max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="flex justify-between items-center mb-3 flex-shrink-0">
                 <h3 class="text-white font-black uppercase text-sm">Elegir icono</h3>
-                <button onclick="closeModal('iconPickerModal')" class="text-zinc-500 text-2xl p-2"><i class="fa-solid fa-times"></i></button>
+                <button type="button" onclick="closeModal('iconPickerModal')" class="text-zinc-500 text-2xl p-2"><i class="fa-solid fa-times"></i></button>
             </div>
-            <p id="iconPickerColName" class="text-xs text-blue-400 mb-2 font-bold"></p>
-            <div class="flex flex-col sm:flex-row gap-2 mb-3">
+            <p id="iconPickerColName" class="text-xs text-blue-400 mb-2 font-bold flex-shrink-0"></p>
+            <div class="flex flex-col sm:flex-row gap-2 mb-3 flex-shrink-0">
                 <input type="text" id="iconSearch" class="input-pro text-xs flex-1" placeholder="Buscar icono (wifi, play, impresora...)" oninput="filterIconPicker()">
                 <select id="iconCategory" class="input-pro text-xs bg-zinc-900 sm:w-48" onchange="filterIconPicker()">
                     <option value="">Todas las categorías</option>
                 </select>
             </div>
-            <div id="iconPickerGrid" class="grid grid-cols-6 sm:grid-cols-8 gap-2 overflow-y-auto flex-1 p-1 min-h-0"></div>
-            <p class="text-[9px] text-zinc-600 mt-2 text-center">Impresora 3D ≈ cubos. También puedes subir tu propio icono.</p>
+            <div id="iconPickerGrid" class="grid grid-cols-5 sm:grid-cols-8 gap-2 overflow-y-auto p-1" style="min-height: 280px; max-height: 55vh; height: 55vh;"></div>
+            <p class="text-[9px] text-zinc-600 mt-2 text-center flex-shrink-0">Elige categoría, busca o sube tu propio icono. Pulsa uno para añadirlo.</p>
         </div>
     </div>
 
@@ -4374,5 +5052,42 @@
         </div>
     </div>
 
+
+<script>
+/* REAFIRMAR selector de iconos al final (nadie puede pisarlo después) */
+(function(){
+  if (typeof window.openIconChooser !== 'function') {
+    console.error('openIconChooser missing');
+    return;
+  }
+  // Guardar referencia inmutable
+  var _chooser = window.openIconChooser;
+  window.openIconChooser = _chooser;
+  window.toggleIconPanel = _chooser;
+  // Re-vincular listener por si se perdió
+  document.addEventListener('click', function(ev) {
+    var t = ev.target;
+    for (var i = 0; i < 6 && t; i++, t = t.parentElement) {
+      if (!t || t.tagName !== 'BUTTON') continue;
+      var txt = (t.textContent || '').toUpperCase();
+      var isAdd = (t.classList && t.classList.contains('btn-add-icon')) ||
+                  txt.indexOf('AÑADIR ICONO') >= 0 ||
+                  txt.indexOf('ANADIR ICONO') >= 0;
+      if (!isAdd) continue;
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      var key = t.getAttribute('data-fkey') || '';
+      if (!key) {
+        var oc = t.getAttribute('onclick') || '';
+        var m = oc.match(/['"]([kK_][^'"]+)['"]/);
+        if (m) key = m[1];
+      }
+      if (key) _chooser(key);
+      else alert('No se identificó el campo de iconos');
+      return;
+    }
+  }, true);
+})();
+</script>
 </body>
 </html>
