@@ -200,6 +200,76 @@
         .card-icons-row.pos-left { justify-content: flex-start; }
         .card-icons-row.pos-center { justify-content: center; }
         .card-icons-row.pos-right { justify-content: flex-end; }
+        .star-rating {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            line-height: 1;
+            vertical-align: middle;
+            overflow: visible;
+        }
+        .star-unit {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.15em;
+            height: 1.15em;
+            font-size: inherit;
+            line-height: 1;
+            overflow: visible;
+            flex-shrink: 0;
+        }
+        .star-unit .star-bg,
+        .star-unit .star-fg i {
+            font-size: 1em;
+            line-height: 1;
+            display: block;
+        }
+        .star-unit .star-bg {
+            color: #52525b;
+        }
+        .star-unit .star-fg {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            overflow: hidden;
+            color: #fbbf24;
+            height: 1.15em;
+            display: flex;
+            align-items: center;
+        }
+        .star-unit .star-fg i {
+            color: #fbbf24;
+        }
+        .star-rating-lg { font-size: 20px; }
+        .star-rating-sm { font-size: 12px; }
+        .star-rating-md { font-size: 16px; }
+        .star-input-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            overflow: visible;
+            padding: 4px 0;
+        }
+        .star-input-row {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            font-size: 26px;
+            line-height: 1;
+            overflow: visible;
+            padding: 4px 2px;
+            user-select: none;
+        }
+        .star-input-row .star-unit {
+            width: 1.2em;
+            height: 1.2em;
+            cursor: pointer;
+        }
+
     </style>
 </head>
 <body class="h-screen flex flex-col">
@@ -581,15 +651,29 @@
                 </div>
             </div>
 
-            <div class="mt-4 border border-zinc-800 rounded-xl p-4 bg-zinc-900/50">
-                <h4 class="text-yellow-500 font-bold uppercase text-xs mb-3">3. Opciones del informe</h4>
+            <div class="mt-4 border border-zinc-800 rounded-xl p-4 bg-zinc-900/50 space-y-4">
+                <h4 class="text-yellow-500 font-bold uppercase text-xs">3. Opciones del informe</h4>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-zinc-300">
-                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="expOptListado" class="accent-blue-500" checked> Incluir listado de ítems</label>
-                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="expOptRelaciones" class="accent-blue-500"> Incluir relaciones entre ítems</label>
-                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="expOptStats" class="accent-blue-500"> Incluir estadísticas</label>
-                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="expOptFotos" class="accent-blue-500"> Incluir fotos en PDF (miniaturas)</label>
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="expOptListado" class="accent-blue-500" checked> Listado de ítems</label>
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="expOptFotos" class="accent-blue-500"> Fotos en PDF (miniaturas)</label>
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="expOptIcons" class="accent-blue-500" checked> Iconos en PDF</label>
+                    <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="expOptRating" class="accent-blue-500" checked> Valoración (estrellas en PDF / número en TXT)</label>
                 </div>
-                <p class="text-[9px] text-zinc-600 mt-2">Marca solo lo que necesites. Puedes exportar una colección o varias (arriba).</p>
+                <div>
+                    <h5 class="text-[10px] font-black uppercase text-blue-400 mb-2">Agrupar por relaciones</h5>
+                    <div id="expGroupRelList" class="space-y-1 max-h-28 overflow-y-auto text-xs text-zinc-300">
+                        <p class="text-zinc-600 text-[10px]">Selecciona colecciones arriba para ver campos de relación.</p>
+                    </div>
+                </div>
+                <div>
+                    <h5 class="text-[10px] font-black uppercase text-blue-400 mb-2">Estadísticas (agrupar y contar)</h5>
+                    <label class="flex items-center gap-2 cursor-pointer text-xs text-zinc-300 mb-2">
+                        <input type="checkbox" id="expOptStats" class="accent-blue-500"> Incluir bloque de estadísticas
+                    </label>
+                    <div id="expStatsFieldList" class="space-y-1 max-h-28 overflow-y-auto text-xs text-zinc-300">
+                        <p class="text-zinc-600 text-[10px]">Elige campos para agrupar (género, plataforma…).</p>
+                    </div>
+                </div>
             </div>
 
             <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -611,7 +695,7 @@
     <div id="connectionsModal" class="modal-overlay hidden">
         <div class="modal-box max-w-lg bg-zinc-950">
             <div class="p-4 border-b border-zinc-800 flex justify-between items-center">
-                <h3 id="connModalTitle" class="text-blue-400 font-black uppercase text-sm">Conexiones Relacionadas</h3>
+                <h3 id="connModalTitle" class="text-blue-400 font-black uppercase text-sm">Relaciones</h3>
                 <button onclick="closeModal('connectionsModal')" class="text-white"><i class="fa-solid fa-times"></i></button>
             </div>
             <div class="px-4 pt-3 flex gap-2">
@@ -2282,15 +2366,187 @@
             document.getElementById('colActiveLabel').innerText = db.activeCol;
         }
         
-        function renderStars(val) {
-             let h = '<div class="text-yellow-500 text-[10px]">';
-             for(let i=1; i<=5; i++) {
-                 if(val >= i) h += '<i class="fa-solid fa-star"></i>';
-                 else if(val >= i - 0.5) h += '<i class="fa-solid fa-star-half-stroke"></i>';
-                 else h += '<i class="fa-regular fa-star"></i>';
-             }
-             return h + ` <span class="text-zinc-500 ml-1">(${val})</span></div>`;
+        function parseRatingValue(val) {
+            if (val === undefined || val === null || val === '') return null;
+            let n = parseFloat(String(val).replace(',', '.'));
+            if (isNaN(n)) return null;
+            if (n < 0) n = 0;
+            if (n > 5) n = 5;
+            return n;
         }
+
+        function renderStars(val, sizeClass) {
+            const n = parseRatingValue(val);
+            if (n === null) return '';
+            const size = sizeClass || 'star-rating-md';
+            let h = '<span class="star-rating ' + size + '" title="' + n.toFixed(1).replace(/\.0$/, '') + '/5">';
+            for (let i = 1; i <= 5; i++) {
+                // Fracción de esta estrella (0..1)
+                let frac = n - (i - 1);
+                if (frac < 0) frac = 0;
+                if (frac > 1) frac = 1;
+                const pct = Math.round(frac * 100);
+                h += '<span class="star-unit">' +
+                     '<i class="fa-solid fa-star star-bg"></i>' +
+                     '<span class="star-fg" style="width:' + pct + '%"><i class="fa-solid fa-star"></i></span>' +
+                     '</span>';
+            }
+            h += '</span>';
+            return h;
+        }
+
+        function renderRatingInput(fieldKey, val) {
+            const n = parseRatingValue(val);
+            const current = n === null ? 0 : n;
+            let stars = '';
+            for (let i = 1; i <= 5; i++) {
+                let frac = current - (i - 1);
+                if (frac < 0) frac = 0;
+                if (frac > 1) frac = 1;
+                const pct = Math.round(frac * 100);
+                stars += '<span class="star-unit" data-star="'+i+'">' +
+                         '<i class="fa-solid fa-star star-bg"></i>' +
+                         '<span class="star-fg" style="width:'+pct+'%"><i class="fa-solid fa-star"></i></span></span>';
+            }
+            // Solo estrellas; el arrastre se enlaza después de insertar el HTML
+            setTimeout(function(){ bindStarDrag(fieldKey); }, 0);
+            return '<div class="star-input-wrap">' +
+                   '<div class="star-input-row select-none" id="starRow_'+fieldKey+'" style="cursor:pointer;user-select:none;touch-action:none;">'+stars+'</div>' +
+                   '' +
+                   '</div>';
+        }
+
+        function ratingFromPointer(row, clientX) {
+            if (!row) return 0;
+            const rect = row.getBoundingClientRect();
+            let ratio = (clientX - rect.left) / rect.width;
+            if (ratio < 0) ratio = 0;
+            if (ratio > 1) ratio = 1;
+            // 0..5 con pasos de 0.1
+            let val = Math.round(ratio * 50) / 10;
+            if (val < 0) val = 0;
+            if (val > 5) val = 5;
+            return val;
+        }
+
+        function paintStarRow(fieldKey, val) {
+            const row = document.getElementById('starRow_' + fieldKey);
+            if (!row) return;
+            const n = parseRatingValue(val) || 0;
+            const units = row.querySelectorAll('.star-unit');
+            units.forEach(function(unit, idx) {
+                const i = idx + 1;
+                let frac = n - (i - 1);
+                if (frac < 0) frac = 0;
+                if (frac > 1) frac = 1;
+                const fg = unit.querySelector('.star-fg');
+                if (fg) fg.style.width = Math.round(frac * 100) + '%';
+            });
+        }
+
+        function bindStarDrag(fieldKey) {
+            const row = document.getElementById('starRow_' + fieldKey);
+            if (!row || row._starBound) return;
+            row._starBound = true;
+            let dragging = false;
+
+            function apply(clientX) {
+                const val = ratingFromPointer(row, clientX);
+                paintStarRow(fieldKey, val);
+                if (typeof updVal === 'function') updVal(fieldKey, String(val));
+            }
+
+            row.addEventListener('mousedown', function(ev) {
+                ev.preventDefault();
+                dragging = true;
+                apply(ev.clientX);
+            });
+            window.addEventListener('mousemove', function(ev) {
+                if (!dragging) return;
+                apply(ev.clientX);
+            });
+            window.addEventListener('mouseup', function() {
+                dragging = false;
+            });
+            row.addEventListener('touchstart', function(ev) {
+                if (!ev.touches[0]) return;
+                dragging = true;
+                apply(ev.touches[0].clientX);
+            }, { passive: true });
+            row.addEventListener('touchmove', function(ev) {
+                if (!dragging || !ev.touches[0]) return;
+                apply(ev.touches[0].clientX);
+            }, { passive: true });
+            row.addEventListener('touchend', function() { dragging = false; });
+        }
+
+        function setRatingFromStar(fieldKey, starIndex, ev) {
+            let val = starIndex;
+            try {
+                const unit = ev.currentTarget;
+                const rect = unit.getBoundingClientRect();
+                const x = (ev.clientX - rect.left) / rect.width;
+                if (x < 0.5) val = starIndex - 0.5;
+                else val = starIndex;
+                if (val < 0.5) val = 0.5;
+            } catch(e) {}
+            if (typeof updVal === 'function') updVal(fieldKey, String(val));
+            paintStarRow(fieldKey, val);
+        }
+
+        function refreshStarRow(fieldKey, val) {
+            paintStarRow(fieldKey, val);
+        }
+
+        function collectItemIcons(item, schema) {
+            // Iconos propios del ítem + iconos de ítems relacionados (p.ej. plataforma)
+            const result = { html: '', align: 'left' };
+            if (!item || !schema) return result;
+            const iconBits = [];
+            schema.filter(f => f && f.type === 'icon').forEach(f => {
+                let icons = [];
+                try {
+                    const raw = item[f.key];
+                    if (Array.isArray(raw)) icons = raw.filter(Boolean);
+                    else if (raw) icons = [raw];
+                } catch(e) {}
+                if (!icons.length) return;
+                let pos = item['_iconPos_' + f.key] || f.iconPosition || 'left';
+                if (pos === 'top' || pos === 'bottom') pos = 'center';
+                result.align = pos;
+                icons.forEach(ic => iconBits.push(iconHtml(ic, 'text-sm')));
+            });
+            // Iconos de relaciones (plataforma, sistema, etc.)
+            schema.filter(f => f && f.type === 'relation').forEach(f => {
+                const raw = item[f.key];
+                const ids = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+                ids.forEach(id => {
+                    if (!id) return;
+                    const rel = db.items.find(x => x.id === id);
+                    if (!rel) return;
+                    const relSchema = db.schemas[rel._col] || [];
+                    relSchema.filter(rf => rf && rf.type === 'icon').forEach(rf => {
+                        let icons = [];
+                        const raw2 = rel[rf.key];
+                        if (Array.isArray(raw2)) icons = raw2.filter(Boolean);
+                        else if (raw2) icons = [raw2];
+                        icons.forEach(ic => iconBits.push(iconHtml(ic, 'text-sm')));
+                    });
+                });
+            });
+            result.html = iconBits.join('');
+            return result;
+        }
+
+        function getItemRatingHtml(item, schema, sizeClass) {
+            if (!item || !schema) return '';
+            const rf = schema.find(f => f && f.type === 'rating');
+            if (!rf) return '';
+            const v = item[rf.key];
+            if (v === undefined || v === null || v === '') return '';
+            return renderStars(v, sizeClass || 'star-rating-sm');
+        }
+
 
         function renderItems() {
             const g = document.getElementById('itemsGrid');
@@ -2348,45 +2604,64 @@
                 }
                 if(!displayTitle || String(displayTitle).trim() === "") displayTitle = "&nbsp;";
 
-                // Iconos: siempre ARRIBA del título; alineación izq/centro/der
-                const iconFields = schema.filter(f => f && f.type === 'icon');
-                let allIconsHtml = '';
-                let iconAlign = 'center';
-                iconFields.forEach(f => {
-                    let icons = [];
-                    try {
-                        const raw = i[f.key];
-                        if (Array.isArray(raw)) icons = raw.filter(Boolean);
-                        else if (raw) icons = [raw];
-                    } catch (e) {}
-                    if (!icons.length) return;
-                    let pos = (i['_iconPos_' + f.key]) || f.iconPosition || 'left';
-                    if (pos === 'top' || pos === 'bottom') pos = 'center';
-                    iconAlign = pos;
-                    allIconsHtml += icons.map(ic => iconHtml(ic, 'text-sm')).join('');
-                });
-                const posClass = iconAlign === 'right' ? 'pos-right' : (iconAlign === 'left' ? 'pos-left' : 'pos-center');
+                // Iconos (propios + de relaciones) y valoración
+                // left: [iconos][título][★] todo a la izquierda
+                // center: [iconos][título][★] todo centrado
+                // right: título izq | iconos centro | ★ der
+                const iconData = collectItemIcons(i, schema);
+                const allIconsHtml = iconData.html || '';
+                const iconAlign = iconData.align || 'left';
+                const ratingHtml = getItemRatingHtml(i, schema, 'star-rating-sm');
                 const safeTitle = (displayTitle === '&nbsp;') ? '&nbsp;' : String(displayTitle).replace(/</g,'&lt;').replace(/>/g,'&gt;');
                 const titleLong = safeTitle.length > 18 && safeTitle !== '&nbsp;';
-                const titleHtml = titleLong
+                const titlePlain = `<span class="truncate">${safeTitle}</span>`;
+                const titleMarquee = titleLong
                     ? `<div class="card-marquee"><span class="card-marquee-inner">${safeTitle}&nbsp;&nbsp;&nbsp;${safeTitle}</span></div>`
-                    : `<span class="truncate block w-full text-center">${safeTitle}</span>`;
+                    : `<span class="truncate block w-full">${safeTitle}</span>`;
+
+                const iconsSpan = allIconsHtml ? `<span class="flex-shrink-0 text-blue-400 inline-flex gap-0.5 items-center">${allIconsHtml}</span>` : '';
+                const ratingSpan = ratingHtml ? `<span class="flex-shrink-0 items-center">${ratingHtml}</span>` : '';
 
                 if (db.view === 'grid') {
                     const imgHtml = cover ? `<img src="${cover}">` : `<div class="w-full h-full flex items-center justify-center bg-zinc-800"><i class="fa-solid fa-image text-zinc-600 text-3xl"></i></div>`;
-                    const iconsRow = allIconsHtml
-                        ? `<div class="card-icons-row ${posClass}">${allIconsHtml}</div>`
-                        : '';
+                    let metaRow = '';
+                    if (allIconsHtml || ratingHtml) {
+                        if (iconAlign === 'right') {
+                            metaRow = `<div class="flex items-center justify-between w-full gap-1" style="min-height:14px;">
+                                <span class="truncate text-left flex-1 min-w-0">${safeTitle === '&nbsp;' ? '' : ''}</span>
+                                <span class="flex items-center gap-1 flex-shrink-0">${iconsSpan}${ratingSpan}</span>
+                            </div>`;
+                            // right en mosaico: iconos+valor a la derecha arriba; título abajo
+                            metaRow = `<div class="flex items-center justify-end w-full gap-1" style="min-height:14px;">${iconsSpan}${ratingSpan}</div>`;
+                        } else if (iconAlign === 'center') {
+                            metaRow = `<div class="flex items-center justify-center w-full gap-1" style="min-height:14px;">${iconsSpan}${ratingSpan}</div>`;
+                        } else {
+                            metaRow = `<div class="flex items-center justify-start w-full gap-1" style="min-height:14px;">${iconsSpan}${ratingSpan}</div>`;
+                        }
+                    }
                     card.innerHTML = `<div class="card-img-area">${imgHtml}</div>
                     <div class="card-text-area" style="white-space:normal;overflow:visible;display:flex;flex-direction:column;align-items:stretch;gap:2px;">
-                        ${iconsRow}
-                        ${titleHtml}
+                        ${metaRow}
+                        ${titleMarquee}
                     </div>`;
                 } else {
-                    const iconsRow = allIconsHtml
-                        ? `<span class="flex-shrink-0 text-blue-400 inline-flex gap-1">${allIconsHtml}</span>`
-                        : '';
-                    card.innerHTML = `<div class="card-text-area flex items-center gap-2 min-w-0">${iconsRow}<span class="truncate flex-1">${safeTitle}</span></div><div class="text-zinc-600 text-xs ml-2"><i class="fa-solid fa-chevron-right"></i></div>`;
+                    // LISTADO
+                    let row = '';
+                    if (iconAlign === 'right') {
+                        // título izquierda, iconos centro, valoración derecha
+                        row = `<span class="truncate flex-1 min-w-0 text-left">${safeTitle}</span>
+                               ${iconsSpan ? `<span class="flex-shrink-0 px-2">${iconsSpan}</span>` : ''}
+                               ${ratingSpan || ''}`;
+                    } else if (iconAlign === 'center') {
+                        // grupo centrado: iconos + título + valoración
+                        row = `<div class="flex items-center justify-center gap-2 w-full min-w-0">
+                            ${iconsSpan}${titlePlain}${ratingSpan}
+                        </div>`;
+                    } else {
+                        // left: iconos, título, valoración — todo a la izquierda en secuencia
+                        row = `${iconsSpan}<span class="truncate min-w-0">${safeTitle}</span>${ratingSpan}`;
+                    }
+                    card.innerHTML = `<div class="card-text-area flex items-center gap-2 min-w-0 w-full ${iconAlign==='left'?'justify-start':(iconAlign==='center'?'justify-center':'justify-between')}">${row}</div><div class="text-zinc-600 text-xs ml-2 flex-shrink-0"><i class="fa-solid fa-chevron-right"></i></div>`;
                 }
                 g.appendChild(card);
             });
@@ -2544,12 +2819,9 @@
                                   let txt = getItemTitleSafe(x);
                                   return `<option value="${x.id}" ${v===x.id?'selected':''}>${escapeHtml(txt)}</option>`;
                               }).join('');
-                              h = `<div class="space-y-1">
-                                <div class="text-[9px] text-zinc-500 uppercase">Solo ítems de: <span class="text-blue-400 font-bold">${escapeHtml(targetCollection)}</span></div>
-                                <select class="input-pro bg-black" onchange="updVal('${f.key}',this.value)">
+                              h = `<select class="input-pro bg-black" onchange="updVal('${f.key}',this.value)">
                                   <option value="">-- Sin asignar --</option>${opts}
-                                </select>
-                              </div>`;
+                                </select>`;
                           }
                     }
                     else if(f.type==='file') h=`<button onclick="openFileManager('${f.key}')" class="w-full bg-zinc-800 py-2 border border-zinc-700 rounded text-xs font-bold uppercase hover:bg-zinc-700">Gestionar Archivos (${Array.isArray(v)?v.length:0})</button>`;
@@ -2613,17 +2885,20 @@
                         </div>`;
                     }
                     else if(f.type==='rating') {
-                        h = `<input type="number" min="0" max="5" step="0.5" class="input-pro" value="${v}" oninput="updVal('${f.key}',this.value)" placeholder="0-5">`;
+                        h = renderRatingInput(f.key, v);
                     }
                     else h=`<input class="input-pro" value="${v}" oninput="updVal('${f.key}',this.value)">`;
                 }
-                d.innerHTML += `<div class="mb-4 bg-[#0d0d10] p-3 rounded border border-zinc-900"><label class="text-[9px] font-black text-zinc-500 uppercase block mb-2 tracking-widest">${f.name}</label>${h}</div>`;
+                const relIcon = (f.type === 'relation')
+                    ? ' <i class="fa-solid fa-diagram-project text-blue-400 ml-1" title="Campo de relación"></i>'
+                    : '';
+                d.innerHTML += `<div class="mb-4 bg-[#0d0d10] p-3 rounded border border-zinc-900" style="overflow:visible"><label class="text-[9px] font-black text-zinc-500 uppercase block mb-2 tracking-widest">${f.name}${relIcon}</label>${h}</div>`;
             });
             
             const connContainer = document.getElementById('connectionsContainer');
             const connBtn = document.getElementById('connectionsBtn');
             connContainer.classList.remove('hidden');
-            connBtn.innerHTML = '<i class="fa-solid fa-share-nodes"></i> VER CONEXIONES';
+            connBtn.innerHTML = '<i class="fa-solid fa-diagram-project"></i> VER RELACIONES';
             renderRelatedEntities(item);
             // Enlazar botones de iconos de forma fiable (sin depender solo de onclick)
             bindIconAddButtons();
@@ -2665,8 +2940,8 @@
                     const groups = relationGroupsForItem(i);
                     const n = groups.reduce((acc, g) => acc + g.targets.length, 0);
                     connBtn.innerHTML = n
-                        ? `<i class="fa-solid fa-share-nodes"></i> VER CONEXIONES <span class="text-[9px] opacity-70">(${n})</span>`
-                        : '<i class="fa-solid fa-share-nodes"></i> VER CONEXIONES';
+                        ? `<i class="fa-solid fa-share-nodes"></i> VER RELACIONES <span class="text-[9px] opacity-70">(${n})</span>`
+                        : '<i class="fa-solid fa-share-nodes"></i> VER RELACIONES';
                 }
             }
             save(); 
@@ -3663,13 +3938,57 @@
         }
         
         function updateExpFields() {
-             const fList = document.getElementById('expFieldList'); fList.innerHTML = "";
+             const fList = document.getElementById('expFieldList');
+             if (fList) fList.innerHTML = "";
+             const groupList = document.getElementById('expGroupRelList');
+             const statsList = document.getElementById('expStatsFieldList');
+             if (groupList) groupList.innerHTML = "";
+             if (statsList) statsList.innerHTML = "";
              const cols = Array.from(document.querySelectorAll('#expColList input:checked')).map(x=>x.value);
              const allFields = new Set();
-             cols.forEach(c => db.schemas[c].forEach(f => allFields.add(f.name)));
+             const relFields = []; // {name, key, col}
+             const groupable = [];
+             cols.forEach(c => {
+                 (db.schemas[c] || []).forEach(f => {
+                     allFields.add(f.name);
+                     if (f.type === 'relation') {
+                         relFields.push({ name: f.name, key: f.key, col: c });
+                     }
+                     if (f.type === 'relation' || f.type === 'text' || f.type === 'select') {
+                         groupable.push({ name: f.name, key: f.key, col: c, type: f.type });
+                     }
+                 });
+             });
              allFields.forEach(f => {
+                 if (!fList) return;
+                 // No listar campos tipo icon en CSV como prioritarios; se pueden desmarcar
                  fList.innerHTML += `<div><input type="checkbox" checked class="accent-blue-500 field-chk" value="${f}"> <label class="text-zinc-400 text-xs">${f}</label></div>`;
              });
+             if (groupList) {
+                 if (!relFields.length) {
+                     groupList.innerHTML = '<p class="text-zinc-600 text-[10px]">No hay campos de relación en las colecciones elegidas.</p>';
+                 } else {
+                     // únicos por nombre
+                     const seen = new Set();
+                     relFields.forEach(rf => {
+                         if (seen.has(rf.name)) return;
+                         seen.add(rf.name);
+                         groupList.innerHTML += `<label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="accent-blue-500 exp-group-rel" value="${rf.name}"> <span class="text-zinc-400">${rf.name}</span></label>`;
+                     });
+                 }
+             }
+             if (statsList) {
+                 if (!groupable.length) {
+                     statsList.innerHTML = '<p class="text-zinc-600 text-[10px]">No hay campos agrupables.</p>';
+                 } else {
+                     const seen = new Set();
+                     groupable.forEach(gf => {
+                         if (seen.has(gf.name)) return;
+                         seen.add(gf.name);
+                         statsList.innerHTML += `<label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" class="accent-blue-500 exp-stats-field" value="${gf.name}"> <span class="text-zinc-400">${gf.name}</span></label>`;
+                     });
+                 }
+             }
         }
 
         
@@ -3693,13 +4012,13 @@
             const v = item[field.key];
             if (v === undefined || v === null || v === "") return "";
             if (field.type === 'relation') {
-                const rel = db.items.find(x => x.id === v);
-                if (!rel) return v ? "(relación rota)" : "";
-                // Si el campo define targetCol y el ítem no es de esa colección, marcar
-                if (field.targetCol && rel._col !== field.targetCol) {
-                    return getItemTitle(rel) + " [¡" + rel._col + " ≠ " + field.targetCol + "!]";
-                }
-                return getItemTitle(rel) + " [" + rel._col + "]";
+                const ids = Array.isArray(v) ? v : [v];
+                const names = ids.map(id => {
+                    if (!id) return '';
+                    const rel = db.items.find(x => x.id === id);
+                    return rel ? getItemTitle(rel) : '';
+                }).filter(Boolean);
+                return names.join(', ');
             }
             if (field.type === 'file') {
                 const files = Array.isArray(v) ? v : (v ? [v] : []);
@@ -3713,18 +4032,154 @@
                 const n = parseFloat(String(v).replace(/[^0-9.-]+/g, ""));
                 if (!isNaN(n)) return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(n);
             }
+            if (field.type === 'rating') {
+                const n = parseFloat(String(v).replace(',', '.'));
+                if (!isNaN(n)) return String(Math.round(n * 10) / 10);
+            }
+            if (field.type === 'icon') {
+                // CSV/TXT: no exportar iconos como datos útiles
+                return "";
+            }
             if (Array.isArray(v)) return v.length + " elemento(s)";
             return String(v);
         }
 
         function getExportOptions() {
+            const groupRels = Array.from(document.querySelectorAll('.exp-group-rel:checked')).map(x => x.value);
+            const statsFields = Array.from(document.querySelectorAll('.exp-stats-field:checked')).map(x => x.value);
             return {
                 listado: !!(document.getElementById('expOptListado') || {}).checked,
-                relaciones: !!(document.getElementById('expOptRelaciones') || {}).checked,
+                relaciones: groupRels.length > 0,
+                groupRels: groupRels,
                 stats: !!(document.getElementById('expOptStats') || {}).checked,
-                fotos: !!(document.getElementById('expOptFotos') || {}).checked
+                statsFields: statsFields,
+                fotos: !!(document.getElementById('expOptFotos') || {}).checked,
+                icons: !!(document.getElementById('expOptIcons') || {}).checked,
+                rating: !!(document.getElementById('expOptRating') || {}).checked
             };
         }
+
+        function ratingStarsText(val) {
+            const n = parseRatingValue(val);
+            if (n === null) return '';
+            // ASCII para PDF (jsPDF no pinta bien ★)
+            let s = '';
+            for (let i = 1; i <= 5; i++) {
+                if (n >= i) s += '*';
+                else if (n >= i - 0.5) s += '+';
+                else s += '-';
+            }
+            return s + '  ' + (Math.round(n * 10) / 10) + '/5';
+        }
+
+        function getItemIconsForExport(item) {
+            // Solo iconos reales del ítem (FA o imagen). Las relaciones ya salen como campos.
+            const schema = db.schemas[item._col] || [];
+            const bits = [];
+            schema.filter(f => f && f.type === 'icon').forEach(f => {
+                let icons = [];
+                const raw = item[f.key];
+                if (Array.isArray(raw)) icons = raw.filter(Boolean);
+                else if (raw) icons = [raw];
+                icons.forEach(ic => {
+                    if (typeof ic === 'string' && ic.indexOf('data:image') === 0) {
+                        bits.push({ type: 'img', data: ic });
+                    } else if (typeof ic === 'string') {
+                        bits.push({ type: 'fa', name: ic.split('|')[0].replace(/^fa-/, '') });
+                    }
+                });
+            });
+            return bits;
+        }
+
+        function drawPdfStars(doc, x, y, val) {
+            const n = parseRatingValue(val);
+            if (n === null) return x;
+            // Dibujar 5 estrellitas con círculos/texto simple
+            doc.setFontSize(9);
+            for (let i = 1; i <= 5; i++) {
+                if (n >= i) {
+                    doc.setTextColor(234, 179, 8);
+                    doc.text('*', x, y);
+                } else if (n >= i - 0.5) {
+                    doc.setTextColor(234, 179, 8);
+                    doc.text('+', x, y);
+                } else {
+                    doc.setTextColor(180, 180, 180);
+                    doc.text('-', x, y);
+                }
+                x += 4;
+            }
+            doc.setTextColor(100, 100, 110);
+            doc.setFontSize(8);
+            doc.text(String(Math.round(n * 10) / 10), x + 1, y);
+            doc.setTextColor(0);
+            return x + 12;
+        }
+
+
+        function groupItemsByRelationFields(items, groupRelNames) {
+            if (!groupRelNames || !groupRelNames.length) return [{ key: '', label: '', items: items }];
+            // Agrupa por el primer campo de relación seleccionado (principal); si hay varios, clave compuesta
+            const map = new Map();
+            items.forEach(item => {
+                const schema = db.schemas[item._col] || [];
+                const parts = [];
+                groupRelNames.forEach(fn => {
+                    const f = schema.find(x => x.name === fn && x.type === 'relation');
+                    if (!f) { parts.push('(sin ' + fn + ')'); return; }
+                    const raw = item[f.key];
+                    const id = Array.isArray(raw) ? raw[0] : raw;
+                    if (!id) { parts.push('(sin ' + fn + ')'); return; }
+                    const rel = db.items.find(x => x.id === id);
+                    parts.push(rel ? getItemTitle(rel) : String(id));
+                });
+                const key = parts.join(' · ');
+                if (!map.has(key)) map.set(key, []);
+                map.get(key).push(item);
+            });
+            return Array.from(map.entries()).map(([label, its]) => ({ key: label, label, items: its }));
+        }
+
+        function buildStatsByFields(cols, statsFieldNames) {
+            const lines = [];
+            if (!statsFieldNames || !statsFieldNames.length) {
+                return buildStatsText(cols);
+            }
+            cols.forEach(col => {
+                const schema = db.schemas[col] || [];
+                const colItems = db.items.filter(i => i._col === col);
+                lines.push('=== ' + col + ' (' + colItems.length + ') ===');
+                statsFieldNames.forEach(fn => {
+                    const f = schema.find(x => x.name === fn);
+                    if (!f) return;
+                    const counts = {};
+                    colItems.forEach(item => {
+                        let label = '(vacío)';
+                        if (f.type === 'relation') {
+                            const raw = item[f.key];
+                            const id = Array.isArray(raw) ? raw[0] : raw;
+                            if (id) {
+                                const rel = db.items.find(x => x.id === id);
+                                label = rel ? getItemTitle(rel) : String(id);
+                            }
+                        } else {
+                            const v = item[f.key];
+                            if (v !== undefined && v !== null && String(v).trim() !== '') label = String(v);
+                        }
+                        counts[label] = (counts[label] || 0) + 1;
+                    });
+                    lines.push('');
+                    lines.push('Por ' + fn + ':');
+                    Object.keys(counts).sort((a,b) => counts[b] - counts[a]).forEach(k => {
+                        lines.push('  ' + k + ': ' + counts[k]);
+                    });
+                });
+                lines.push('');
+            });
+            return lines;
+        }
+
 
         function getExportSelection() {
             const cols = Array.from(document.querySelectorAll('#expColList input:checked')).map(x => x.value);
@@ -3786,8 +4241,8 @@
             const { cols, fieldNames, items } = getExportSelection();
             if (!cols.length) return alert("Selecciona al menos una colección.");
             const opt = getExportOptions();
-            if (!opt.listado && !opt.stats && !opt.relaciones) {
-                return alert("Marca al menos una opción: listado, relaciones o estadísticas.");
+            if (!opt.listado && !opt.stats) {
+                return alert("Marca al menos listado de ítems o estadísticas.");
             }
 
             const dateStr = new Date().toISOString().slice(0, 10);
@@ -3795,8 +4250,15 @@
 
             // ---------- CSV ----------
             if (type === 'csv') {
+                // CSV: solo campos de datos (sin iconos)
+                const csvFields = fieldNames.filter(fn => {
+                    return cols.some(c => {
+                        const f = (db.schemas[c] || []).find(x => x.name === fn);
+                        return f && f.type !== 'icon';
+                    });
+                });
                 let csv = "Coleccion;Titulo";
-                fieldNames.forEach(fn => { csv += ";" + fn; });
+                csvFields.forEach(fn => { csv += ";" + fn; });
                 if (opt.relaciones) csv += ";Relaciones_salida;Relaciones_entrada";
                 csv += "\n";
 
@@ -3808,17 +4270,12 @@
                     items.forEach(item => {
                         const title = getItemTitle(item).replace(/"/g, '""').replace(/;/g, ",");
                         let row = '"' + item._col + '";"' + title + '"';
-                        fieldNames.forEach(fn => {
+                        csvFields.forEach(fn => {
                             const f = (db.schemas[item._col] || []).find(x => x.name === fn);
                             let val = f ? getFieldDisplayValue(item, f) : "";
                             val = String(val).replace(/"/g, '""').replace(/;/g, ",");
                             row += ';"' + val + '"';
                         });
-                        if (opt.relaciones) {
-                            const rel = getRelationsForItem(item);
-                            row += ';"' + rel.outs.join(" | ").replace(/"/g, '""') + '"';
-                            row += ';"' + rel.ins.join(" | ").replace(/"/g, '""') + '"';
-                        }
                         csv += row + "\n";
                     });
                 }
@@ -3841,7 +4298,7 @@
                 lines.push("");
 
                 if (opt.stats) {
-                    lines.push(...buildStatsText(cols));
+                    lines.push(...buildStatsByFields(cols, opt.statsFields || []));
                 }
 
                 cols.forEach(col => {
@@ -3853,7 +4310,16 @@
                         lines.push("(sin ítems)");
                         return;
                     }
-                    colItems.forEach((item, idx) => {
+                    const groups = groupItemsByRelationFields(colItems, opt.groupRels || []);
+                    let idxGlobal = 0;
+                    groups.forEach(grp => {
+                    if (grp.label) {
+                        lines.push("");
+                        lines.push(">>> " + grp.label + " (" + grp.items.length + ")");
+                    }
+                    grp.items.forEach((item) => {
+                        const idx = idxGlobal++;
+
                         if (opt.listado) {
                             lines.push("");
                             lines.push((idx + 1) + ". " + getItemTitle(item));
@@ -3876,7 +4342,8 @@
                                 rel.ins.forEach(r => lines.push("   ← " + r));
                             }
                         }
-                    });
+                    }); // grp.items
+                    }); // groups
                 });
 
                 const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
@@ -3917,7 +4384,7 @@
                     doc.setFontSize(12);
                     doc.text("Estadísticas", 14, y); y += 6;
                     doc.setFontSize(9);
-                    buildStatsText(cols).forEach(line => {
+                    buildStatsByFields(cols, opt.statsFields || []).forEach(line => {
                         ensureSpace(6);
                         doc.text(line, 14, y);
                         y += 5;
@@ -3940,54 +4407,93 @@
                     }
 
                     colItems.forEach((item, idx) => {
-                        ensureSpace(18);
+                        ensureSpace(22);
                         const title = (idx + 1) + ". " + getItemTitle(item);
+                        const schema = db.schemas[col] || [];
                         if (opt.listado) {
-                            // miniatura opcional
+                            // Miniatura
+                            let textX = 14;
                             if (opt.fotos && item._photos && item._photos[0]) {
                                 try {
-                                    doc.addImage(item._photos[0], "JPEG", 14, y - 3, 12, 12);
-                                    doc.text(title, 30, y + 3);
-                                    y += 14;
-                                } catch (e) {
-                                    doc.text(title, 14, y); y += 5;
-                                }
-                            } else {
-                                doc.setFont(undefined, "bold");
-                                doc.text(title, 14, y); y += 5;
-                                doc.setFont(undefined, "normal");
+                                    doc.addImage(item._photos[0], "JPEG", 14, y - 2, 11, 11);
+                                    textX = 28;
+                                } catch (e) {}
                             }
-                            const schema = db.schemas[col] || [];
+                            // Título
+                            doc.setFont(undefined, "bold");
+                            doc.setFontSize(10);
+                            doc.setTextColor(20, 20, 25);
+                            const titleSplit = doc.splitTextToSize(title, pageW - textX - 40);
+                            doc.text(titleSplit, textX, y + 2);
+                            // Valoración a la derecha
+                            if (opt.rating) {
+                                const rf = schema.find(x => x.type === 'rating');
+                                if (rf && item[rf.key] !== undefined && item[rf.key] !== '') {
+                                    drawPdfStars(doc, pageW - 42, y + 2, item[rf.key]);
+                                }
+                            }
+                            y += Math.max(6, titleSplit.length * 4.5) + 2;
+                            doc.setFont(undefined, "normal");
+                            doc.setFontSize(9);
+
+                            // Iconos imagen (si hay data:image)
+                            if (opt.icons) {
+                                const ib = getItemIconsForExport(item);
+                                let ix = textX;
+                                ib.forEach(ic => {
+                                    if (ic.type === 'img' && ic.data) {
+                                        try {
+                                            doc.addImage(ic.data, "PNG", ix, y - 2, 6, 6);
+                                            ix += 8;
+                                        } catch (e) {}
+                                    }
+                                });
+                                if (ix > textX) y += 8;
+                            }
+
+                            // Campos seleccionados (limpios, sin icon type)
                             schema.forEach(f => {
                                 if (f.isTitle) return;
+                                if (f.type === 'icon') return;
+                                if (f.type === 'rating' && opt.rating) return; // ya dibujada
                                 if (fieldNames.length && !fieldNames.includes(f.name)) return;
                                 const val = getFieldDisplayValue(item, f);
                                 if (val === "") return;
                                 ensureSpace(6);
-                                const line = f.name + ": " + val;
-                                const split = doc.splitTextToSize(line, pageW - 28);
-                                doc.text(split, 18, y);
-                                y += split.length * 4.5;
+                                doc.setTextColor(90, 90, 100);
+                                doc.setFontSize(8);
+                                doc.text(f.name, 18, y);
+                                doc.setTextColor(30, 30, 35);
+                                doc.setFontSize(9);
+                                const split = doc.splitTextToSize(String(val), pageW - 55);
+                                doc.text(split, 50, y);
+                                y += Math.max(5, split.length * 4.2);
                             });
+                            // Separador sutil
+                            doc.setDrawColor(230, 230, 235);
+                            doc.setLineWidth(0.2);
+                            doc.line(14, y + 1, pageW - 14, y + 1);
+                            y += 5;
                         } else if (opt.relaciones) {
-                            doc.text(title, 14, y); y += 5;
+                            doc.setFont(undefined, "bold");
+                            doc.text(title, 14, y);
+                            doc.setFont(undefined, "normal");
+                            y += 5;
                         }
 
-                        if (opt.relaciones) {
+                        if (opt.relaciones && opt.groupRels && opt.groupRels.length) {
+                            // Solo si se pidió agrupar y no están ya en campos
                             const rel = getRelationsForItem(item);
                             rel.outs.forEach(r => {
                                 ensureSpace(5);
                                 doc.setTextColor(37, 99, 235);
-                                doc.text("→ " + r, 18, y); y += 4.5;
-                            });
-                            rel.ins.forEach(r => {
-                                ensureSpace(5);
-                                doc.setTextColor(22, 163, 74);
-                                doc.text("← " + r, 18, y); y += 4.5;
+                                doc.setFontSize(8);
+                                doc.text("- " + r, 18, y); y += 4;
                             });
                             doc.setTextColor(0);
+                            doc.setFontSize(9);
                         }
-                        y += 3;
+                        y += 2;
                     });
                     y += 6;
                 });
@@ -4133,24 +4639,125 @@
         }
 
         function exportCurrentRelations(type) {
-            const item=db.items.find(x=>x.id===activeId); if(!item) return;
-            const groups=relationGroupsForItem(item);
-            const now=new Date();
-            const stamp=now.toLocaleString('es-ES').replace(/[:/]/g,'-');
-            const title='Relacionados de '+getItemTitleSafe(item);
-            const lines=[title,'Fecha y hora: '+now.toLocaleString('es-ES'),'='.repeat(60)];
-            groups.forEach(g=>{ lines.push(''); lines.push((g.direction==='out'?'→ ':'← ')+g.label); g.targets.forEach((t,i)=>lines.push('  '+(i+1)+'. '+getItemTitleSafe(t)+' ['+t._col+']')); });
-            if(!groups.length) lines.push('Sin elementos relacionados.');
-            const base=title.replace(/[^\wáéíóúüñÁÉÍÓÚÜÑ -]/g,'').trim().replace(/\s+/g,'_')+'_'+stamp;
-            const download=(blob,ext)=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=base+'.'+ext; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); };
-            if(type==='txt'){ download(new Blob(['\ufeff'+lines.join('\n')],{type:'text/plain;charset=utf-8'}),'txt'); return; }
-            if(!window.jspdf || !window.jspdf.jsPDF){ return alert('No se pudo cargar la librería PDF.'); }
-            const {jsPDF}=window.jspdf, doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'}); let y=15;
-            const add=(txt,size=10)=>{ doc.setFontSize(size); const wrapped=doc.splitTextToSize(String(txt),180); if(y+wrapped.length*5>280){doc.addPage();y=15;} doc.text(wrapped,14,y); y+=wrapped.length*5+1; };
-            add(title,16); add('Fecha y hora: '+now.toLocaleString('es-ES'),9); y+=3;
-            groups.forEach(g=>{ add((g.direction==='out'?'→ ':'← ')+g.label,11); g.targets.forEach((t,i)=>add((i+1)+'. '+getItemTitleSafe(t)+' ['+t._col+']',10)); y+=2; });
-            if(!groups.length) add('Sin elementos relacionados.',10);
-            doc.save(base+'.pdf');
+            const item = db.items.find(x => x.id === activeId);
+            if (!item) return;
+            const groups = relationGroupsForItem(item);
+            const now = new Date();
+            const stamp = now.toLocaleString('es-ES').replace(/[:/]/g, '-');
+            const mainTitle = getItemTitleSafe(item);
+            const total = groups.reduce((a, g) => a + g.targets.length, 0);
+            const cleanLab = (typeof cleanRelationLabel === 'function')
+                ? cleanRelationLabel
+                : (s) => String(s || '').replace(/\(s\)/gi, 's').replace(/\s*[→←]\s*/g, ' · ').trim();
+
+            // --- TXT ---
+            const lines = [];
+            lines.push('RELACIONES');
+            lines.push(mainTitle);
+            lines.push('Fecha: ' + now.toLocaleString('es-ES'));
+            lines.push('Total relacionados: ' + total);
+            lines.push(''.padEnd(50, '-'));
+            if (!groups.length) {
+                lines.push('Sin elementos relacionados.');
+            } else {
+                groups.forEach(g => {
+                    const lab = cleanLab(g.label);
+                    lines.push('');
+                    lines.push(lab + ' (' + g.targets.length + ')');
+                    g.targets.forEach((t, i) => {
+                        lines.push('  ' + (i + 1) + '. ' + getItemTitleSafe(t) + '  ·  ' + (t._col || ''));
+                    });
+                });
+                lines.push('');
+                lines.push(''.padEnd(50, '-'));
+                lines.push('TOTAL: ' + total + ' elemento' + (total === 1 ? '' : 's'));
+            }
+            const base = ('Relaciones_' + mainTitle).replace(/[^\wáéíóúüñÁÉÍÓÚÜÑ -]/g, '').trim().replace(/\s+/g, '_') + '_' + stamp;
+            const download = (blob, ext) => {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = base + '.' + ext;
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+            };
+            if (type === 'txt') {
+                download(new Blob(['\ufeff' + lines.join('\n')], { type: 'text/plain;charset=utf-8' }), 'txt');
+                return;
+            }
+
+            // --- PDF más limpio ---
+            if (!window.jspdf || !window.jspdf.jsPDF) return alert('No se pudo cargar la librería PDF.');
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const pageW = doc.internal.pageSize.getWidth();
+            let y = 0;
+
+            // Cabecera con franja
+            doc.setFillColor(15, 15, 18);
+            doc.rect(0, 0, pageW, 28, 'F');
+            doc.setFillColor(59, 130, 246);
+            doc.rect(0, 28, pageW, 1.2, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('Relaciones', 14, 14);
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.setTextColor(180, 180, 190);
+            // Título sin partir caracteres raros: usar splitTextToSize
+            const titleLines = doc.splitTextToSize(mainTitle, pageW - 28);
+            doc.setTextColor(255, 255, 255);
+            doc.text(titleLines, 14, 21);
+            y = 36;
+
+            doc.setTextColor(120, 120, 130);
+            doc.setFontSize(8);
+            doc.text(now.toLocaleString('es-ES') + '   ·   Total: ' + total, 14, y);
+            y += 8;
+
+            if (!groups.length) {
+                doc.setTextColor(100, 100, 110);
+                doc.setFontSize(10);
+                doc.text('Sin elementos relacionados.', 14, y);
+            } else {
+                groups.forEach(g => {
+                    if (y > 270) { doc.addPage(); y = 20; }
+                    const lab = cleanLab(g.label);
+                    // Sección
+                    doc.setFillColor(30, 30, 36);
+                    doc.roundedRect(12, y - 4, pageW - 24, 8, 1.5, 1.5, 'F');
+                    doc.setTextColor(96, 165, 250);
+                    doc.setFontSize(9);
+                    doc.setFont(undefined, 'bold');
+                    doc.text(lab + '  ·  ' + g.targets.length, 16, y + 1.5);
+                    y += 10;
+                    doc.setFont(undefined, 'normal');
+                    g.targets.forEach((t, i) => {
+                        if (y > 280) { doc.addPage(); y = 20; }
+                        const line = (i + 1) + '.  ' + getItemTitleSafe(t);
+                        const col = t._col || '';
+                        doc.setTextColor(30, 30, 30);
+                        doc.setFontSize(10);
+                        const wrapped = doc.splitTextToSize(line, pageW - 50);
+                        doc.text(wrapped, 16, y);
+                        doc.setTextColor(140, 140, 150);
+                        doc.setFontSize(8);
+                        doc.text(col, pageW - 14, y, { align: 'right' });
+                        y += Math.max(6, wrapped.length * 5);
+                    });
+                    y += 4;
+                });
+                if (y > 270) { doc.addPage(); y = 20; }
+                doc.setDrawColor(59, 130, 246);
+                doc.setLineWidth(0.3);
+                doc.line(14, y, pageW - 14, y);
+                y += 6;
+                doc.setTextColor(40, 40, 50);
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'bold');
+                doc.text('Total: ' + total + (total === 1 ? ' elemento' : ' elementos'), 14, y);
+            }
+            doc.save(base + '.pdf');
         }
 
         function relationGroupsForItem(item) {
@@ -4193,26 +4800,67 @@
         }
 
         function renderRelatedEntities(item) {
+            // El listado detallado solo en el modal «Ver relaciones» (no reiterar debajo del botón)
             const panel = document.getElementById('relatedEntitiesPanel');
             if (!panel) return;
+            panel.innerHTML = '';
             const groups = relationGroupsForItem(item);
-            if (!groups.length) { panel.innerHTML = '<div class="text-[10px] text-zinc-600 text-center py-2">Sin elementos relacionados.</div>'; return; }
-            const renderGroup = g => {
-                const items = g.targets.map(target => `<button type="button" onclick="showInspector('${target.id}')" class="w-full text-left bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 hover:border-blue-700 rounded p-2 transition"><span class="text-xs text-white font-bold block truncate">${escapeHtml(getItemTitleSafe(target))}</span><span class="text-[9px] text-zinc-500">${escapeHtml(target._col)}</span></button>`).join('');
-                return `<section class="mb-3"><div class="text-[9px] font-black uppercase tracking-widest text-blue-400 mb-2">${escapeHtml(g.label)}</div><div class="text-[8px] text-zinc-600 uppercase mb-1">${g.direction === 'out' ? 'Este elemento →' : 'Apunta a este elemento ←'}</div><div class="space-y-1">${items}</div></section>`;
-            };
-            panel.innerHTML = `<div class="border border-zinc-800 rounded-lg bg-zinc-900/40 p-3"><div class="text-[10px] font-black uppercase text-white mb-3"><i class="fa-solid fa-diagram-project mr-1"></i> Relacionados por entidad</div>${groups.map(renderGroup).join('')}</div>`;
+            const n = groups.reduce((acc, g) => acc + g.targets.length, 0);
+            const connBtn = document.getElementById('connectionsBtn');
+            if (connBtn) {
+                connBtn.innerHTML = n
+                    ? `<i class="fa-solid fa-diagram-project"></i> VER RELACIONES <span class="text-[9px] opacity-70">(${n})</span>`
+                    : '<i class="fa-solid fa-diagram-project"></i> VER RELACIONES';
+            }
+        }
+
+        function cleanRelationLabel(label) {
+            if (!label) return 'Relacionado';
+            let s = String(label);
+            // Quitar flechas y restos técnicos
+            s = s.replace(/\s*[→←]\s*/g, ' · ');
+            // Quitar (s) o (S) de plurales raros tipo Juego(s)
+            s = s.replace(/\(s\)/gi, 's');
+            s = s.replace(/\s+/g, ' ').trim();
+            return s;
         }
 
         function openConnectionsModal() {
             const item = db.items.find(x => x.id === activeId);
             const list = document.getElementById('connectionsList');
-            if (!item) { list.innerHTML = ''; return; }
+            if (!item) { if (list) list.innerHTML = ''; return; }
             const groups = relationGroupsForItem(item);
-            const all = groups.flatMap(g => g.targets.map(target => ({ target, label: g.label, direction: g.direction })));
-            document.getElementById('connModalTitle').innerText = `Conexiones Relacionadas (${all.length})`;
-            if (!all.length) list.innerHTML = "<div class='text-zinc-500 text-center'>Sin conexiones detectadas.</div>";
-            else list.innerHTML = all.map(({target,label,direction}) => `<button type="button" onclick="showInspector('${target.id}');closeModal('connectionsModal')" class="w-full text-left cursor-pointer bg-zinc-900 p-3 mb-2 rounded border border-zinc-800 hover:border-blue-500"><div class="flex justify-between items-center gap-2"><span class="text-white font-bold truncate">${escapeHtml(getItemTitleSafe(target))}</span><span class="text-[10px] bg-blue-900/20 text-blue-400 px-2 rounded">${escapeHtml(target._col)}</span></div><div class="text-[9px] text-zinc-600 mt-1">${direction === 'out' ? '→ ' : '← '}${escapeHtml(label)}</div></button>`).join('');
+            const total = groups.reduce((a, g) => a + g.targets.length, 0);
+            const titleEl = document.getElementById('connModalTitle');
+            if (titleEl) titleEl.innerText = total ? ('Relaciones (' + total + ')') : 'Relaciones';
+            if (!list) return;
+            if (!groups.length) {
+                list.innerHTML = "<div class='text-zinc-500 text-center py-8 text-xs'>No hay relaciones en este elemento.</div>";
+            } else {
+                list.innerHTML = groups.map(g => {
+                    const lab = cleanRelationLabel(g.label);
+                    const dir = g.direction === 'out' ? 'Sale de aquí' : 'Llega aquí';
+                    const rows = g.targets.map(target => {
+                        const tid = target.id.replace(/'/g, "\\'");
+                        return `<button type="button" class="w-full text-left cursor-pointer bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 hover:border-blue-500 rounded-xl p-3 transition flex items-center justify-between gap-3"
+                            onclick="event.preventDefault();event.stopPropagation();closeModal('connectionsModal');setTimeout(function(){showInspector('${tid}');},30);">
+                            <div class="min-w-0">
+                              <div class="text-white font-bold text-sm truncate">${escapeHtml(getItemTitleSafe(target))}</div>
+                              <div class="text-[10px] text-zinc-500 mt-0.5">${escapeHtml(target._col || '')}</div>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-zinc-600 text-xs flex-shrink-0"></i>
+                          </button>`;
+                    }).join('');
+                    return `<div class="mb-4">
+                        <div class="flex items-center gap-2 mb-2 px-1">
+                          <i class="fa-solid fa-diagram-project text-blue-400 text-xs"></i>
+                          <span class="text-[11px] font-black uppercase tracking-widest text-blue-400">${escapeHtml(lab)}</span>
+                          <span class="text-[9px] text-zinc-600 ml-auto">${dir} · ${g.targets.length}</span>
+                        </div>
+                        <div class="space-y-1.5">${rows}</div>
+                      </div>`;
+                }).join('');
+            }
             openModal('connectionsModal');
         }
 
