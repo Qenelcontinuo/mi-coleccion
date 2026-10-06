@@ -224,6 +224,7 @@
                     Cargando...
                 </div>
             </div>
+            <div id="collectionCount" class="px-4 pt-4 pb-2"></div>
             <div id="itemsGrid" class="view-grid"></div>
         </main>
 
@@ -435,68 +436,78 @@
     </div>
 
     <div id="statsModal" class="modal-overlay hidden">
-        <div class="modal-box max-w-6xl">
+        <div class="modal-box max-w-7xl">
             <div class="p-6 border-b border-zinc-800 bg-black flex justify-between items-center">
-                <h2 class="text-xl font-black uppercase text-yellow-500">Informe de Datos</h2>
+                <div>
+                    <h2 class="text-xl font-black uppercase text-yellow-500">Estadísticas</h2>
+                    <p class="text-[10px] text-zinc-500 mt-1 uppercase tracking-wider">Resumen de colecciones y estadísticas personalizadas</p>
+                </div>
                 <button onclick="closeModal('statsModal')" class="text-zinc-500 text-3xl"><i class="fa-solid fa-times"></i></button>
             </div>
-            <div class="p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 overflow-y-auto max-h-[80vh]">
-                
-                <div class="lg:col-span-4 space-y-6">
-                     <div class="space-y-4">
-                          <h3 class="text-xs font-bold text-white mb-2 uppercase border-b border-zinc-800 pb-2">Conteo Rápido</h3>
-                          <div id="statsBody" class="space-y-2"></div>
-                     </div>
-                     <div class="space-y-4">
-                        <h3 class="text-xs font-bold text-green-500 mb-2 uppercase border-b border-zinc-800 pb-2">Resumen Financiero</h3>
-                        <div id="financialStatsBody" class="space-y-2 bg-zinc-900 p-4 rounded-xl border border-zinc-800"></div>
-                    </div>
-                </div>
 
-                <div class="lg:col-span-8 space-y-6">
-                    <div class="bg-zinc-900 p-6 rounded-xl border border-zinc-800">
-                        <h3 class="text-sm font-black text-blue-400 mb-4 uppercase flex items-center gap-2">
-                            <i class="fa-solid fa-flask"></i> Generador de Informes Avanzado
-                        </h3>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+            <div class="p-5 md:p-8 overflow-y-auto max-h-[82vh] space-y-8">
+                <!-- RESUMEN AUTOMÁTICO -->
+                <section>
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                        <div>
+                            <h3 class="text-sm font-black text-white uppercase">Resumen de todas las colecciones</h3>
+                            <p class="text-[10px] text-zinc-500 mt-1">Cantidad de elementos guardados en cada colección.</p>
+                        </div>
+                        <div id="statsGrandTotal" class="text-xs font-black text-blue-400 bg-blue-500/10 border border-blue-500/20 px-3 py-2 rounded-lg"></div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                        <div id="statsCollectionTable" class="bg-zinc-900/70 border border-zinc-800 rounded-xl p-4"></div>
+                        <div class="bg-zinc-900/70 border border-zinc-800 rounded-xl p-4 min-h-[300px] flex items-center justify-center">
+                            <div class="w-full h-[300px] relative"><canvas id="collectionsPieChart"></canvas></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ESTADÍSTICA PERSONALIZADA -->
+                <section class="border-t border-zinc-800 pt-7">
+                    <div class="mb-4">
+                        <h3 class="text-sm font-black text-white uppercase">Crear estadística</h3>
+                        <p class="text-[10px] text-zinc-500 mt-1">Elige una colección, el campo por el que se agrupa y el campo cuyos valores se cuentan.</p>
+                    </div>
+
+                    <div class="bg-zinc-900/70 border border-zinc-800 rounded-xl p-4 md:p-5">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
-                                <label class="text-[9px] font-bold text-zinc-500 uppercase block mb-2">1. Seleccionar Colecciones</label>
-                                <div id="advStatsCols" class="bg-black border border-zinc-800 rounded p-2 h-32 overflow-y-auto space-y-1"></div>
+                                <label class="text-[9px] font-black text-zinc-500 uppercase block mb-2">1. Colección</label>
+                                <select id="advCollection" class="input-pro text-xs bg-black" onchange="updateAdvFields()"></select>
                             </div>
-                            
-                            <div class="space-y-3">
-                                <div>
-                                    <label class="text-[9px] font-bold text-zinc-500 uppercase block mb-1">2. Agrupar por Campo (Eje X)</label>
-                                    <select id="advGroupBy" class="input-pro text-xs bg-black"></select>
-                                </div>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label class="text-[9px] font-bold text-zinc-500 uppercase block mb-1">3. Operación</label>
-                                        <select id="advOperation" class="input-pro text-xs bg-black" onchange="toggleAdvValueField()">
-                                            <option value="count">Contar Ítems (Cantidad)</option>
-                                            <option value="sum">Sumar Valor (Total)</option>
-                                        </select>
-                                    </div>
-                                    <div id="advValueFieldWrap" class="opacity-50 pointer-events-none">
-                                        <label class="text-[9px] font-bold text-zinc-500 uppercase block mb-1">4. Campo Valor</label>
-                                        <select id="advValueField" class="input-pro text-xs bg-black"></select>
-                                    </div>
-                                </div>
+                            <div>
+                                <label class="text-[9px] font-black text-zinc-500 uppercase block mb-2">2. Agrupar por</label>
+                                <select id="advGroupBy" class="input-pro text-xs bg-black"></select>
+                            </div>
+                            <div>
+                                <label class="text-[9px] font-black text-zinc-500 uppercase block mb-2">3. Contar por</label>
+                                <select id="advValueField" class="input-pro text-xs bg-black"></select>
                             </div>
                         </div>
-
-                        <button onclick="generateAdvancedReport()" class="w-full bg-blue-600 py-3 rounded-lg font-black uppercase text-xs hover:bg-blue-500 transition shadow-lg shadow-blue-900/20">
-                            GENERAR GRÁFICO E INFORME
+                        <button onclick="generateAdvancedReport()" class="w-full mt-5 bg-blue-600 py-3 rounded-lg font-black uppercase text-xs hover:bg-blue-500 transition shadow-lg shadow-blue-900/20">
+                            GENERAR ESTADÍSTICA
                         </button>
                     </div>
 
-                    <div class="bg-black p-4 rounded-xl border border-zinc-800">
-                        <canvas id="advChart" class="max-h-64 w-full mb-6"></canvas>
-                        <div id="advReportTable" class="overflow-x-auto"></div>
+                    <div id="advResultEmpty" class="mt-5 bg-zinc-950 border border-zinc-800 rounded-xl p-8 text-center text-zinc-600 text-xs">Selecciona los tres campos y pulsa «Generar estadística».</div>
+                    <div id="advResultWrap" class="hidden mt-5 bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden">
+                        <div class="p-4 border-b border-zinc-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div>
+                                <h4 id="advResultTitle" class="text-xs font-black uppercase text-white"></h4>
+                                <p id="advResultTotal" class="text-[10px] text-zinc-500 mt-1"></p>
+                            </div>
+                            <div class="flex bg-zinc-900 border border-zinc-800 rounded-lg p-1 self-start">
+                                <button id="advTabList" onclick="switchAdvResultTab('list')" class="px-4 py-2 rounded-md text-[10px] font-black uppercase bg-blue-600 text-white">Lista</button>
+                                <button id="advTabPie" onclick="switchAdvResultTab('pie')" class="px-4 py-2 rounded-md text-[10px] font-black uppercase text-zinc-500 hover:text-white">Tarta</button>
+                            </div>
+                        </div>
+                        <div id="advResultList" class="p-4 overflow-x-auto"></div>
+                        <div id="advResultPie" class="hidden p-5">
+                            <div class="h-[360px] relative"><canvas id="advChart"></canvas></div>
+                        </div>
                     </div>
-                </div>
-
+                </section>
             </div>
         </div>
     </div>
@@ -530,6 +541,16 @@
                 <div id="editRelSet" class="hidden p-3 bg-zinc-900 rounded border border-zinc-700 space-y-2">
                     <label class="text-[9px] text-zinc-400 uppercase font-bold">Relacionar con:</label>
                     <select id="editRelDest" class="input-pro text-xs bg-black"></select>
+                    <p class="text-[9px] text-zinc-600">Solo se listarán ítems de esa colección. No se mezclan con otras.</p>
+                </div>
+                <div id="editIconSet" class="hidden p-3 bg-zinc-900 rounded border border-zinc-700 space-y-2">
+                    <label class="text-[9px] text-zinc-400 uppercase font-bold">Posición de la simbología:</label>
+                    <select id="editIconPos" class="input-pro text-xs bg-black">
+                        <option value="left">Izquierda</option>
+                        <option value="right">Derecha</option>
+                        <option value="top">Arriba</option>
+                    </select>
+                    <p class="text-[9px] text-zinc-600">El icono se elige después desde cada artículo.</p>
                 </div>
                 <button onclick="saveFieldEdit()" class="w-full bg-blue-600 py-3 rounded font-black uppercase text-xs hover:bg-blue-500">Guardar Cambios</button>
                 <button onclick="closeModal('fieldEditModal')" class="w-full text-zinc-500 py-2 font-bold uppercase text-[10px]">Cancelar</button>
@@ -1254,6 +1275,12 @@
                 // Convertir a icono pequeño PNG con fondo transparente cuando sea posible
                 compressIconTransparent(file, (dataUrl) => {
                     if (!dataUrl) return alert('No se pudo procesar el icono');
+                    if (window._iconPickerMode === 'field') {
+                        setFieldIconValue(window._iconPickerFieldKey, dataUrl);
+                        window._iconPickerMode = 'collection';
+                        closeModal('iconPickerModal');
+                        return;
+                    }
                     if (!db.settings.colIcons) db.settings.colIcons = {};
                     db.settings.colIcons[window._iconPickerTarget] = dataUrl;
                     save();
@@ -1830,18 +1857,38 @@
 
         function renderItems() {
             const g = document.getElementById('itemsGrid');
+            const countBox = document.getElementById('collectionCount');
             const q = document.getElementById('globalSearch').value.toLowerCase();
             g.className = db.view === 'grid' ? 'view-grid' : 'view-list';
             g.innerHTML = "";
-            
-            const items = db.items.filter(i => {
-                if(i._col !== db.activeCol) return false;
+
+            const allCollectionItems = db.items.filter(i => i._col === db.activeCol);
+            const items = allCollectionItems.filter(i => {
                 const raw = JSON.stringify(i).toLowerCase();
                 return raw.includes(q);
             });
 
+            if (countBox) {
+                const total = allCollectionItems.length;
+                const visible = items.length;
+                countBox.innerHTML = `
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-zinc-900/70 border border-zinc-800 rounded-xl px-4 py-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 flex-shrink-0"><i class="fa-solid fa-layer-group"></i></div>
+                            <div class="min-w-0">
+                                <div class="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Colección actual</div>
+                                <div class="text-sm font-black text-white uppercase truncate">${escapeHtml(db.activeCol || 'Sin colección')}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-black text-blue-400 leading-none">${total}</div>
+                            <div class="text-[9px] text-zinc-500 uppercase font-bold">${total === 1 ? 'elemento guardado' : 'elementos guardados'}${q ? ` · ${visible} visibles` : ''}</div>
+                        </div>
+                    </div>`;
+            }
+
             if(items.length === 0) {
-                g.innerHTML = `<div class="col-span-full text-center text-zinc-600 mt-20"><p class="text-xl font-black uppercase">NO HAY ELEMENTOS</p><p class="text-xs">Pulsa "+ AÑADIR ARTÍCULO" para empezar.</p></div>`;
+                g.innerHTML = `<div class="col-span-full text-center text-zinc-600 mt-10"><p class="text-xl font-black uppercase">NO HAY ELEMENTOS</p><p class="text-xs">${q ? 'No hay resultados para esta búsqueda.' : 'Pulsa "+ AÑADIR ARTÍCULO" para empezar.'}</p></div>`;
                 return;
             }
 
@@ -1849,40 +1896,26 @@
             let primaryField = schema.find(f => f.isTitle);
             if (!primaryField) primaryField = schema.find(f => f.name.match(/^(titulo|title|nombre|name)$/i));
             if (!primaryField) primaryField = schema.find(f => f.type === 'text' || f.type === 'textarea');
-            // NO usar schema[0] si no es texto (evita enlazar el título a moneda/rating/etc.)
 
             items.forEach(i => {
-                const card = document.createElement('div'); 
-                card.className = `item-card ${activeId===i.id?'active':''}`; 
+                const card = document.createElement('div');
+                card.className = `item-card ${activeId===i.id?'active':''}`;
                 card.onclick = () => showInspector(i.id);
-                
                 let cover = null;
                 if(i._photos && i._photos.length) cover = i._photos[0];
-
-                let displayTitle = "Sin Título"; 
-                if(primaryField && i[primaryField.key]) {
-                    displayTitle = i[primaryField.key];
-                } else if (!primaryField) {
-                     const possibleKeys = Object.keys(i).filter(k => k !== 'id' && k !== '_col' && k !== '_photos');
-                     if(possibleKeys.length > 0) displayTitle = i[possibleKeys[0]];
+                let displayTitle = "Sin Título";
+                if(primaryField && i[primaryField.key]) displayTitle = i[primaryField.key];
+                else if (!primaryField) {
+                    const possibleKeys = Object.keys(i).filter(k => k !== 'id' && k !== '_col' && k !== '_photos');
+                    if(possibleKeys.length > 0) displayTitle = i[possibleKeys[0]];
                 }
-                
-                if(!displayTitle || displayTitle.trim() === "") displayTitle = "&nbsp;";
+                if(!displayTitle || String(displayTitle).trim() === "") displayTitle = "&nbsp;";
 
                 if (db.view === 'grid') {
-                    let imgHtml = cover ? 
-                        `<img src="${cover}">` : 
-                        `<div class="w-full h-full flex items-center justify-center bg-zinc-800"><i class="fa-solid fa-image text-zinc-600 text-3xl"></i></div>`;
-                    
-                    card.innerHTML = `
-                    <div class="card-img-area">${imgHtml}</div>
-                    <div class="card-text-area">${displayTitle}</div>`;
+                    const imgHtml = cover ? `<img src="${cover}">` : `<div class="w-full h-full flex items-center justify-center bg-zinc-800"><i class="fa-solid fa-image text-zinc-600 text-3xl"></i></div>`;
+                    card.innerHTML = `<div class="card-img-area">${imgHtml}</div><div class="card-text-area">${displayTitle}</div>`;
                 } else {
-                    card.innerHTML = `
-                    <div class="card-text-area">${displayTitle}</div>
-                    <div class="text-zinc-600 text-xs ml-2">
-                        <i class="fa-solid fa-chevron-right"></i>
-                    </div>`;
+                    card.innerHTML = `<div class="card-text-area">${displayTitle}</div><div class="text-zinc-600 text-xs ml-2"><i class="fa-solid fa-chevron-right"></i></div>`;
                 }
                 g.appendChild(card);
             });
@@ -1959,17 +1992,20 @@
                 
                 if(!isEditing) {
                     if(f.type==='link') h = v?`<a href="${v}" target="_blank" class="text-blue-400 underline break-all">${v}</a>`:'-';
-                    else if(f.type==='relation') { 
-                        const r=db.items.find(x=>x.id===v); 
-                        let rTxt = "-";
-                        if(r) {
-                             const s = db.schemas[r._col];
-                             const pf = s ? (s.find(z=>z.isTitle)||s.find(z=>z.type==='text')||s[0]) : null;
-                             if(pf && r[pf.key]) rTxt = r[pf.key];
-                             else rTxt = r.title || "Item";
-                            
-                             h=`<button onclick="showInspector('${r.id}')" class="text-blue-400 font-bold border-b border-blue-900">${rTxt}</button>`;
-                        } else h = '-';
+                    else if(f.type==='relation') {
+                        const r = v ? db.items.find(x => x.id === v) : null;
+                        if (r) {
+                             // Si el campo tiene targetCol, avisar si el ítem no pertenece a esa colección
+                             const expected = f.targetCol;
+                             const wrongCol = expected && r._col !== expected;
+                             const rTxt = getItemTitleSafe(r);
+                             const colBadge = wrongCol
+                               ? `<span class="text-[9px] text-red-400 ml-1">(¡colección distinta: ${escapeHtml(r._col)}!)</span>`
+                               : `<span class="text-[9px] text-zinc-600 ml-1">[${escapeHtml(r._col)}]</span>`;
+                             h = `<button onclick="showInspector('${r.id}')" class="text-blue-400 font-bold border-b border-blue-900">${escapeHtml(rTxt)}</button>${colBadge}`;
+                        } else {
+                             h = v ? `<span class="text-red-400 text-xs">Relación rota (id no encontrado)</span>` : '-';
+                        }
                     }
                     else if(f.type==='rating') { h = renderStars(v); }
                     else if(f.type==='file') {
@@ -2021,18 +2057,25 @@
                     if(f.type==='textarea') h=`<textarea class="input-pro h-24" oninput="updVal('${f.key}',this.value)">${v}</textarea>`;
                     else if(f.type==='textarea_lines') h=`<textarea class="input-pro h-40 whitespace-pre" oninput="updVal('${f.key}',this.value)">${v}</textarea>`;
                     else if(f.type==='relation') {
-                          const targetCollection = f.targetCol || Object.keys(db.schemas)[0]; 
-                          const t=db.items.filter(it=>it._col===targetCollection);
-                          const opts = t.map(x => {
-                              let txt = "Sin Título";
-                              const sch = db.schemas[x._col];
-                              if(sch) {
-                                  const pk = sch.find(k=>k.isTitle) || sch.find(k=>k.type==='text') || sch[0];
-                                  if(pk && x[pk.key]) txt = x[pk.key];
-                              }
-                              return `<option value="${x.id}" ${v===x.id?'selected':''}>${txt}</option>`;
-                          }).join('');
-                          h=`<select class="input-pro bg-black" onchange="updVal('${f.key}',this.value)"><option value="">-- Sin asignar --</option>${opts}</select>`;
+                          const targetCollection = f.targetCol;
+                          if (!targetCollection || !db.schemas[targetCollection]) {
+                              h = `<div class="bg-red-900/20 border border-red-800 text-red-400 text-xs p-2 rounded">
+                                Relación mal configurada: falta la colección destino.<br>
+                                Ve a Configuración → Estructura → edita este campo y elige «Relacionar con».
+                              </div>`;
+                          } else {
+                              const t = db.items.filter(it => it._col === targetCollection);
+                              const opts = t.map(x => {
+                                  let txt = getItemTitleSafe(x);
+                                  return `<option value="${x.id}" ${v===x.id?'selected':''}>${escapeHtml(txt)}</option>`;
+                              }).join('');
+                              h = `<div class="space-y-1">
+                                <div class="text-[9px] text-zinc-500 uppercase">Solo ítems de: <span class="text-blue-400 font-bold">${escapeHtml(targetCollection)}</span></div>
+                                <select class="input-pro bg-black" onchange="updVal('${f.key}',this.value)">
+                                  <option value="">-- Sin asignar --</option>${opts}
+                                </select>
+                              </div>`;
+                          }
                     }
                     else if(f.type==='file') h=`<button onclick="openFileManager('${f.key}')" class="w-full bg-zinc-800 py-2 border border-zinc-700 rounded text-xs font-bold uppercase hover:bg-zinc-700">Gestionar Archivos (${Array.isArray(v)?v.length:0})</button>`;
                     else if(f.type==='barcode') {
@@ -2925,7 +2968,12 @@
             const isFirst = db.schemas[edCol].length === 0;
             
             const f = { id: Date.now().toString(), name: n, type: t, key: "k_"+Date.now(), isTitle: isFirst };
-            if(t==='relation'){ f.targetCol=document.getElementById('relDest').value; f.targetField=document.getElementById('relDisp').value; }
+            if(t==='relation'){
+                const dest = document.getElementById('relDest').value;
+                if(!dest){ alert('Elige la colección con la que relacionar.'); return; }
+                f.targetCol = dest;
+                f.targetField = document.getElementById('relDisp').value;
+            }
             if(t==='icon'){ f.iconPosition=document.getElementById('iconPos')?.value || 'left'; }
             db.schemas[edCol].push(f); 
             inp.value = ""; document.getElementById('newFType').value = "text"; toggleRel();
@@ -2987,10 +3035,20 @@
             f.type = newType;
 
             if (newType === 'relation') {
-                f.targetCol = document.getElementById('editRelDest').value;
+                const dest = document.getElementById('editRelDest').value;
+                if (!dest) return alert('Elige la colección destino de la relación.');
+                f.targetCol = dest;
+                if (f.targetField && !(db.schemas[dest] || []).some(x => x.key === f.targetField)) {
+                    delete f.targetField;
+                }
+            } else {
+                delete f.targetCol;
+                delete f.targetField;
             }
             if (newType === 'icon') {
                 f.iconPosition = document.getElementById('editIconPos')?.value || 'left';
+            } else {
+                delete f.iconPosition;
             }
 
             save();
@@ -3098,7 +3156,11 @@
             if (v === undefined || v === null || v === "") return "";
             if (field.type === 'relation') {
                 const rel = db.items.find(x => x.id === v);
-                if (!rel) return String(v);
+                if (!rel) return v ? "(relación rota)" : "";
+                // Si el campo define targetCol y el ítem no es de esa colección, marcar
+                if (field.targetCol && rel._col !== field.targetCol) {
+                    return getItemTitle(rel) + " [¡" + rel._col + " ≠ " + field.targetCol + "!]";
+                }
                 return getItemTitle(rel) + " [" + rel._col + "]";
             }
             if (field.type === 'file') {
@@ -3410,14 +3472,30 @@
         function openFieldIconPicker(fieldKey) {
             window._iconPickerMode = 'field';
             window._iconPickerFieldKey = fieldKey;
-            const search = document.getElementById('iconSearch'); if (search) search.value='';
-            const sel = document.getElementById('iconCategory'); if(sel) sel.value='';
-            filterIconPicker(); openModal('iconPickerModal');
+            const nameEl = document.getElementById('iconPickerColName');
+            if (nameEl) nameEl.innerText = 'Icono del campo';
+            const search = document.getElementById('iconSearch');
+            if (search) search.value = '';
+            const sel = document.getElementById('iconCategory');
+            if (sel) {
+                sel.innerHTML = '<option value="">Todas las categorías</option>' +
+                    Object.keys(ICON_CATEGORIES).map(k => '<option value="'+k+'">'+k+'</option>').join('');
+                sel.value = '';
+            }
+            filterIconPicker();
+            openModal('iconPickerModal');
         }
 
         function setFieldIconValue(fieldKey, storeVal) {
-            const item=db.items.find(x=>x.id===activeId); if(!item) return;
-            item[fieldKey]=storeVal; save(); renderInspector(item);
+            const item = db.items.find(x => x.id === activeId);
+            if (!item) return;
+            item[fieldKey] = storeVal;
+            save();
+            // Actualizar preview del botón si existe
+            const prev = document.getElementById('fieldIconPreview_' + fieldKey);
+            if (prev) prev.innerHTML = iconHtml(storeVal, 'text-lg');
+            renderInspectorFields();
+            renderItems();
         }
 
         function exportCurrentRelations(type) {
@@ -3447,8 +3525,14 @@
             schema.filter(f => f && f.type === 'relation').forEach(f => {
                 const raw = item[f.key];
                 const ids = Array.isArray(raw) ? raw : (raw ? [raw] : []);
-                const targets = ids.map(id => db.items.find(x => x.id === id)).filter(Boolean);
-                groups.push({ direction: 'out', label: f.name || 'Relacionado', field: f, targets });
+                const targets = ids.map(id => {
+                    const found = db.items.find(x => x.id === id);
+                    if (!found) return null;
+                    // Si hay targetCol definido, solo aceptar ítems de esa colección
+                    if (f.targetCol && found._col !== f.targetCol) return null;
+                    return found;
+                }).filter(Boolean);
+                groups.push({ direction: 'out', label: (f.name || 'Relacionado') + (f.targetCol ? ' → ' + f.targetCol : ''), field: f, targets });
             });
             db.items.forEach(other => {
                 if (other.id === item.id) return;
@@ -3489,225 +3573,160 @@
             openModal('connectionsModal');
         }
 
+        let collectionsPieInstance = null;
+        let advResultChartInstance = null;
+        let advResultData = null;
+
+        function getFieldCountableValue(item, field) {
+            if (!field) return false;
+            const v = item[field.key];
+            if (v === undefined || v === null || v === '') return false;
+            if (Array.isArray(v)) return v.length > 0;
+            return String(v).trim() !== '';
+        }
+
+        function getChartPalette(count) {
+            const palette = ['#3b82f6','#22c55e','#f59e0b','#ef4444','#a855f7','#06b6d4','#ec4899','#84cc16','#f97316','#14b8a6','#8b5cf6','#eab308'];
+            return Array.from({length: count}, (_, i) => palette[i % palette.length]);
+        }
+
         function openStats() {
-            const b = document.getElementById('statsBody'); b.innerHTML = "";
-            const fb = document.getElementById('financialStatsBody'); fb.innerHTML = "";
-            
-            Object.keys(db.schemas).forEach(c => {
-                const count = db.items.filter(i => i._col === c).length;
-                b.innerHTML += `<div class="bg-zinc-900 p-3 rounded border border-zinc-800 flex justify-between items-center"><span class="text-white font-bold uppercase text-xs">${c}</span><span class="text-blue-500 font-black text-lg">${count}</span></div>`;
-            });
-
-            let grandTotal = 0;
-            let hasAnyCurrency = false;
-            Object.keys(db.schemas).forEach(colName => {
-                const colSchema = db.schemas[colName];
-                const currencyFields = colSchema.filter(f => f.type === 'currency');
-                if (currencyFields.length > 0) {
-                    hasAnyCurrency = true;
-                    let colHtml = `<div class="mb-4 last:mb-0"><h4 class="text-xs font-black text-blue-400 uppercase mb-2">${colName}</h4>`;
-                    currencyFields.forEach(f => {
-                        let totalField = 0;
-                        db.items.filter(i => i._col === colName).forEach(i => {
-                            let val = i[f.key];
-                            if (typeof val === 'string') { val = parseFloat(val.replace(/[^0-9.-]+/g,"")); }
-                            if (!isNaN(val)) totalField += parseFloat(val);
-                        });
-                        grandTotal += totalField;
-                        colHtml += `
-                        <div class="flex justify-between items-center border-b border-zinc-800/50 pb-1 mb-1 last:border-0 last:mb-0">
-                            <span class="text-[10px] font-bold text-zinc-400 uppercase ml-2">- ${f.name}</span>
-                            <span class="text-white font-mono font-bold text-xs">${new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(totalField)}</span>
-                        </div>`;
-                    });
-                    colHtml += `</div>`;
-                    fb.innerHTML += colHtml;
-                }
-            });
-
-            if (!hasAnyCurrency) { fb.innerHTML = "<span class='text-zinc-500 text-xs italic'>No hay campos de moneda definidos.</span>"; } 
-            else {
-                fb.innerHTML += `
-                <div class="mt-4 pt-3 border-t border-zinc-700 flex justify-between items-center bg-zinc-900">
-                    <span class="text-sm font-black text-white uppercase">TOTAL GLOBAL</span>
-                    <span class="text-green-400 font-mono font-black text-lg">${new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(grandTotal)}</span>
-                </div>`;
-            }
-
+            renderCollectionStats();
             initAdvancedStats();
             openModal('statsModal');
         }
 
-        function initAdvancedStats() {
-            const colCont = document.getElementById('advStatsCols');
-            colCont.innerHTML = "";
-            Object.keys(db.schemas).forEach(c => {
-                colCont.innerHTML += `
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" value="${c}" id="chk_stat_${c}" class="accent-blue-500" onchange="updateAdvFields()">
-                    <label for="chk_stat_${c}" class="text-xs text-zinc-300 cursor-pointer select-none">${c}</label>
-                </div>`;
-            });
-            document.getElementById('advGroupBy').innerHTML = "<option value=''>-- Seleccionar --</option>";
-            document.getElementById('advValueField').innerHTML = "<option value=''>-- Seleccionar --</option>";
-            document.getElementById('advOperation').value = "count";
-            toggleAdvValueField();
-            
-            document.getElementById('advReportTable').innerHTML = "";
-            if(advChartInstance) { advChartInstance.destroy(); advChartInstance = null; }
-        }
+        function renderCollectionStats() {
+            const names = Object.keys(db.schemas);
+            const counts = names.map(c => db.items.filter(i => i._col === c).length);
+            const total = counts.reduce((a,b) => a+b, 0);
+            const table = document.getElementById('statsCollectionTable');
+            const grand = document.getElementById('statsGrandTotal');
+            if (grand) grand.textContent = `${total} ${total === 1 ? 'elemento' : 'elementos'} en total`;
 
-        function updateAdvFields() {
-            const selectedCols = Array.from(document.querySelectorAll('#advStatsCols input:checked')).map(cb => cb.value);
-            const groupSelect = document.getElementById('advGroupBy');
-            const valueSelect = document.getElementById('advValueField');
-            const currentGroup = groupSelect.value;
-            const currentValue = valueSelect.value;
-
-            groupSelect.innerHTML = "<option value=''>-- Seleccionar --</option>";
-            valueSelect.innerHTML = "<option value=''>-- Seleccionar --</option>";
-            
-            if(selectedCols.length === 0) return;
-
-            const allFieldNames = new Set();
-            selectedCols.forEach(c => {
-                if(db.schemas[c]) {
-                    db.schemas[c].forEach(f => allFieldNames.add(f.name));
-                }
-            });
-
-            Array.from(allFieldNames).sort().forEach(fn => {
-                groupSelect.innerHTML += `<option value="${fn}">${fn}</option>`;
-                valueSelect.innerHTML += `<option value="${fn}">${fn}</option>`;
-            });
-
-            if(Array.from(groupSelect.options).some(o => o.value === currentGroup)) groupSelect.value = currentGroup;
-            if(Array.from(valueSelect.options).some(o => o.value === currentValue)) valueSelect.value = currentValue;
-        }
-
-        function toggleAdvValueField() {
-            const op = document.getElementById('advOperation').value;
-            const wrap = document.getElementById('advValueFieldWrap');
-            if(op === 'sum') {
-                wrap.classList.remove('opacity-50', 'pointer-events-none');
+            if (!names.length) {
+                table.innerHTML = '<div class="text-xs text-zinc-600 text-center py-8">No hay colecciones creadas.</div>';
             } else {
-                wrap.classList.add('opacity-50', 'pointer-events-none');
-                document.getElementById('advValueField').value = "";
+                const colors = getChartPalette(names.length);
+                table.innerHTML = `
+                    <div class="space-y-1">
+                        ${names.map((name,i) => `
+                            <div class="flex items-center justify-between gap-3 px-3 py-3 rounded-lg hover:bg-zinc-800/70 transition">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:${colors[i]}"></span>
+                                    <span class="text-xs font-bold text-white truncate">${escapeHtml(name)}</span>
+                                </div>
+                                <span class="text-lg font-black text-white font-mono">${counts[i]}</span>
+                            </div>`).join('')}
+                    </div>`;
+            }
+
+            const canvas = document.getElementById('collectionsPieChart');
+            if (canvas && typeof Chart !== 'undefined') {
+                if (collectionsPieInstance) collectionsPieInstance.destroy();
+                collectionsPieInstance = new Chart(canvas.getContext('2d'), {
+                    type: 'doughnut',
+                    data: { labels: names, datasets: [{ data: counts, backgroundColor: getChartPalette(names.length), borderColor: '#050505', borderWidth: 3 }] },
+                    options: {
+                        responsive: true, maintainAspectRatio: false, cutout: '48%',
+                        plugins: { legend: { position: 'bottom', labels: { color: '#d4d4d8', boxWidth: 12, padding: 14, font: { size: 10, weight: 'bold' } } },
+                            tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` } } }
+                    }
+                });
             }
         }
 
+        function initAdvancedStats() {
+            const collection = document.getElementById('advCollection');
+            const groupSelect = document.getElementById('advGroupBy');
+            const valueSelect = document.getElementById('advValueField');
+            const names = Object.keys(db.schemas);
+            collection.innerHTML = names.length ? names.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('') : '<option value="">-- Sin colecciones --</option>';
+            if (names.length) updateAdvFields();
+            else { groupSelect.innerHTML = '<option value="">-- Sin campos --</option>'; valueSelect.innerHTML = '<option value="">-- Sin campos --</option>'; }
+            document.getElementById('advResultEmpty').classList.remove('hidden');
+            document.getElementById('advResultWrap').classList.add('hidden');
+            advResultData = null;
+            if (advResultChartInstance) { advResultChartInstance.destroy(); advResultChartInstance = null; }
+        }
+
+        function updateAdvFields() {
+            const collection = document.getElementById('advCollection').value;
+            const groupSelect = document.getElementById('advGroupBy');
+            const valueSelect = document.getElementById('advValueField');
+            const schema = db.schemas[collection] || [];
+            const fields = schema.filter(f => f && f.type !== 'photo' && f.type !== 'file');
+            const opts = fields.map(f => `<option value="${escapeHtml(f.key)}">${escapeHtml(f.name || f.key)}</option>`).join('');
+            groupSelect.innerHTML = fields.length ? opts : '<option value="">-- Sin campos --</option>';
+            valueSelect.innerHTML = fields.length ? opts : '<option value="">-- Sin campos --</option>';
+            const title = fields.find(f => f.isTitle) || fields.find(f => /^(titulo|title|nombre|name)$/i.test(f.name || ''));
+            if (title) valueSelect.value = title.key;
+            const group = fields.find(f => f.name && /genero|género/i.test(f.name)) || title || fields[0];
+            if (group) groupSelect.value = group.key;
+        }
+
+        function switchAdvResultTab(tab) {
+            const list = document.getElementById('advResultList');
+            const pie = document.getElementById('advResultPie');
+            const listBtn = document.getElementById('advTabList');
+            const pieBtn = document.getElementById('advTabPie');
+            const active = 'px-4 py-2 rounded-md text-[10px] font-black uppercase bg-blue-600 text-white';
+            const idle = 'px-4 py-2 rounded-md text-[10px] font-black uppercase text-zinc-500 hover:text-white';
+            if (tab === 'pie') { list.classList.add('hidden'); pie.classList.remove('hidden'); listBtn.className=idle; pieBtn.className=active; }
+            else { pie.classList.add('hidden'); list.classList.remove('hidden'); listBtn.className=active; pieBtn.className=idle; }
+        }
+
         function generateAdvancedReport() {
-            const selectedCols = Array.from(document.querySelectorAll('#advStatsCols input:checked')).map(cb => cb.value);
-            const groupBy = document.getElementById('advGroupBy').value;
-            const operation = document.getElementById('advOperation').value;
-            const valueField = document.getElementById('advValueField').value;
+            const collection = document.getElementById('advCollection').value;
+            const groupKey = document.getElementById('advGroupBy').value;
+            const countKey = document.getElementById('advValueField').value;
+            const schema = db.schemas[collection] || [];
+            const groupField = schema.find(f => f.key === groupKey);
+            const countField = schema.find(f => f.key === countKey);
+            if (!collection || !groupField || !countField) return alert('Selecciona una colección, un campo para agrupar y un campo para contar.');
 
-            if(selectedCols.length === 0) return alert("Selecciona al menos una colección.");
-            if(!groupBy) return alert("Selecciona un campo para agrupar.");
-            if(operation === 'sum' && !valueField) return alert("Selecciona qué campo quieres sumar.");
-
-            const dataMap = {}; 
-            
-            db.items.forEach(item => {
-                if(!selectedCols.includes(item._col)) return; 
-                
-                const schema = db.schemas[item._col];
-                const groupFieldDef = schema.find(f => f.name === groupBy);
-                
-                let groupVal = "Desconocido / Sin Campo";
-                if(groupFieldDef) {
-                    const raw = item[groupFieldDef.key];
-                    if(raw && raw.toString().trim() !== "") groupVal = raw.toString();
-                    else groupVal = "(Vacío)";
-                }
-
-                if(!dataMap[groupVal]) dataMap[groupVal] = 0;
-
-                if(operation === 'count') {
-                    dataMap[groupVal]++;
-                } else {
-                    const valFieldDef = schema.find(f => f.name === valueField);
-                    if(valFieldDef) {
-                        let num = item[valFieldDef.key];
-                        if(typeof num === 'string') num = parseFloat(num.replace(/[^0-9.-]+/g,""));
-                        if(!isNaN(num)) dataMap[groupVal] += num;
-                    }
-                }
+            const dataMap = {};
+            const items = db.items.filter(i => i._col === collection);
+            items.forEach(item => {
+                let groupVal = item[groupField.key];
+                if (Array.isArray(groupVal)) groupVal = groupVal.length ? groupVal.join(', ') : '(Vacío)';
+                groupVal = groupVal == null || String(groupVal).trim() === '' ? '(Vacío)' : String(groupVal);
+                if (!dataMap[groupVal]) dataMap[groupVal] = 0;
+                if (getFieldCountableValue(item, countField)) dataMap[groupVal]++;
             });
 
             const labels = Object.keys(dataMap);
             const values = Object.values(dataMap);
+            if (!labels.length) return alert('No se encontraron datos para esa combinación.');
 
-            if(labels.length === 0) return alert("No se encontraron datos con esos criterios.");
+            const total = values.reduce((a,b)=>a+b,0);
+            const title = `${collection}: cuenta ${countField.name} agrupado por ${groupField.name}`;
+            document.getElementById('advResultTitle').textContent = title;
+            document.getElementById('advResultTotal').textContent = `${total} ${countField.name} contabilizados en ${items.length} elementos`;
+            document.getElementById('advResultEmpty').classList.add('hidden');
+            document.getElementById('advResultWrap').classList.remove('hidden');
 
-            const ctx = document.getElementById('advChart').getContext('2d');
-            if(advChartInstance) advChartInstance.destroy();
+            const colors = getChartPalette(labels.length);
+            document.getElementById('advResultList').innerHTML = `
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead><tr class="bg-zinc-900 text-zinc-400 uppercase"><th class="p-3 border-b border-zinc-800">${escapeHtml(groupField.name)}</th><th class="p-3 border-b border-zinc-800 text-right">Cantidad</th></tr></thead>
+                    <tbody>${labels.map((l,i)=>`<tr class="border-b border-zinc-900"><td class="p-3 text-white font-bold"><span class="inline-block w-2.5 h-2.5 rounded-full mr-2" style="background:${colors[i]}"></span>${escapeHtml(l)}</td><td class="p-3 text-right text-blue-400 font-black font-mono text-base">${values[i]}</td></tr>`).join('')}<tr class="bg-zinc-900"><td class="p-3 text-white font-black uppercase">TOTAL</td><td class="p-3 text-right text-green-400 font-black font-mono text-base">${total}</td></tr></tbody>
+                </table>`;
 
-            const bgColors = labels.map(() => `hsl(${Math.random() * 360}, 70%, 50%)`);
-
-            advChartInstance = new Chart(ctx, {
-                type: 'bar', 
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: operation === 'sum' ? 'Total Valor' : 'Cantidad Ítems',
-                        data: values,
-                        backgroundColor: bgColors,
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        title: { display: true, text: `Reporte: ${operation === 'sum' ? 'Suma de '+valueField : 'Conteo'} por ${groupBy}`, color: '#fff' }
-                    },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { color: '#aaa' }, grid: { color: '#333' } },
-                        x: { ticks: { color: '#aaa' }, grid: { color: '#333' } }
-                    }
-                }
-            });
-
-            let tableHtml = `
-            <table class="w-full text-left border-collapse text-xs">
-                <thead>
-                    <tr class="bg-zinc-900 text-zinc-400 uppercase">
-                        <th class="p-3 border-b border-zinc-800">${groupBy}</th>
-                        <th class="p-3 border-b border-zinc-800 text-right">${operation === 'sum' ? 'Total ('+valueField+')' : 'Cantidad'}</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-            
-            let totalSum = 0;
-            labels.forEach((l, i) => {
-                let v = values[i];
-                totalSum += v;
-                let displayV = v;
-                if(operation === 'sum') displayV = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2 }).format(v);
-                
-                tableHtml += `
-                <tr class="border-b border-zinc-900 hover:bg-zinc-900/50">
-                    <td class="p-3 text-white font-bold">${l}</td>
-                    <td class="p-3 text-right text-blue-400 font-mono">${displayV}</td>
-                </tr>`;
-            });
-
-            let displayTotal = totalSum;
-            if(operation === 'sum') displayTotal = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2 }).format(totalSum);
-
-            tableHtml += `
-                <tr class="bg-zinc-900 font-black text-white">
-                    <td class="p-3 uppercase">TOTAL</td>
-                    <td class="p-3 text-right text-green-400 font-mono">${displayTotal}</td>
-                </tr>
-            </tbody></table>`;
-
-            document.getElementById('advReportTable').innerHTML = tableHtml;
+            if (advResultChartInstance) advResultChartInstance.destroy();
+            const canvas = document.getElementById('advChart');
+            if (canvas && typeof Chart !== 'undefined') {
+                advResultChartInstance = new Chart(canvas.getContext('2d'), {
+                    type:'doughnut',
+                    data:{ labels, datasets:[{ data:values, backgroundColor:colors, borderColor:'#050505', borderWidth:3 }] },
+                    options:{ responsive:true, maintainAspectRatio:false, cutout:'42%', plugins:{ legend:{position:'bottom',labels:{color:'#d4d4d8',boxWidth:12,padding:14,font:{size:10,weight:'bold'}}}, tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw}`}} } }
+                });
+            }
+            advResultData = {collection, groupField, countField, labels, values};
+            switchAdvResultTab('list');
         }
 
-                function compressImage(file, maxWidth, quality, callback) {
+        function compressImage(file, maxWidth, quality, callback) {
             const reader = new FileReader();
             reader.onerror = () => callback(null);
             reader.readAsDataURL(file);
