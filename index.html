@@ -145,11 +145,19 @@
         .mobile-sidebar.open { transform: translateX(0); }
         .mobile-inspector { position: fixed; inset: 0; z-index: 100; background: var(--panel); transform: translateY(100%); transition: transform 0.3s; display: flex; flex-direction: column; }
         .mobile-inspector.active { transform: translateY(0); }
+        /* adaptive-layout-fix */
+        html, body { max-width: 100%; overflow-x: hidden; }
+        @media (max-width: 767px) {
+            .mobile-inspector { width: 100% !important; max-width: 100% !important; }
+        }
+        @media (min-width: 768px) {
+            #inspectorPanel.mobile-inspector { width: clamp(280px, 38vw, 640px); max-width: 45vw; }
+        }
         .overlay-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 40; display: none; }
 
         @media (min-width: 768px) {
             .mobile-sidebar { position: relative; transform: none; width: 18rem; z-index: 1; }
-            .mobile-inspector { position: relative; transform: none; width: 600px; z-index: 1; }
+            .mobile-inspector { position: relative; transform: none; width: clamp(280px, 38vw, 640px); flex: 0 1 auto; z-index: 1; min-width: 0; max-width: 100%; overflow-x: hidden; }
             .menu-toggle { display: none; }
             .overlay-bg { display: none !important; }
             .inspector-back-btn { display: none; }
@@ -172,14 +180,18 @@
         .card-marquee {
             overflow: hidden;
             width: 100%;
-            mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
-            -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%);
+            max-width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
         }
         .card-marquee-inner {
             display: inline-block;
             white-space: nowrap;
-            padding-left: 0;
             animation: cardMarquee 12s linear infinite;
+        }
+        #inspectorPanel, #inspectorContent, #dynamicFields {
+            min-width: 0;
+            overflow-x: hidden;
         }
         @keyframes cardMarquee {
             0% { transform: translateX(0); }
@@ -533,11 +545,11 @@
                     <input type="text" id="globalSearch" oninput="renderItems()" placeholder="Búsqueda Inteligente (Texto, Campos)..." class="input-pro pl-10">
                     <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-zinc-600 text-xs"></i>
                 </div>
-                <div id="colActiveLabel" class="text-[10px] font-black text-blue-500 bg-blue-500/10 px-4 py-1.5 rounded-full border border-blue-500/20 uppercase tracking-widest hidden md:block">
+                <div id="colActiveLabel" class="text-[10px] font-black text-blue-500 bg-blue-500/10 px-3 py-1.5 rounded-full border border-blue-500/20 uppercase tracking-widest flex-shrink-0 max-w-[40%] truncate">
                     Cargando...
                 </div>
             </div>
-            <div id="collectionCount" class="px-4 pt-4 pb-2"></div>
+            <div id="collectionCount" class="px-3 sm:px-4 pt-3 pb-2 w-full box-border"></div>
             <div id="itemsGrid" class="view-grid"></div>
         </main>
 
@@ -547,19 +559,14 @@
                 <p class="text-xs font-black uppercase tracking-widest">Selecciona un elemento</p>
             </div>
 
-            <div id="inspectorContent" class="hidden flex-1 flex flex-col overflow-hidden">
-                <div class="p-4 border-b border-zinc-800 flex flex-wrap gap-2 justify-between items-center bg-zinc-900/50">
-                    <button onclick="hideInspector()" class="inspector-back-btn text-white"><i class="fa-solid fa-arrow-left"></i></button>
-                    
-                    <div class="flex gap-2">
-                        <!-- autoFetch desactivado temporalmente -->
-                    </div>
-
-                    <div class="flex gap-2 ml-auto items-center">
-                        <button id="saveItemBtn" onclick="manualSaveItem()" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 transition">
+            <div id="inspectorContent" class="hidden flex-1 flex flex-col overflow-hidden min-w-0">
+                <div id="inspectorToolbar" class="p-4 border-b border-zinc-800 flex items-center justify-between gap-2 bg-zinc-900/50 flex-shrink-0">
+                    <button type="button" onclick="hideInspector()" class="inspector-back-btn text-white"><i class="fa-solid fa-arrow-left"></i></button>
+                    <div class="flex gap-2 items-center ml-auto">
+                        <button type="button" id="saveItemBtn" onclick="manualSaveItem()" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 transition">
                             <i class="fa-solid fa-floppy-disk"></i> <span>GUARDAR</span>
                         </button>
-                        <button id="delItemBtn" onclick="deleteCurrentItem()" class="text-red-500 hover:text-red-400 text-[10px] font-black uppercase px-2">ELIMINAR</button>
+                        <button type="button" id="delItemBtn" onclick="deleteCurrentItem()" class="text-red-500 hover:text-red-400 text-[10px] font-black uppercase px-2">ELIMINAR</button>
                     </div>
                 </div>
 
@@ -1179,7 +1186,7 @@
                         <input type="text" id="ghBranchInp" class="input-pro text-xs" placeholder="main" value="main">
                         <label class="text-[9px] font-black text-zinc-500 uppercase">Token (permiso Contents: Read and write)</label>
                         <input type="password" id="ghTokenInp" class="input-pro text-xs" placeholder="github_pat_... o ghp_..." autocomplete="off">
-                        <p class="text-[9px] text-zinc-600">Créalo en GitHub → Settings → Developer settings → Personal access tokens. Solo se guarda en <strong>este</strong> navegador, no dentro del HTML.</p>
+                        <p class="text-[9px] text-zinc-600">Token classic con permiso <strong>repo</strong> y caducidad <strong>No expiration</strong>. Se guarda en este navegador y en la copia de seguridad / data.json (para recuperarlo al restaurar).</p>
                         <div class="flex flex-col sm:flex-row gap-2">
                             <button type="button" onclick="ghSaveSettings()" class="flex-1 bg-zinc-800 py-2 rounded text-[10px] font-black uppercase">Guardar ajustes</button>
                             <button type="button" onclick="ghPushData()" class="flex-1 bg-blue-900/40 text-blue-300 border border-blue-800 py-2 rounded text-[10px] font-black uppercase">Guardar datos en el repo</button>
@@ -2421,15 +2428,31 @@
             return null;
         }
 
+
+        async function restoreGithubSettingsFromDb() {
+            try {
+                if (!db || !db.settings || !db.settings.github) return;
+                const g = db.settings.github;
+                if (g.token) await localforage.setItem(GH_TOKEN_KEY, g.token);
+                if (g.user) await localforage.setItem(GH_USER_KEY, g.user);
+                if (g.repo) await localforage.setItem(GH_REPO_KEY, g.repo);
+                if (g.branch) await localforage.setItem(GH_BRANCH_KEY, g.branch);
+                if (typeof g.auto === 'boolean') await localforage.setItem(GH_AUTO_KEY, g.auto);
+            } catch (e) { console.warn(e); }
+        }
+
         async function ghGetCfg() {
             const det = ghDetectFromUrl();
-            return {
-                token: (await localforage.getItem(GH_TOKEN_KEY)) || '',
-                user: (await localforage.getItem(GH_USER_KEY)) || (det && det.user) || '',
-                repo: (await localforage.getItem(GH_REPO_KEY)) || (det && det.repo) || '',
-                branch: (await localforage.getItem(GH_BRANCH_KEY)) || (det && det.branch) || 'main',
-                auto: !!(await localforage.getItem(GH_AUTO_KEY))
-            };
+            // Prioridad: localforage → db.settings.github (va en la copia de seguridad) → URL
+            let s = {};
+            try { s = (db && db.settings && db.settings.github) ? db.settings.github : {}; } catch (e) {}
+            const token = (await localforage.getItem(GH_TOKEN_KEY)) || s.token || '';
+            const user = (await localforage.getItem(GH_USER_KEY)) || s.user || (det && det.user) || '';
+            const repo = (await localforage.getItem(GH_REPO_KEY)) || s.repo || (det && det.repo) || '';
+            const branch = (await localforage.getItem(GH_BRANCH_KEY)) || s.branch || (det && det.branch) || 'main';
+            let auto = await localforage.getItem(GH_AUTO_KEY);
+            if (auto === null || auto === undefined) auto = !!s.auto;
+            return { token: token, user: user, repo: repo, branch: branch || 'main', auto: !!auto };
         }
 
         async function ghLoadSettingsUI() {
@@ -2451,22 +2474,36 @@
 
         async function ghSaveSettings() {
             const val = id => ((document.getElementById(id) || {}).value || '').trim();
-            await localforage.setItem(GH_TOKEN_KEY, val('ghTokenInp'));
-            await localforage.setItem(GH_USER_KEY, val('ghUserInp'));
-            await localforage.setItem(GH_REPO_KEY, val('ghRepoInp'));
-            await localforage.setItem(GH_BRANCH_KEY, val('ghBranchInp') || 'main');
-            await localforage.setItem(GH_AUTO_KEY, !!(document.getElementById('ghAutoSync') || {}).checked);
+            const cfg = {
+                token: val('ghTokenInp'),
+                user: val('ghUserInp'),
+                repo: val('ghRepoInp'),
+                branch: val('ghBranchInp') || 'main',
+                auto: !!(document.getElementById('ghAutoSync') || {}).checked
+            };
+            // En este navegador
+            await localforage.setItem(GH_TOKEN_KEY, cfg.token);
+            await localforage.setItem(GH_USER_KEY, cfg.user);
+            await localforage.setItem(GH_REPO_KEY, cfg.repo);
+            await localforage.setItem(GH_BRANCH_KEY, cfg.branch);
+            await localforage.setItem(GH_AUTO_KEY, cfg.auto);
+            // Dentro de la base (sale en copia de seguridad JSON y en data.json del repo)
+            if (!db.settings) db.settings = {};
+            db.settings.github = cfg;
+            try { await localforage.setItem(STORAGE_KEY, db); } catch (e) {}
             await ghLoadSettingsUI();
-            if (typeof appAlert === 'function') await appAlert('Ajustes guardados solo en este navegador.');
+            if (typeof appAlert === 'function') await appAlert('Ajustes guardados en este navegador y en la copia de datos (se restauran con el backup).');
         }
 
-        function ghHeaders(token) {
-            return {
-                'Authorization': 'Bearer ' + token,
-                'Accept': 'application/vnd.github+json',
-                'X-GitHub-Api-Version': '2022-11-28',
-                'Content-Type': 'application/json'
+        function ghHeaders(token, writing) {
+            // Classic PAT (ghp_...) usa "token "; fine-grained también lo acepta
+            const t = String(token || '').trim().replace(/^(Bearer|token)\s+/i, '');
+            const h = {
+                'Authorization': 'token ' + t,
+                'Accept': 'application/vnd.github+json'
             };
+            if (writing) h['Content-Type'] = 'application/json';
+            return h;
         }
 
         function utf8ToBase64(str) {
@@ -2496,7 +2533,6 @@
         }
 
         async function ghPushData() {
-            // Evitar varios guardados a la vez (causa típica del 409)
             if (window._ghPushing) {
                 window._ghPushQueued = true;
                 return false;
@@ -2515,126 +2551,135 @@
                 if (uiBranch) cfg.branch = uiBranch;
 
                 if (!cfg.token || !cfg.user || !cfg.repo) {
-                    alert('Necesitas usuario, repositorio y token.');
+                    if (!window._ghSilent) alert('Faltan usuario, repositorio o token.');
                     return false;
                 }
-                if (st) st.textContent = 'Guardando data.json en el repositorio…';
+                if (st) st.textContent = 'Guardando en GitHub…';
 
                 db._savedAt = Date.now();
+                if (!db.settings) db.settings = {};
+                db.settings.github = {
+                    token: cfg.token, user: cfg.user, repo: cfg.repo,
+                    branch: cfg.branch || 'main',
+                    auto: !!(await localforage.getItem(GH_AUTO_KEY))
+                };
                 await localforage.setItem(STORAGE_KEY, db);
+                await localforage.setItem(GH_TOKEN_KEY, cfg.token);
+                await localforage.setItem(GH_USER_KEY, cfg.user);
+                await localforage.setItem(GH_REPO_KEY, cfg.repo);
+                await localforage.setItem(GH_BRANCH_KEY, cfg.branch || 'main');
 
-                const content = utf8ToBase64(JSON.stringify(db));
-                const url = 'https://api.github.com/repos/' + encodeURIComponent(cfg.user) + '/' + encodeURIComponent(cfg.repo) +
-                    '/contents/' + GH_DATA_PATH;
+                // NUNCA subir el token a GitHub (secret scanning → 409 Secret detected)
+                const payload = JSON.parse(JSON.stringify(db));
+                if (payload.settings && payload.settings.github) {
+                    delete payload.settings.github.token;
+                    payload.settings.github.tokenSavedLocally = true;
+                }
+                // por si el token apareciera en otro sitio del JSON
+                let jsonStr = JSON.stringify(payload);
+                if (cfg.token && jsonStr.indexOf(cfg.token) >= 0) {
+                    jsonStr = jsonStr.split(cfg.token).join('[TOKEN_OMITIDO]');
+                }
+                const content = utf8ToBase64(jsonStr);
+                const apiBase = 'https://api.github.com/repos/' + encodeURIComponent(cfg.user) + '/' + encodeURIComponent(cfg.repo) + '/contents/' + GH_DATA_PATH;
+
+                async function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
 
                 async function getSha(branch) {
-                    try {
-                        const metaUrl = 'https://api.github.com/repos/' + encodeURIComponent(cfg.user) + '/' + encodeURIComponent(cfg.repo) +
-                            '/contents/' + GH_DATA_PATH + '?ref=' + encodeURIComponent(branch) + '&_ts=' + Date.now();
-                        const r = await fetch(metaUrl, {
-                            headers: Object.assign({}, ghHeaders(cfg.token), { 'Cache-Control': 'no-cache' }),
-                            cache: 'no-store'
-                        });
-                        if (r.status === 404) return { sha: null, ok: true };
-                        if (!r.ok) {
-                            const t = await r.text();
-                            return { sha: null, ok: false, status: r.status, text: t };
-                        }
-                        const meta = await r.json();
-                        return { sha: meta.sha || null, ok: true };
-                    } catch (e) {
-                        return { sha: null, ok: false, text: String(e) };
+                    const url = apiBase + '?ref=' + encodeURIComponent(branch);
+                    const r = await fetch(url, { method: 'GET', headers: ghHeaders(cfg.token, false), cache: 'no-store' });
+                    if (r.status === 404) return null;
+                    if (!r.ok) {
+                        const t = await r.text();
+                        throw new Error('Lectura GitHub ' + r.status + ': ' + t.slice(0, 120));
                     }
+                    const j = await r.json();
+                    return j.sha || null;
                 }
 
-                async function putOnce(branch, sha) {
+                async function put(branch, sha) {
                     const body = {
-                        message: 'MiColeccion: actualizar data.json ' + new Date().toISOString(),
+                        message: 'MiColeccion ' + new Date().toISOString(),
                         content: content,
                         branch: branch
                     };
                     if (sha) body.sha = sha;
-                    return fetch(url, {
+                    return fetch(apiBase, {
                         method: 'PUT',
-                        headers: ghHeaders(cfg.token),
+                        headers: ghHeaders(cfg.token, true),
                         body: JSON.stringify(body)
                     });
                 }
 
-                async function sleep(ms) {
-                    return new Promise(function(r) { setTimeout(r, ms); });
-                }
-
                 let branch = cfg.branch || 'main';
                 let lastErr = '';
-                let success = false;
+                let ok = false;
 
-                for (let attempt = 0; attempt < 6; attempt++) {
-                    const info = await getSha(branch);
-                    if (!info.ok && info.status === 404 && branch === 'main' && attempt === 0) {
-                        // probar master solo si main no existe el archivo... keep trying main first
+                for (let i = 0; i < 5; i++) {
+                    try {
+                        let sha = null;
+                        try { sha = await getSha(branch); } catch (e1) {
+                            // si main falla, probar master
+                            if (branch === 'main') {
+                                branch = 'master';
+                                try { sha = await getSha(branch); } catch (e2) { throw e1; }
+                            } else throw e1;
+                        }
+                        const res = await put(branch, sha);
+                        if (res.ok) { ok = true; break; }
+                        const t = await res.text();
+                        lastErr = res.status + ' ' + t.slice(0, 160);
+                        if (res.status === 409 || res.status === 422) {
+                            if (/secret/i.test(t)) {
+                                throw new Error('GitHub rechazó el archivo porque detectó un secreto (el token). Ya no se sube el token. Vuelve a pulsar Guardar datos en el repo.');
+                            }
+                            await sleep(400);
+                            continue;
+                        }
+                        if (res.status === 401 || res.status === 403) {
+                            throw new Error('Token inválido o sin permiso repo. Crea un token classic con casilla «repo» y caducidad «No expiration».');
+                        }
+                        if (res.status === 404) {
+                            if (branch === 'main') { branch = 'master'; continue; }
+                            throw new Error('No se encuentra el repo ' + cfg.user + '/' + cfg.repo + '. Revisa el nombre.');
+                        }
+                        throw new Error('GitHub ' + lastErr);
+                    } catch (e) {
+                        lastErr = String(e && e.message || e);
+                        if (/Failed to fetch|NetworkError|Load failed|abort/i.test(lastErr)) {
+                            await sleep(600);
+                            if (i < 4) continue;
+                            throw new Error('El navegador no pudo conectar con api.github.com. Prueba: desactivar bloqueador en esta página, otra red, o otro navegador. Detalle: ' + lastErr);
+                        }
+                        throw e;
                     }
-                    let res = await putOnce(branch, info.sha);
-                    if (res.ok) {
-                        success = true;
-                        if (branch === 'master') cfg.branch = 'master';
-                        break;
-                    }
-                    const t = await res.text();
-                    lastErr = 'GitHub ' + res.status + ' ' + t.slice(0, 120);
-
-                    if (res.status === 409) {
-                        // SHA desfasado: esperar y reintentar con SHA fresco
-                        await sleep(400 + attempt * 300);
-                        continue;
-                    }
-                    if (res.status === 404 && branch === 'main') {
-                        branch = 'master';
-                        await sleep(200);
-                        continue;
-                    }
-                    // otros errores: no insistir en bucle infinito
-                    break;
                 }
+                if (!ok) throw new Error(lastErr || 'No se pudo guardar');
 
-                if (!success) {
-                    let hint = '';
-                    if (/409/.test(lastErr)) {
-                        hint = 'Conflicto de versión. Tus datos locales están bien. Prueba otra vez en unos segundos.';
-                    } else if (/404/.test(lastErr)) {
-                        hint = 'Usuario/repo incorrectos o sin acceso.';
-                    } else if (/401|403/.test(lastErr)) {
-                        hint = 'Token incorrecto o sin permiso repo.';
-                    }
-                    throw new Error(hint + ' ' + lastErr);
-                }
-
-                await localforage.setItem(GH_TOKEN_KEY, cfg.token);
-                await localforage.setItem(GH_USER_KEY, cfg.user);
-                await localforage.setItem(GH_REPO_KEY, cfg.repo);
-                await localforage.setItem(GH_BRANCH_KEY, cfg.branch || branch || 'main');
+                cfg.branch = branch;
+                await localforage.setItem(GH_BRANCH_KEY, branch);
+                if (db.settings.github) db.settings.github.branch = branch;
 
                 if (st) {
-                    st.textContent = 'Guardado en el repo: ' + cfg.user + '/' + cfg.repo + '/' + GH_DATA_PATH + ' · ' + new Date().toLocaleString('es-ES');
+                    st.textContent = 'Guardado OK: ' + cfg.user + '/' + cfg.repo + '/data.json · ' + new Date().toLocaleString('es-ES');
                     st.className = 'text-[10px] text-green-400';
                 }
                 return true;
             } catch (e) {
                 console.error(e);
                 if (st) {
-                    st.textContent = 'Error: ' + (e.message || e) + ' — Datos LOCALES intactos.';
+                    st.textContent = 'Error: ' + (e.message || e) + ' — Datos locales intactos.';
                     st.className = 'text-[10px] text-red-400';
                 }
-                // No spamear alert en auto-sync; solo si el usuario pulsó el botón
                 if (!window._ghSilent) {
-                    alert('No se pudo escribir en el repo. Tus datos de este navegador NO se han borrado. ' + (e.message || e));
+                    alert('No se pudo escribir en el repo. Tus datos de este navegador NO se han borrado.\n\n' + (e.message || e));
                 }
                 return false;
             } finally {
                 window._ghPushing = false;
                 if (window._ghPushQueued) {
                     window._ghPushQueued = false;
-                    setTimeout(function() { ghPushData(); }, 800);
+                    setTimeout(function() { ghPushData(); }, 1000);
                 }
             }
         }
@@ -2673,6 +2718,7 @@
                 if (!db.settings) db.settings = {};
                 await localforage.setItem(STORAGE_KEY, db);
                 if (typeof normalizeSchemas === 'function') normalizeSchemas();
+            if (typeof restoreGithubSettingsFromDb === 'function') await restoreGithubSettingsFromDb();
                 if (typeof renderColNav === 'function') renderColNav();
                 if (typeof renderItems === 'function') renderItems();
                 if (st) {
@@ -2938,17 +2984,17 @@
                 const total = allCollectionItems.length;
                 const visible = items.length;
                 countBox.innerHTML = `
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-zinc-900/70 border border-zinc-800 rounded-xl px-4 py-3">
-                        <div class="flex items-center gap-3 min-w-0">
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 bg-zinc-900/70 border border-zinc-800 rounded-xl px-3 py-3 w-full box-border">
+                        <div class="flex items-center gap-3 min-w-0 flex-1">
                             <div class="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 flex-shrink-0"><i class="fa-solid fa-layer-group"></i></div>
-                            <div class="min-w-0">
+                            <div class="min-w-0 overflow-hidden">
                                 <div class="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Colección actual</div>
                                 <div class="text-sm font-black text-white uppercase truncate">${escapeHtml(db.activeCol || 'Sin colección')}</div>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <div class="text-2xl font-black text-blue-400 leading-none">${total}</div>
-                            <div class="text-[9px] text-zinc-500 uppercase font-bold">${total === 1 ? 'elemento guardado' : 'elementos guardados'}${q ? ` · ${visible} visibles` : ''}</div>
+                        <div class="inline-flex items-center gap-1.5 bg-blue-600/25 border border-blue-500/50 rounded-md px-2.5 py-1 self-start sm:self-center sm:ml-auto flex-shrink-0">
+                            <span class="text-lg sm:text-2xl font-black text-blue-400 leading-none tabular-nums">${total}</span>
+                            <span class="text-[10px] text-blue-200 uppercase font-bold">${total === 1 ? 'registro' : 'registros'}${q ? ' · ' + visible + ' visibles' : ''}</span>
                         </div>
                     </div>`;
             }
@@ -3047,6 +3093,15 @@
             renderGallery(item);
             renderInspectorFields();
             if (typeof applyUserPermissions === 'function') applyUserPermissions();
+            // Asegurar botones visibles para admin
+            try {
+                if (typeof isAdmin === 'function' && isAdmin()) {
+                    const s = document.getElementById('saveItemBtn');
+                    const dlt = document.getElementById('delItemBtn');
+                    if (s) { s.style.display = ''; s.classList.remove('hidden'); }
+                    if (dlt) { dlt.style.display = ''; dlt.classList.remove('hidden'); }
+                }
+            } catch (e) {}
             if(window.innerWidth < 768) { document.getElementById('mainSidebar').classList.remove('open'); document.getElementById('sidebarOverlay').style.display='none'; }
         }
 
@@ -3077,16 +3132,14 @@
             if (!inp) return;
             const val = (inp.value || '').trim() || 'Sin Título';
             const safe = val.replace(/</g,'&lt;').replace(/>/g,'&gt;');
-            const long = safe.length > 18;
             if (view) {
-                if (long) {
-                    view.className = 'card-marquee text-xl font-black text-white uppercase cursor-pointer';
-                    view.style.minHeight = '1.6em';
+                view.className = 'card-marquee text-xl font-black text-white uppercase cursor-text';
+                view.style.lineHeight = '1.25';
+                if (safe.length > 24) {
                     view.innerHTML = '<span class="card-marquee-inner">' + safe + '&nbsp;&nbsp;&nbsp;' + safe + '</span>';
                 } else {
-                    view.className = 'text-xl font-black text-white uppercase no-cut-text cursor-pointer';
-                    view.removeAttribute('style');
                     view.textContent = val;
+                    view.className = 'text-xl font-black text-white uppercase cursor-text';
                 }
                 view.classList.remove('hidden');
                 view.onclick = startInspectorTitleEdit;
@@ -3094,9 +3147,12 @@
             inp.classList.add('hidden');
         }
 
-                function renderInspectorFields() {
+        function renderInspectorFields() {
             const item = db.items.find(i => i.id === activeId);
-            const d = document.getElementById('dynamicFields'); d.innerHTML = "";
+            const d = document.getElementById('dynamicFields');
+            if (!d) return;
+            d.innerHTML = "";
+            if (!item) return;
             
             const schema = db.schemas[item._col] || [];
             
@@ -3115,7 +3171,7 @@
                  if(possibleKeys.length > 0) displayTitle = item[possibleKeys[0]];
             }
             
-            // Título: carrusel si es largo; al pulsar se edita (input)
+            // Título: carrusel si es largo; al pulsar se edita. Mismo tamaño de siempre.
             if (!primaryField && isEditing) {
                 const newKey = "k_title_" + Date.now();
                 primaryField = { id: "title_auto", name: "Título", type: "text", key: newKey, isTitle: true };
@@ -3126,28 +3182,23 @@
                 displayTitle = rawTitleVal || "Sin Título";
             }
             const tSafe = String(displayTitle || 'Sin Título').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-            const tSafeAttr = String(rawTitleVal || displayTitle || '').replace(/"/g, '&quot;');
-            const tLong = tSafe.length > 18;
+            const safeVal = String(rawTitleVal || displayTitle || '').replace(/"/g, '&quot;');
+            const tLong = tSafe.length > 22;
             const titleKey = primaryField ? primaryField.key : '';
+            const inpCls = 'w-full bg-transparent text-xl font-black text-white uppercase border-b border-zinc-800 pb-2 focus:border-blue-500 outline-none';
             if (isEditing && titleKey) {
-                // Vista: carrusel; clic → input para editar
-                const viewHtml = tLong
-                    ? `<div id="inspectorTitleView" class="card-marquee text-xl font-black text-white uppercase cursor-pointer" style="min-height:1.6em;" onclick="startInspectorTitleEdit()"><span class="card-marquee-inner">${tSafe}&nbsp;&nbsp;&nbsp;${tSafe}</span></div>`
-                    : `<div id="inspectorTitleView" class="text-xl font-black text-white uppercase no-cut-text cursor-pointer" onclick="startInspectorTitleEdit()">${tSafe}</div>`;
-                d.innerHTML += `<div class="mb-6 border-b border-zinc-800 pb-2">
-                    ${viewHtml}
-                    <input type="text" id="inspectorTitleInp" value="${tSafeAttr}" data-fkey="${titleKey}"
-                        class="hidden w-full bg-transparent text-xl font-black text-white uppercase border-0 border-b border-blue-500 outline-none"
-                        oninput="updVal('${titleKey}', this.value)"
-                        onblur="endInspectorTitleEdit()"
-                        placeholder="Escribe el Título...">
-                </div>`;
-            } else {
                 if (tLong) {
-                    d.innerHTML += `<div id="inspectorHeaderTitle" class="card-marquee text-xl font-black text-white mb-6 uppercase border-b border-zinc-800 pb-2"><span class="card-marquee-inner">${tSafe}&nbsp;&nbsp;&nbsp;${tSafe}</span></div>`;
+                    d.innerHTML += `<div class="mb-6" style="overflow:hidden;min-width:0;max-width:100%;">
+                        <div id="inspectorTitleView" class="card-marquee text-xl font-black text-white uppercase cursor-pointer border-b border-zinc-800 pb-2" onclick="startInspectorTitleEdit()"><span class="card-marquee-inner">${tSafe}&nbsp;&nbsp;&nbsp;${tSafe}</span></div>
+                        <input type="text" id="inspectorTitleInp" value="${safeVal}" class="hidden ${inpCls} mb-0" oninput="updVal('${titleKey}', this.value)" onblur="endInspectorTitleEdit()" placeholder="Escribe el Título...">
+                    </div>`;
                 } else {
-                    d.innerHTML += `<h2 id="inspectorHeaderTitle" class="text-xl font-black text-white mb-6 uppercase no-cut-text border-b border-zinc-800 pb-2">${tSafe}</h2>`;
+                    d.innerHTML += `<input type="text" id="inspectorTitleInp" value="${safeVal}" oninput="updVal('${titleKey}', this.value)" class="${inpCls} mb-6" placeholder="Escribe el Título...">`;
                 }
+            } else if (tLong) {
+                d.innerHTML += `<div class="card-marquee text-xl font-black text-white mb-6 uppercase border-b border-zinc-800 pb-2"><span class="card-marquee-inner">${tSafe}&nbsp;&nbsp;&nbsp;${tSafe}</span></div>`;
+            } else {
+                d.innerHTML += `<h2 class="text-xl font-black text-white mb-6 uppercase border-b border-zinc-800 pb-2 no-cut-text">${tSafe}</h2>`;
             }
 
             db.schemas[item._col].forEach(f => {
