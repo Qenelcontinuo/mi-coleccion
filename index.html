@@ -2600,10 +2600,7 @@
                     st.textContent = 'Error: ' + (e.message || e) + ' — Tus datos LOCALES siguen intactos.';
                     st.className = 'text-[10px] text-red-400';
                 }
-                alert('No se pudo escribir en el repo.
-Tus datos de este navegador NO se han borrado.
-
-' + (e.message || e));
+                alert('No se pudo escribir en el repo. Tus datos de este navegador NO se han borrado. ' + (e.message || e));
                 return false;
             }
         }
