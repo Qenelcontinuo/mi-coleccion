@@ -2496,35 +2496,60 @@
         }
 
         async function ghPushData() {
-            const st = document.getElementById('serverStatus');
-            const cfg = await ghGetCfg();
-            // prefer UI values if open
-            const uiTok = ((document.getElementById('ghTokenInp') || {}).value || '').trim();
-            const uiUser = ((document.getElementById('ghUserInp') || {}).value || '').trim();
-            const uiRepo = ((document.getElementById('ghRepoInp') || {}).value || '').trim();
-            const uiBranch = ((document.getElementById('ghBranchInp') || {}).value || '').trim();
-            if (uiTok) cfg.token = uiTok;
-            if (uiUser) cfg.user = uiUser;
-            if (uiRepo) cfg.repo = uiRepo;
-            if (uiBranch) cfg.branch = uiBranch;
-
-            if (!cfg.token || !cfg.user || !cfg.repo) {
-                alert('Necesitas usuario, repositorio y token.');
+            // Evitar varios guardados a la vez (causa típica del 409)
+            if (window._ghPushing) {
+                window._ghPushQueued = true;
                 return false;
             }
-            if (st) st.textContent = 'Guardando data.json en el repositorio…';
+            window._ghPushing = true;
+            const st = document.getElementById('serverStatus');
             try {
+                const cfg = await ghGetCfg();
+                const uiTok = ((document.getElementById('ghTokenInp') || {}).value || '').trim();
+                const uiUser = ((document.getElementById('ghUserInp') || {}).value || '').trim();
+                const uiRepo = ((document.getElementById('ghRepoInp') || {}).value || '').trim();
+                const uiBranch = ((document.getElementById('ghBranchInp') || {}).value || '').trim();
+                if (uiTok) cfg.token = uiTok;
+                if (uiUser) cfg.user = uiUser;
+                if (uiRepo) cfg.repo = uiRepo;
+                if (uiBranch) cfg.branch = uiBranch;
+
+                if (!cfg.token || !cfg.user || !cfg.repo) {
+                    alert('Necesitas usuario, repositorio y token.');
+                    return false;
+                }
+                if (st) st.textContent = 'Guardando data.json en el repositorio…';
+
                 db._savedAt = Date.now();
-                // 1) Siempre local primero (nunca se pierde)
                 await localforage.setItem(STORAGE_KEY, db);
 
                 const content = utf8ToBase64(JSON.stringify(db));
                 const url = 'https://api.github.com/repos/' + encodeURIComponent(cfg.user) + '/' + encodeURIComponent(cfg.repo) +
                     '/contents/' + GH_DATA_PATH;
 
-                async function putWithSha(branch, sha) {
+                async function getSha(branch) {
+                    try {
+                        const metaUrl = 'https://api.github.com/repos/' + encodeURIComponent(cfg.user) + '/' + encodeURIComponent(cfg.repo) +
+                            '/contents/' + GH_DATA_PATH + '?ref=' + encodeURIComponent(branch) + '&_ts=' + Date.now();
+                        const r = await fetch(metaUrl, {
+                            headers: Object.assign({}, ghHeaders(cfg.token), { 'Cache-Control': 'no-cache' }),
+                            cache: 'no-store'
+                        });
+                        if (r.status === 404) return { sha: null, ok: true };
+                        if (!r.ok) {
+                            const t = await r.text();
+                            return { sha: null, ok: false, status: r.status, text: t };
+                        }
+                        const meta = await r.json();
+                        return { sha: meta.sha || null, ok: true };
+                    } catch (e) {
+                        return { sha: null, ok: false, text: String(e) };
+                    }
+                }
+
+                async function putOnce(branch, sha) {
                     const body = {
-                        message: 'MiColeccion: actualizar data.json',
+                        message: 'MiColeccion: actualizar data.json ' + new Date().toISOString(),
                         content: content,
                         branch: branch
                     };
@@ -2536,65 +2561,58 @@
                     });
                 }
 
-                async function latestSha(branch) {
-                    try {
-                        const metaUrl = 'https://api.github.com/repos/' + encodeURIComponent(cfg.user) + '/' + encodeURIComponent(cfg.repo) +
-                            '/contents/' + GH_DATA_PATH + '?ref=' + encodeURIComponent(branch);
-                        const r = await fetch(metaUrl, { headers: ghHeaders(cfg.token), cache: 'no-store' });
-                        if (r.status === 404) return null;
-                        if (!r.ok) return null;
-                        const meta = await r.json();
-                        return meta && meta.sha ? meta.sha : null;
-                    } catch (e) { return null; }
+                async function sleep(ms) {
+                    return new Promise(function(r) { setTimeout(r, ms); });
                 }
 
                 let branch = cfg.branch || 'main';
-                let sha = await latestSha(branch);
-                let res = await putWithSha(branch, sha);
+                let lastErr = '';
+                let success = false;
 
-                // Conflicto 409: el archivo cambió → leer SHA fresco y reintentar (hasta 3 veces)
-                let tries = 0;
-                while (res.status === 409 && tries < 3) {
-                    tries++;
-                    sha = await latestSha(branch);
-                    res = await putWithSha(branch, sha);
-                }
-
-                // Rama main no existe → probar master
-                if (!res.ok && branch === 'main') {
-                    const t0 = await res.clone().text();
-                    if (res.status === 404 || /branch|not found/i.test(t0)) {
-                        branch = 'master';
-                        sha = await latestSha(branch);
-                        res = await putWithSha(branch, sha);
-                        tries = 0;
-                        while (res.status === 409 && tries < 3) {
-                            tries++;
-                            sha = await latestSha(branch);
-                            res = await putWithSha(branch, sha);
-                        }
-                        if (res.ok) cfg.branch = 'master';
+                for (let attempt = 0; attempt < 6; attempt++) {
+                    const info = await getSha(branch);
+                    if (!info.ok && info.status === 404 && branch === 'main' && attempt === 0) {
+                        // probar master solo si main no existe el archivo... keep trying main first
                     }
-                }
-
-                if (!res.ok) {
+                    let res = await putOnce(branch, info.sha);
+                    if (res.ok) {
+                        success = true;
+                        if (branch === 'master') cfg.branch = 'master';
+                        break;
+                    }
                     const t = await res.text();
-                    let hint = '';
-                    if (res.status === 404) {
-                        hint = ' Usuario o repositorio incorrectos, o el token no tiene acceso. ' +
-                            'Si tu web es USUARIO.github.io, el repo suele ser USUARIO.github.io. Prueba rama master si main falla.';
-                    } else if (res.status === 401 || res.status === 403) {
-                        hint = ' Token incorrecto o sin permiso repo.';
-                    } else if (res.status === 409) {
-                        hint = ' El archivo data.json cambió a la vez. Espera un segundo y pulsa otra vez «Guardar datos en el repo».';
+                    lastErr = 'GitHub ' + res.status + ' ' + t.slice(0, 120);
+
+                    if (res.status === 409) {
+                        // SHA desfasado: esperar y reintentar con SHA fresco
+                        await sleep(400 + attempt * 300);
+                        continue;
                     }
-                    throw new Error('GitHub ' + res.status + '. ' + hint + ' ' + t.slice(0, 100));
+                    if (res.status === 404 && branch === 'main') {
+                        branch = 'master';
+                        await sleep(200);
+                        continue;
+                    }
+                    // otros errores: no insistir en bucle infinito
+                    break;
                 }
-                // persist cfg from UI
+
+                if (!success) {
+                    let hint = '';
+                    if (/409/.test(lastErr)) {
+                        hint = 'Conflicto de versión. Tus datos locales están bien. Prueba otra vez en unos segundos.';
+                    } else if (/404/.test(lastErr)) {
+                        hint = 'Usuario/repo incorrectos o sin acceso.';
+                    } else if (/401|403/.test(lastErr)) {
+                        hint = 'Token incorrecto o sin permiso repo.';
+                    }
+                    throw new Error(hint + ' ' + lastErr);
+                }
+
                 await localforage.setItem(GH_TOKEN_KEY, cfg.token);
                 await localforage.setItem(GH_USER_KEY, cfg.user);
                 await localforage.setItem(GH_REPO_KEY, cfg.repo);
-                await localforage.setItem(GH_BRANCH_KEY, cfg.branch || 'main');
+                await localforage.setItem(GH_BRANCH_KEY, cfg.branch || branch || 'main');
 
                 if (st) {
                     st.textContent = 'Guardado en el repo: ' + cfg.user + '/' + cfg.repo + '/' + GH_DATA_PATH + ' · ' + new Date().toLocaleString('es-ES');
@@ -2604,11 +2622,20 @@
             } catch (e) {
                 console.error(e);
                 if (st) {
-                    st.textContent = 'Error: ' + (e.message || e) + ' — Tus datos LOCALES siguen intactos.';
+                    st.textContent = 'Error: ' + (e.message || e) + ' — Datos LOCALES intactos.';
                     st.className = 'text-[10px] text-red-400';
                 }
-                alert('No se pudo escribir en el repo. Tus datos de este navegador NO se han borrado. ' + (e.message || e));
+                // No spamear alert en auto-sync; solo si el usuario pulsó el botón
+                if (!window._ghSilent) {
+                    alert('No se pudo escribir en el repo. Tus datos de este navegador NO se han borrado. ' + (e.message || e));
+                }
                 return false;
+            } finally {
+                window._ghPushing = false;
+                if (window._ghPushQueued) {
+                    window._ghPushQueued = false;
+                    setTimeout(function() { ghPushData(); }, 800);
+                }
             }
         }
 
@@ -2678,11 +2705,13 @@
                 if (auto) {
                     const cfg = await ghGetCfg();
                     if (cfg.token && cfg.user && cfg.repo) {
-                        await ghPushData();
+                        window._ghSilent = true;
+                        try { await ghPushData(); } finally { window._ghSilent = false; }
                     }
                 }
             } catch (e) {
                 console.warn('Auto-sync GitHub falló (local intacto):', e);
+                window._ghSilent = false;
             }
         }
 
@@ -3033,7 +3062,39 @@
             // Ya no hay botón de solo lectura
         }
 
-        function renderInspectorFields() {
+
+        function startInspectorTitleEdit() {
+            const view = document.getElementById('inspectorTitleView');
+            const inp = document.getElementById('inspectorTitleInp');
+            if (!inp) return;
+            if (view) view.classList.add('hidden');
+            inp.classList.remove('hidden');
+            try { inp.focus(); inp.select(); } catch (e) {}
+        }
+        function endInspectorTitleEdit() {
+            const view = document.getElementById('inspectorTitleView');
+            const inp = document.getElementById('inspectorTitleInp');
+            if (!inp) return;
+            const val = (inp.value || '').trim() || 'Sin Título';
+            const safe = val.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            const long = safe.length > 18;
+            if (view) {
+                if (long) {
+                    view.className = 'card-marquee text-xl font-black text-white uppercase cursor-pointer';
+                    view.style.minHeight = '1.6em';
+                    view.innerHTML = '<span class="card-marquee-inner">' + safe + '&nbsp;&nbsp;&nbsp;' + safe + '</span>';
+                } else {
+                    view.className = 'text-xl font-black text-white uppercase no-cut-text cursor-pointer';
+                    view.removeAttribute('style');
+                    view.textContent = val;
+                }
+                view.classList.remove('hidden');
+                view.onclick = startInspectorTitleEdit;
+            }
+            inp.classList.add('hidden');
+        }
+
+                function renderInspectorFields() {
             const item = db.items.find(i => i.id === activeId);
             const d = document.getElementById('dynamicFields'); d.innerHTML = "";
             
@@ -3054,22 +3115,34 @@
                  if(possibleKeys.length > 0) displayTitle = item[possibleKeys[0]];
             }
             
-            // Siempre editable si es admin/edición: si no hay campo título, crearlo automáticamente
-            if (isEditing) {
-                if (!primaryField) {
-                    const newKey = "k_title_" + Date.now();
-                    primaryField = { id: "title_auto", name: "Título", type: "text", key: newKey, isTitle: true };
-                    if (!db.schemas[item._col]) db.schemas[item._col] = [];
-                    db.schemas[item._col].unshift(primaryField);
-                    // no await save aquí para no bloquear UI; se guarda con el resto
-                    save();
-                    rawTitleVal = item[newKey] || "";
-                }
-                const safeVal = (rawTitleVal || "").toString().replace(/"/g, '&quot;');
-                d.innerHTML += `<input type="text" id="inspectorTitleInp" value="${safeVal}" oninput="updVal('${primaryField.key}', this.value)" class="w-full bg-transparent text-xl font-black text-white mb-6 uppercase border-b border-zinc-800 pb-2 focus:border-blue-500 outline-none" placeholder="Escribe el Título...">`;
+            // Título: carrusel si es largo; al pulsar se edita (input)
+            if (!primaryField && isEditing) {
+                const newKey = "k_title_" + Date.now();
+                primaryField = { id: "title_auto", name: "Título", type: "text", key: newKey, isTitle: true };
+                if (!db.schemas[item._col]) db.schemas[item._col] = [];
+                db.schemas[item._col].unshift(primaryField);
+                save();
+                rawTitleVal = item[newKey] || "";
+                displayTitle = rawTitleVal || "Sin Título";
+            }
+            const tSafe = String(displayTitle || 'Sin Título').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            const tSafeAttr = String(rawTitleVal || displayTitle || '').replace(/"/g, '&quot;');
+            const tLong = tSafe.length > 18;
+            const titleKey = primaryField ? primaryField.key : '';
+            if (isEditing && titleKey) {
+                // Vista: carrusel; clic → input para editar
+                const viewHtml = tLong
+                    ? `<div id="inspectorTitleView" class="card-marquee text-xl font-black text-white uppercase cursor-pointer" style="min-height:1.6em;" onclick="startInspectorTitleEdit()"><span class="card-marquee-inner">${tSafe}&nbsp;&nbsp;&nbsp;${tSafe}</span></div>`
+                    : `<div id="inspectorTitleView" class="text-xl font-black text-white uppercase no-cut-text cursor-pointer" onclick="startInspectorTitleEdit()">${tSafe}</div>`;
+                d.innerHTML += `<div class="mb-6 border-b border-zinc-800 pb-2">
+                    ${viewHtml}
+                    <input type="text" id="inspectorTitleInp" value="${tSafeAttr}" data-fkey="${titleKey}"
+                        class="hidden w-full bg-transparent text-xl font-black text-white uppercase border-0 border-b border-blue-500 outline-none"
+                        oninput="updVal('${titleKey}', this.value)"
+                        onblur="endInspectorTitleEdit()"
+                        placeholder="Escribe el Título...">
+                </div>`;
             } else {
-                const tSafe = String(displayTitle || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-                const tLong = tSafe.length > 22;
                 if (tLong) {
                     d.innerHTML += `<div id="inspectorHeaderTitle" class="card-marquee text-xl font-black text-white mb-6 uppercase border-b border-zinc-800 pb-2"><span class="card-marquee-inner">${tSafe}&nbsp;&nbsp;&nbsp;${tSafe}</span></div>`;
                 } else {
