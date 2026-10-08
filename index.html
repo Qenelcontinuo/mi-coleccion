@@ -638,20 +638,21 @@
 
     <div id="exportCenterModal" class="modal-overlay hidden" style="z-index: 5000;">
         <div class="bg-black border border-zinc-800 p-6 rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
-            <h3 class="text-white font-bold mb-4 uppercase text-lg text-center">Centro de Exportación e Importación</h3>
+            <h3 class="text-white font-bold mb-4 uppercase text-lg text-center flex-shrink-0">Centro de Exportación e Importación</h3>
             
-            <div class="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
+            <div class="flex-1 overflow-y-auto space-y-4 p-1 min-h-0">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="border border-zinc-800 p-4 rounded bg-zinc-900/50">
                     <h4 class="text-blue-400 font-bold uppercase text-xs mb-3">1. Seleccionar Colecciones</h4>
-                    <div id="expColList" class="space-y-1 h-40 overflow-y-auto"></div>
+                    <div id="expColList" class="space-y-1 max-h-36 overflow-y-auto"></div>
                 </div>
                 <div class="border border-zinc-800 p-4 rounded bg-zinc-900/50">
                     <h4 class="text-blue-400 font-bold uppercase text-xs mb-3">2. Seleccionar Campos</h4>
-                    <div id="expFieldList" class="space-y-1 h-40 overflow-y-auto"></div>
+                    <div id="expFieldList" class="space-y-1 max-h-36 overflow-y-auto"></div>
                 </div>
             </div>
 
-            <div class="mt-4 border border-zinc-800 rounded-xl p-4 bg-zinc-900/50 space-y-4">
+            <div class="border border-zinc-800 rounded-xl p-4 bg-zinc-900/50 space-y-4">
                 <h4 class="text-yellow-500 font-bold uppercase text-xs">3. Opciones del informe</h4>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-zinc-300">
                     <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="expOptListado" class="accent-blue-500" checked> Listado de ítems</label>
@@ -675,8 +676,9 @@
                     </div>
                 </div>
             </div>
+            </div><!-- fin scroll opciones -->
 
-            <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 flex-shrink-0">
                  <button onclick="runExport('csv')" class="bg-zinc-800 p-3 rounded text-xs font-bold uppercase hover:bg-zinc-700 border border-zinc-700">Descargar CSV</button>
                  <button onclick="runExport('txt')" class="bg-zinc-800 p-3 rounded text-xs font-bold uppercase hover:bg-zinc-700 border border-zinc-700">Descargar TXT</button>
                  <button onclick="runExport('pdf')" class="bg-blue-900/30 text-blue-400 p-3 rounded text-xs font-bold uppercase hover:bg-blue-900/50 border border-blue-900">Descargar PDF</button>
@@ -1152,6 +1154,22 @@
                         <div class="flex flex-col sm:flex-row gap-2">
                             <button onclick="renderTrashList()" class="flex-1 bg-zinc-800 py-2 rounded text-[10px] font-black uppercase">Actualizar lista</button>
                             <button onclick="emptyTrash()" class="flex-1 border border-red-900 text-red-500 py-2 rounded text-[10px] font-black uppercase hover:bg-red-900/20">Vaciar papelera</button>
+                        </div>
+                    </div>
+                </details>
+
+                <details open>
+                    <summary>Almacenamiento en el servidor</summary>
+                    <div class="space-y-3">
+                        <p class="text-[10px] text-zinc-400">
+                            Si subes <strong class="text-white">save.php</strong> en la misma carpeta que el HTML, los datos se guardan también en el disco del hosting como <strong class="text-white">data.json</strong> (además del navegador).
+                            No hace falta token ni Gist: es el mismo sitio donde está la web.
+                        </p>
+                        <p id="serverStatus" class="text-[10px] text-zinc-500">Comprobando servidor…</p>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <button type="button" onclick="serverCheck()" class="flex-1 bg-zinc-800 py-2 rounded text-[10px] font-black uppercase">Comprobar servidor</button>
+                            <button type="button" onclick="serverForceUpload()" class="flex-1 bg-blue-900/40 text-blue-300 border border-blue-800 py-2 rounded text-[10px] font-black uppercase">Guardar ahora en servidor</button>
+                            <button type="button" onclick="serverForceDownload()" class="flex-1 bg-green-900/30 text-green-400 border border-green-800 py-2 rounded text-[10px] font-black uppercase">Cargar desde servidor</button>
                         </div>
                     </div>
                 </details>
@@ -2177,6 +2195,27 @@
                 if (!d) {
                     d = await localforage.getItem(STORAGE_KEY);
                 }
+                // Servidor: si hay data.json y (no hay local O el servidor es más reciente), usar servidor
+                try {
+                    const ok = await serverCheck();
+                    if (ok) {
+                        const remote = await serverReadDb();
+                        if (remote && typeof remote === 'object' && (remote.items || remote.schemas)) {
+                            const localAt = (d && d._savedAt) ? d._savedAt : 0;
+                            const remoteAt = remote._savedAt || 0;
+                            const localCount = (d && d.items) ? d.items.length : 0;
+                            const remoteCount = (remote.items || []).length;
+                            if (!d || localCount === 0) {
+                                d = remote;
+                            } else if (remoteAt > localAt) {
+                                d = remote;
+                            }
+                            // si local es más nuevo, se mantiene local y al guardar se sube al servidor
+                        }
+                    }
+                } catch (e) {
+                    console.warn('No se pudo leer servidor:', e);
+                }
                 if(d) { 
                     db = {...db, ...d}; 
                     if(!db.viewSettings) db.viewSettings = {};
@@ -2336,20 +2375,129 @@
             }
         }
 
+        // ===== Guardado en disco del servidor (save.php → data.json) =====
+        const SERVER_API = 'save.php';
+        let serverAvailable = null; // null=desconocido, true/false
+
+        async function serverCheck() {
+            const st = document.getElementById('serverStatus');
+            try {
+                const res = await fetch(SERVER_API + '?t=' + Date.now(), { method: 'GET', cache: 'no-store' });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                // Puede devolver null o el JSON de datos
+                serverAvailable = true;
+                let info = 'Servidor OK: los datos se guardan en data.json (disco del hosting).';
+                try {
+                    const data = await res.json();
+                    if (data && data.items) {
+                        info += ' · En servidor: ' + (data.items.length || 0) + ' ítems.';
+                    } else if (data === null) {
+                        info += ' · Aún no hay data.json (se creará al guardar).';
+                    }
+                } catch (e) {}
+                if (st) { st.textContent = info; st.className = 'text-[10px] text-green-400'; }
+                return true;
+            } catch (e) {
+                serverAvailable = false;
+                if (st) {
+                    st.textContent = 'Sin save.php en el servidor (o el hosting no ejecuta PHP). Solo se usa el navegador. Sube save.php junto al HTML.';
+                    st.className = 'text-[10px] text-yellow-500';
+                }
+                return false;
+            }
+        }
+
+        async function serverWriteDb(dataObj) {
+            const res = await fetch(SERVER_API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dataObj)
+            });
+            if (!res.ok) {
+                const t = await res.text();
+                throw new Error('Servidor ' + res.status + ': ' + t.slice(0, 120));
+            }
+            return res.json().catch(() => ({ ok: true }));
+        }
+
+        async function serverReadDb() {
+            const res = await fetch(SERVER_API + '?t=' + Date.now(), { method: 'GET', cache: 'no-store' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            return data; // null o objeto
+        }
+
+        async function serverForceUpload() {
+            const st = document.getElementById('serverStatus');
+            try {
+                if (serverAvailable === false) {
+                    const ok = await serverCheck();
+                    if (!ok) return alert('No hay save.php en el servidor. Súbelo en la misma carpeta que el HTML.');
+                }
+                db._savedAt = Date.now();
+                await serverWriteDb(db);
+                if (st) { st.textContent = 'Guardado en el servidor · ' + new Date().toLocaleString('es-ES'); st.className = 'text-[10px] text-green-400'; }
+                if (typeof appAlert === 'function') await appAlert('Datos guardados en el disco del servidor (data.json).');
+            } catch (e) {
+                if (st) { st.textContent = 'Error al guardar en servidor: ' + (e.message || e); st.className = 'text-[10px] text-red-400'; }
+                alert('No se pudo guardar en el servidor: ' + (e.message || e));
+            }
+        }
+
+        async function serverForceDownload() {
+            const st = document.getElementById('serverStatus');
+            try {
+                const remote = await serverReadDb();
+                if (!remote || typeof remote !== 'object') {
+                    alert('El servidor no tiene datos todavía.');
+                    return;
+                }
+                const localCount = (db.items || []).length;
+                const remoteCount = (remote.items || []).length;
+                if (localCount > 0 && remoteCount !== localCount) {
+                    const ok = confirm('Local: ' + localCount + ' ítems. Servidor: ' + remoteCount + ' ítems.\\n\\n¿Cargar los del servidor en este navegador?');
+                    if (!ok) return;
+                }
+                db = { ...db, ...remote };
+                if (!db.schemas) db.schemas = {};
+                if (!Array.isArray(db.items)) db.items = [];
+                if (!db.settings) db.settings = {};
+                await localforage.setItem(STORAGE_KEY, db);
+                if (typeof normalizeSchemas === 'function') normalizeSchemas();
+                if (typeof renderColNav === 'function') renderColNav();
+                if (typeof renderItems === 'function') renderItems();
+                if (st) { st.textContent = 'Cargado desde servidor · ' + remoteCount + ' ítems'; st.className = 'text-[10px] text-green-400'; }
+            } catch (e) {
+                alert('No se pudo cargar del servidor: ' + (e.message || e));
+            }
+        }
+
         async function save() { 
             try {
+                db._savedAt = Date.now();
                 await localforage.setItem(STORAGE_KEY, db);
             } catch(e) {
-                console.error("Error guardando:", e);
+                console.error("Error guardando local:", e);
             }
             if (dirHandle && fsWriteEnabled) {
-                await writeNetDbFile();
+                try { await writeNetDbFile(); } catch(e) { console.warn(e); }
+            }
+            // Disco del servidor (si save.php está disponible)
+            try {
+                if (serverAvailable === null) await serverCheck();
+                if (serverAvailable) {
+                    await serverWriteDb(db);
+                }
+            } catch (e) {
+                console.warn('Guardado en servidor falló (local intacto):', e);
+                serverAvailable = false;
             }
         }
 
         async function tryOpenConfig() {
             if (typeof isAdmin === 'function' && !isAdmin()) { await appAlert('Solo el administrador puede acceder a la configuración.'); return; }
             openModal('configModal');
+            if (typeof serverCheck === 'function') serverCheck();
         }
 
         function renderColNav() {
@@ -4095,26 +4243,28 @@
         function drawPdfStars(doc, x, y, val) {
             const n = parseRatingValue(val);
             if (n === null) return x;
-            // Dibujar 5 estrellitas con círculos/texto simple
-            doc.setFontSize(9);
+            // Etiqueta + estrellas grandes (ASCII compatible con fuente estándar)
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 110);
+            doc.text('Valoracion', x, y - 4);
+            doc.setFontSize(14);
             for (let i = 1; i <= 5; i++) {
                 if (n >= i) {
                     doc.setTextColor(234, 179, 8);
-                    doc.text('*', x, y);
+                    doc.text('*', x + (i - 1) * 5.5, y + 2);
                 } else if (n >= i - 0.5) {
                     doc.setTextColor(234, 179, 8);
-                    doc.text('+', x, y);
+                    doc.text('+', x + (i - 1) * 5.5, y + 2);
                 } else {
-                    doc.setTextColor(180, 180, 180);
-                    doc.text('-', x, y);
+                    doc.setTextColor(190, 190, 195);
+                    doc.text('-', x + (i - 1) * 5.5, y + 2);
                 }
-                x += 4;
             }
-            doc.setTextColor(100, 100, 110);
-            doc.setFontSize(8);
-            doc.text(String(Math.round(n * 10) / 10), x + 1, y);
+            doc.setFontSize(9);
+            doc.setTextColor(60, 60, 70);
+            doc.text(String(Math.round(n * 10) / 10) + '/5', x + 30, y + 2);
             doc.setTextColor(0);
-            return x + 12;
+            return x + 48;
         }
 
 
@@ -4220,7 +4370,7 @@
                 const relId = item[f.key];
                 if (!relId) return;
                 const rel = db.items.find(x => x.id === relId);
-                if (rel) outs.push(f.name + " → " + getItemTitle(rel) + " (" + rel._col + ")");
+                if (rel) outs.push(f.name + ": " + getItemTitle(rel));
                 else outs.push(f.name + " → (relación rota)");
             });
             // Ítems que apuntan a este
@@ -4230,7 +4380,7 @@
                 const os = db.schemas[other._col] || [];
                 os.filter(f => f.type === 'relation').forEach(f => {
                     if (other[f.key] === item.id) {
-                        ins.push(getItemTitle(other) + " (" + other._col + ") → " + f.name);
+                        ins.push(getItemTitle(other) + " → " + f.name);
                     }
                 });
             });
@@ -4429,7 +4579,7 @@
                             if (opt.rating) {
                                 const rf = schema.find(x => x.type === 'rating');
                                 if (rf && item[rf.key] !== undefined && item[rf.key] !== '') {
-                                    drawPdfStars(doc, pageW - 42, y + 2, item[rf.key]);
+                                    drawPdfStars(doc, pageW - 58, y + 4, item[rf.key]);
                                 }
                             }
                             y += Math.max(6, titleSplit.length * 4.5) + 2;
@@ -4455,12 +4605,16 @@
                             schema.forEach(f => {
                                 if (f.isTitle) return;
                                 if (f.type === 'icon') return;
-                                if (f.type === 'rating' && opt.rating) return; // ya dibujada
+                                if (f.type === 'rating' && opt.rating) return; // ya dibujada arriba
                                 if (fieldNames.length && !fieldNames.includes(f.name)) return;
                                 const val = getFieldDisplayValue(item, f);
                                 if (val === "") return;
                                 ensureSpace(6);
-                                doc.setTextColor(90, 90, 100);
+                                if (f.type === 'relation') {
+                                    doc.setTextColor(37, 99, 235); // azul = relación
+                                } else {
+                                    doc.setTextColor(90, 90, 100);
+                                }
                                 doc.setFontSize(8);
                                 doc.text(f.name, 18, y);
                                 doc.setTextColor(30, 30, 35);
@@ -4469,29 +4623,10 @@
                                 doc.text(split, 50, y);
                                 y += Math.max(5, split.length * 4.2);
                             });
-                            // Separador sutil
                             doc.setDrawColor(230, 230, 235);
                             doc.setLineWidth(0.2);
                             doc.line(14, y + 1, pageW - 14, y + 1);
                             y += 5;
-                        } else if (opt.relaciones) {
-                            doc.setFont(undefined, "bold");
-                            doc.text(title, 14, y);
-                            doc.setFont(undefined, "normal");
-                            y += 5;
-                        }
-
-                        if (opt.relaciones && opt.groupRels && opt.groupRels.length) {
-                            // Solo si se pidió agrupar y no están ya en campos
-                            const rel = getRelationsForItem(item);
-                            rel.outs.forEach(r => {
-                                ensureSpace(5);
-                                doc.setTextColor(37, 99, 235);
-                                doc.setFontSize(8);
-                                doc.text("- " + r, 18, y); y += 4;
-                            });
-                            doc.setTextColor(0);
-                            doc.setFontSize(9);
                         }
                         y += 2;
                     });
