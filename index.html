@@ -2400,8 +2400,14 @@
                 if (host.endsWith('github.io')) {
                     const user = host.replace('.github.io', '');
                     const parts = path.split('/').filter(Boolean);
-                    // https://user.github.io/repo/...  or https://user.github.io/
-                    const repo = parts[0] || user + '.github.io';
+                    // https://user.github.io/          → repo user.github.io
+                    // https://user.github.io/repo/x    → repo = repo
+                    let repo;
+                    if (!parts.length || parts[0].toLowerCase().endsWith('.html')) {
+                        repo = user + '.github.io';
+                    } else {
+                        repo = parts[0];
+                    }
                     return { user: user, repo: repo, branch: 'main' };
                 }
             } catch (e) {}
@@ -2505,31 +2511,77 @@
                 // 1) Siempre local primero (nunca se pierde)
                 await localforage.setItem(STORAGE_KEY, db);
 
-                let sha = null;
-                try {
-                    const meta = await ghGetFileMeta(cfg);
-                    if (meta && meta.sha) sha = meta.sha;
-                } catch (e) {
-                    // 404 ok
-                }
                 const content = utf8ToBase64(JSON.stringify(db));
-                const body = {
-                    message: 'MiColeccion: actualizar data.json',
-                    content: content,
-                    branch: cfg.branch || 'main'
-                };
-                if (sha) body.sha = sha;
-
                 const url = 'https://api.github.com/repos/' + encodeURIComponent(cfg.user) + '/' + encodeURIComponent(cfg.repo) +
                     '/contents/' + GH_DATA_PATH;
-                const res = await fetch(url, {
-                    method: 'PUT',
-                    headers: ghHeaders(cfg.token),
-                    body: JSON.stringify(body)
-                });
+
+                async function putWithSha(branch, sha) {
+                    const body = {
+                        message: 'MiColeccion: actualizar data.json',
+                        content: content,
+                        branch: branch
+                    };
+                    if (sha) body.sha = sha;
+                    return fetch(url, {
+                        method: 'PUT',
+                        headers: ghHeaders(cfg.token),
+                        body: JSON.stringify(body)
+                    });
+                }
+
+                async function latestSha(branch) {
+                    try {
+                        const metaUrl = 'https://api.github.com/repos/' + encodeURIComponent(cfg.user) + '/' + encodeURIComponent(cfg.repo) +
+                            '/contents/' + GH_DATA_PATH + '?ref=' + encodeURIComponent(branch);
+                        const r = await fetch(metaUrl, { headers: ghHeaders(cfg.token), cache: 'no-store' });
+                        if (r.status === 404) return null;
+                        if (!r.ok) return null;
+                        const meta = await r.json();
+                        return meta && meta.sha ? meta.sha : null;
+                    } catch (e) { return null; }
+                }
+
+                let branch = cfg.branch || 'main';
+                let sha = await latestSha(branch);
+                let res = await putWithSha(branch, sha);
+
+                // Conflicto 409: el archivo cambió → leer SHA fresco y reintentar (hasta 3 veces)
+                let tries = 0;
+                while (res.status === 409 && tries < 3) {
+                    tries++;
+                    sha = await latestSha(branch);
+                    res = await putWithSha(branch, sha);
+                }
+
+                // Rama main no existe → probar master
+                if (!res.ok && branch === 'main') {
+                    const t0 = await res.clone().text();
+                    if (res.status === 404 || /branch|not found/i.test(t0)) {
+                        branch = 'master';
+                        sha = await latestSha(branch);
+                        res = await putWithSha(branch, sha);
+                        tries = 0;
+                        while (res.status === 409 && tries < 3) {
+                            tries++;
+                            sha = await latestSha(branch);
+                            res = await putWithSha(branch, sha);
+                        }
+                        if (res.ok) cfg.branch = 'master';
+                    }
+                }
+
                 if (!res.ok) {
                     const t = await res.text();
-                    throw new Error('GitHub ' + res.status + ': ' + t.slice(0, 250));
+                    let hint = '';
+                    if (res.status === 404) {
+                        hint = ' Usuario o repositorio incorrectos, o el token no tiene acceso. ' +
+                            'Si tu web es USUARIO.github.io, el repo suele ser USUARIO.github.io. Prueba rama master si main falla.';
+                    } else if (res.status === 401 || res.status === 403) {
+                        hint = ' Token incorrecto o sin permiso repo.';
+                    } else if (res.status === 409) {
+                        hint = ' El archivo data.json cambió a la vez. Espera un segundo y pulsa otra vez «Guardar datos en el repo».';
+                    }
+                    throw new Error('GitHub ' + res.status + '. ' + hint + ' ' + t.slice(0, 100));
                 }
                 // persist cfg from UI
                 await localforage.setItem(GH_TOKEN_KEY, cfg.token);
@@ -2548,7 +2600,10 @@
                     st.textContent = 'Error: ' + (e.message || e) + ' — Tus datos LOCALES siguen intactos.';
                     st.className = 'text-[10px] text-red-400';
                 }
-                alert('No se pudo escribir en el repo (los datos de este navegador NO se han borrado):\\n' + (e.message || e));
+                alert('No se pudo escribir en el repo.
+Tus datos de este navegador NO se han borrado.
+
+' + (e.message || e));
                 return false;
             }
         }
