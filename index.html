@@ -179,13 +179,13 @@
             display: inline-block;
             white-space: nowrap;
             padding-left: 0;
-            animation: cardMarquee 9s linear infinite;
+            animation: cardMarquee 12s linear infinite;
         }
         @keyframes cardMarquee {
             0% { transform: translateX(0); }
-            25% { transform: translateX(0); }
-            75% { transform: translateX(calc(-100% + 120px)); }
-            100% { transform: translateX(calc(-100% + 120px)); }
+            12% { transform: translateX(0); }
+            88% { transform: translateX(-50%); }
+            100% { transform: translateX(-50%); }
         }
         .card-icons-row {
             display: flex;
@@ -247,27 +247,32 @@
         .star-rating-sm { font-size: 12px; }
         .star-rating-md { font-size: 16px; }
         .star-input-wrap {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
+            display: block;
+            width: fit-content;
+            max-width: 100%;
             overflow: visible;
-            padding: 4px 0;
+            padding: 6px 0;
         }
         .star-input-row {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             cursor: pointer;
-            font-size: 26px;
+            font-size: 28px;
             line-height: 1;
             overflow: visible;
-            padding: 4px 2px;
+            padding: 6px 4px;
             user-select: none;
+            width: fit-content;
+            max-width: 100%;
+            touch-action: none;
         }
         .star-input-row .star-unit {
-            width: 1.2em;
-            height: 1.2em;
+            width: 1.25em;
+            height: 1.25em;
             cursor: pointer;
+            flex-shrink: 0;
+            touch-action: none;
         }
 
     </style>
@@ -1374,8 +1379,10 @@
                 }
 
                 window._dialogOpts = opts;
+                // Siempre encima del inspector móvil y de cualquier panel
+                try { document.body.appendChild(box); } catch (e) {}
                 box.classList.remove('hidden');
-                box.style.display = 'flex';
+                box.style.cssText = 'display:flex !important; position:fixed !important; inset:0 !important; z-index:2147483646 !important; background:rgba(0,0,0,0.92) !important; align-items:center !important; justify-content:center !important; padding:16px !important;';
             });
         }
 
@@ -2784,33 +2791,37 @@
             let dragging = false;
 
             function apply(clientX) {
+                // Solo el ancho real de las 5 estrellas (fit-content)
                 const val = ratingFromPointer(row, clientX);
                 paintStarRow(fieldKey, val);
                 if (typeof updVal === 'function') updVal(fieldKey, String(val));
             }
 
-            row.addEventListener('mousedown', function(ev) {
-                ev.preventDefault();
+            function onStart(clientX, ev) {
+                if (ev && ev.cancelable) ev.preventDefault();
                 dragging = true;
-                apply(ev.clientX);
+                apply(clientX);
+            }
+
+            row.addEventListener('mousedown', function(ev) {
+                onStart(ev.clientX, ev);
             });
             window.addEventListener('mousemove', function(ev) {
                 if (!dragging) return;
                 apply(ev.clientX);
             });
-            window.addEventListener('mouseup', function() {
-                dragging = false;
-            });
+            window.addEventListener('mouseup', function() { dragging = false; });
             row.addEventListener('touchstart', function(ev) {
                 if (!ev.touches[0]) return;
-                dragging = true;
-                apply(ev.touches[0].clientX);
-            }, { passive: true });
+                onStart(ev.touches[0].clientX, ev);
+            }, { passive: false });
             row.addEventListener('touchmove', function(ev) {
                 if (!dragging || !ev.touches[0]) return;
+                if (ev.cancelable) ev.preventDefault();
                 apply(ev.touches[0].clientX);
-            }, { passive: true });
+            }, { passive: false });
             row.addEventListener('touchend', function() { dragging = false; });
+            row.addEventListener('touchcancel', function() { dragging = false; });
         }
 
         function setRatingFromStar(fieldKey, starIndex, ev) {
@@ -2946,7 +2957,7 @@
                 const iconAlign = iconData.align || 'left';
                 const ratingHtml = getItemRatingHtml(i, schema, 'star-rating-sm');
                 const safeTitle = (displayTitle === '&nbsp;') ? '&nbsp;' : String(displayTitle).replace(/</g,'&lt;').replace(/>/g,'&gt;');
-                const titleLong = safeTitle.length > 18 && safeTitle !== '&nbsp;';
+                const titleLong = safeTitle.length > 14 && safeTitle !== '&nbsp;';
                 const titlePlain = `<span class="truncate">${safeTitle}</span>`;
                 const titleMarquee = titleLong
                     ? `<div class="card-marquee"><span class="card-marquee-inner">${safeTitle}&nbsp;&nbsp;&nbsp;${safeTitle}</span></div>`
@@ -2978,21 +2989,17 @@
                         ${titleMarquee}
                     </div>`;
                 } else {
-                    // LISTADO
+                    // LISTADO — títulos largos en carrusel
+                    const titleEl = titleLong
+                        ? `<div class="card-marquee flex-1 min-w-0"><span class="card-marquee-inner">${safeTitle}&nbsp;&nbsp;&nbsp;${safeTitle}</span></div>`
+                        : `<span class="truncate flex-1 min-w-0">${safeTitle}</span>`;
                     let row = '';
                     if (iconAlign === 'right') {
-                        // título izquierda, iconos centro, valoración derecha
-                        row = `<span class="truncate flex-1 min-w-0 text-left">${safeTitle}</span>
-                               ${iconsSpan ? `<span class="flex-shrink-0 px-2">${iconsSpan}</span>` : ''}
-                               ${ratingSpan || ''}`;
+                        row = `${titleEl}${iconsSpan ? `<span class="flex-shrink-0 px-2">${iconsSpan}</span>` : ''}${ratingSpan || ''}`;
                     } else if (iconAlign === 'center') {
-                        // grupo centrado: iconos + título + valoración
-                        row = `<div class="flex items-center justify-center gap-2 w-full min-w-0">
-                            ${iconsSpan}${titlePlain}${ratingSpan}
-                        </div>`;
+                        row = `<div class="flex items-center justify-center gap-2 w-full min-w-0">${iconsSpan}${titleEl}${ratingSpan}</div>`;
                     } else {
-                        // left: iconos, título, valoración — todo a la izquierda en secuencia
-                        row = `${iconsSpan}<span class="truncate min-w-0">${safeTitle}</span>${ratingSpan}`;
+                        row = `${iconsSpan}${titleEl}${ratingSpan}`;
                     }
                     card.innerHTML = `<div class="card-text-area flex items-center gap-2 min-w-0 w-full ${iconAlign==='left'?'justify-start':(iconAlign==='center'?'justify-center':'justify-between')}">${row}</div><div class="text-zinc-600 text-xs ml-2 flex-shrink-0"><i class="fa-solid fa-chevron-right"></i></div>`;
                 }
@@ -3061,7 +3068,13 @@
                 const safeVal = (rawTitleVal || "").toString().replace(/"/g, '&quot;');
                 d.innerHTML += `<input type="text" id="inspectorTitleInp" value="${safeVal}" oninput="updVal('${primaryField.key}', this.value)" class="w-full bg-transparent text-xl font-black text-white mb-6 uppercase border-b border-zinc-800 pb-2 focus:border-blue-500 outline-none" placeholder="Escribe el Título...">`;
             } else {
-                d.innerHTML += `<h2 id="inspectorHeaderTitle" class="text-xl font-black text-white mb-6 uppercase no-cut-text border-b border-zinc-800 pb-2">${displayTitle}</h2>`;
+                const tSafe = String(displayTitle || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                const tLong = tSafe.length > 22;
+                if (tLong) {
+                    d.innerHTML += `<div id="inspectorHeaderTitle" class="card-marquee text-xl font-black text-white mb-6 uppercase border-b border-zinc-800 pb-2"><span class="card-marquee-inner">${tSafe}&nbsp;&nbsp;&nbsp;${tSafe}</span></div>`;
+                } else {
+                    d.innerHTML += `<h2 id="inspectorHeaderTitle" class="text-xl font-black text-white mb-6 uppercase no-cut-text border-b border-zinc-800 pb-2">${tSafe}</h2>`;
+                }
             }
 
             db.schemas[item._col].forEach(f => {
@@ -6005,7 +6018,7 @@
 
 
     <!-- Diálogo integrado (sustituye alert/confirm/prompt del navegador) -->
-    <div id="appDialog" class="modal-overlay hidden" style="z-index:99999;">
+    <div id="appDialog" class="modal-overlay hidden" style="z-index:2147483646;">
         <div class="bg-zinc-950 border border-zinc-700 p-5 sm:p-6 rounded-2xl w-[92%] max-w-md shadow-2xl mx-auto">
             <h3 id="appDialogTitle" class="text-white font-black uppercase text-sm mb-2"></h3>
             <p id="appDialogMsg" class="text-zinc-400 text-xs leading-relaxed mb-4 whitespace-pre-wrap"></p>
